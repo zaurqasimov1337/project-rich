@@ -352,7 +352,11 @@
     "pricingCourse": "Kurs üzrə",
     "pricingLesson": "Dərs üzrə",
     "durationWeeks": "Müddət (həftə)",
-    "defaultCapacity": "Default tutum"
+    "defaultCapacity": "Default tutum",
+    "format": "Format",
+    "formatOnline": "Onlayn",
+    "formatOffline": "Oflayn",
+    "duration": "Müddət"
   },
   "exams": {
     "title": "İmtahanlar",

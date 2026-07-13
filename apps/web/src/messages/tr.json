@@ -352,7 +352,11 @@
     "pricingCourse": "Kurs başına",
     "pricingLesson": "Ders başına",
     "durationWeeks": "Süre (hafta)",
-    "defaultCapacity": "Varsayılan kapasite"
+    "defaultCapacity": "Varsayılan kapasite",
+    "format": "Format",
+    "formatOnline": "Çevrimiçi",
+    "formatOffline": "Yüz yüze",
+    "duration": "Süre"
   },
   "exams": {
     "title": "Sınavlar",

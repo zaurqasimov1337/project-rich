@@ -403,6 +403,7 @@ model Course {
   currency        String          @default("AZN")
   durationWeeks   Int?
   defaultCapacity Int             @default(12)
+  format          String          @default("offline") // online|offline
   syllabus        Json            @default("[]")
   status          String          @default("active") // active|archived
   createdAt       DateTime        @default(now())

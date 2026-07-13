@@ -22,6 +22,8 @@ interface CourseRow {
   price: number;
   pricingModel: string;
   status: string;
+  format: string;
+  durationWeeks: number | null;
   activeGroups: number;
   category: { id: string; name: string } | null;
 }
@@ -34,6 +36,7 @@ interface CourseForm {
   price: number;
   durationWeeks?: number;
   defaultCapacity?: number;
+  format?: string;
 }
 
 export default function CoursesPage() {
@@ -66,7 +69,7 @@ export default function CoursesPage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CourseForm>({ defaultValues: { pricingModel: 'monthly' } });
+  } = useForm<CourseForm>({ defaultValues: { pricingModel: 'monthly', format: 'offline' } });
 
   const createMutation = useMutation({
     mutationFn: (v: CourseForm) =>
@@ -93,7 +96,7 @@ export default function CoursesPage() {
   const columns: Column<CourseRow>[] = [
     { key: 'name', header: t('course'), render: (r) => <span className="font-medium">{r.name}</span> },
     { key: 'category', header: tc('category'), render: (r) => r.category?.name ?? '—' },
-    { key: 'level', header: t('level'), render: (r) => r.level ?? '—' },
+    { key: 'duration', header: t('duration'), render: (r) => (r.durationWeeks ? `${r.durationWeeks} həftə` : '—') },
     {
       key: 'price',
       header: tc('price'),
@@ -101,6 +104,15 @@ export default function CoursesPage() {
         <span className="tabular-nums">
           {formatMoney(r.price)}{' '}
           <span className="text-xs text-muted">({pricingLabels[r.pricingModel]})</span>
+        </span>
+      ),
+    },
+    {
+      key: 'format',
+      header: t('format'),
+      render: (r) => (
+        <span className="inline-flex rounded-full bg-muted-bg px-2 py-0.5 text-xs font-medium text-muted">
+          {r.format === 'online' ? t('formatOnline') : t('formatOffline')}
         </span>
       ),
     },
@@ -207,6 +219,16 @@ export default function CoursesPage() {
               <Label>{t('defaultCapacity')}</Label>
               <Input type="number" min={1} {...register('defaultCapacity')} />
             </div>
+          </div>
+          <div>
+            <Label>{t('format')}</Label>
+            <Select
+              options={[
+                { value: 'offline', label: t('formatOffline') },
+                { value: 'online', label: t('formatOnline') },
+              ]}
+              {...register('format')}
+            />
           </div>
         </form>
       </Drawer>

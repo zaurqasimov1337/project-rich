@@ -352,7 +352,11 @@
     "pricingCourse": "За курс",
     "pricingLesson": "За урок",
     "durationWeeks": "Длительность (недели)",
-    "defaultCapacity": "Вместимость по умолчанию"
+    "defaultCapacity": "Вместимость по умолчанию",
+    "format": "Формат",
+    "formatOnline": "Онлайн",
+    "formatOffline": "Офлайн",
+    "duration": "Длительность"
   },
   "exams": {
     "title": "Экзамены",

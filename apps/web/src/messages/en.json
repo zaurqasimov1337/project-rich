@@ -352,7 +352,11 @@
     "pricingCourse": "Per course",
     "pricingLesson": "Per lesson",
     "durationWeeks": "Duration (weeks)",
-    "defaultCapacity": "Default capacity"
+    "defaultCapacity": "Default capacity",
+    "format": "Format",
+    "formatOnline": "Online",
+    "formatOffline": "Offline",
+    "duration": "Duration"
   },
   "exams": {
     "title": "Exams",

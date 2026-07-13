@@ -64,6 +64,10 @@ class CourseDto {
   defaultCapacity?: number;
 
   @IsOptional()
+  @IsIn(['online', 'offline'])
+  format?: string;
+
+  @IsOptional()
   @IsArray()
   syllabus?: { title: string; topics?: string[] }[];
 }
@@ -106,6 +110,10 @@ class UpdateCourseDto {
   @IsInt()
   @Min(1)
   defaultCapacity?: number;
+
+  @IsOptional()
+  @IsIn(['online', 'offline'])
+  format?: string;
 
   @IsOptional()
   @IsArray()
@@ -222,6 +230,7 @@ export class CoursesController {
         price: dto.price,
         durationWeeks: dto.durationWeeks,
         defaultCapacity: dto.defaultCapacity ?? 12,
+        format: dto.format ?? 'offline',
         syllabus: dto.syllabus ?? [],
       },
     });
@@ -243,6 +252,7 @@ export class CoursesController {
         price: dto.price ?? undefined,
         durationWeeks: dto.durationWeeks ?? undefined,
         defaultCapacity: dto.defaultCapacity ?? undefined,
+        format: dto.format ?? undefined,
         syllabus: dto.syllabus ?? undefined,
         status: dto.status ?? undefined,
       },
