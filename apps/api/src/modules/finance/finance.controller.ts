@@ -140,6 +140,16 @@ export class FinanceController {
     });
   }
 
+  @Get('expenses/summary')
+  @RequirePermissions('finance.read')
+  async expensesSummary() {
+    const [recurring, oneTime] = await Promise.all([
+      this.prisma.scoped.expense.aggregate({ where: { recurring: true }, _sum: { amount: true } }),
+      this.prisma.scoped.expense.aggregate({ where: { recurring: false }, _sum: { amount: true } }),
+    ]);
+    return { recurring: recurring._sum.amount ?? 0, oneTime: oneTime._sum.amount ?? 0 };
+  }
+
   @Get('expenses')
   @RequirePermissions('finance.read')
   async expenses(@Query() q: ListQueryDto) {
@@ -171,6 +181,7 @@ export class FinanceController {
           cashAccountId,
           amount: dto.amount,
           date: new Date(dto.date),
+          recurring: dto.recurring ?? false,
           vendor: dto.vendor,
           note: dto.note,
           branchId: dto.branchId,

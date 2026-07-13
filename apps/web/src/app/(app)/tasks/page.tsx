@@ -149,7 +149,7 @@ export default function TasksPage() {
       </div>
 
       {/* filters */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface p-3">
+      <div className="flex items-center gap-2 overflow-x-auto rounded-xl border border-border bg-surface p-3">
         <Select
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}

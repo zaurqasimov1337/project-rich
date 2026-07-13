@@ -467,7 +467,12 @@
       "title": "Expenses",
       "newExpense": "New expense",
       "emptyTitle": "No expenses",
-      "selectCategory": "Select a category"
+      "selectCategory": "Select a category",
+      "frequency": "Frequency",
+      "recurring": "Recurring",
+      "oneTime": "One-time",
+      "recurringExpenses": "Monthly recurring expenses",
+      "oneTimeExpenses": "One-time expenses"
     },
     "payroll": {
       "title": "Payroll",

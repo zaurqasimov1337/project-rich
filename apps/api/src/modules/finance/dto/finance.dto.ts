@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsDateString,
   IsIn,
   IsInt,
@@ -99,6 +100,10 @@ export class CreateExpenseDto {
   @IsString()
   @MaxLength(500)
   note?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  recurring?: boolean;
 
   @IsOptional()
   @IsUUID()

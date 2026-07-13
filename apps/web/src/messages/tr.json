@@ -467,7 +467,12 @@
       "title": "Giderler",
       "newExpense": "Yeni gider",
       "emptyTitle": "Gider yok",
-      "selectCategory": "Kategori seçin"
+      "selectCategory": "Kategori seçin",
+      "frequency": "Sıklık",
+      "recurring": "Tekrarlı",
+      "oneTime": "Tek seferlik",
+      "recurringExpenses": "Aylık tekrarlı giderler",
+      "oneTimeExpenses": "Tek seferlik giderler"
     },
     "payroll": {
       "title": "Bordro",

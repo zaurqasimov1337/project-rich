@@ -19,6 +19,7 @@ interface ExpenseRow {
   id: string;
   amount: number;
   date: string;
+  recurring: boolean;
   vendor: string | null;
   note: string | null;
   category: { name: string };
@@ -29,6 +30,7 @@ interface ExpenseForm {
   categoryId: string;
   amount: number;
   date: string;
+  recurring?: string;
   vendor?: string;
   note?: string;
 }
@@ -51,16 +53,25 @@ export default function ExpensesPage() {
     queryFn: () => api.get<{ id: string; name: string }[]>('/expense-categories'),
     enabled: drawerOpen,
   });
+  const { data: summary } = useQuery({
+    queryKey: ['expenses-summary'],
+    queryFn: () => api.get<{ recurring: number; oneTime: number }>('/expenses/summary'),
+  });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ExpenseForm>({
-    defaultValues: { date: new Date().toISOString().slice(0, 10) },
+    defaultValues: { date: new Date().toISOString().slice(0, 10), recurring: 'true' },
   });
 
   const createMutation = useMutation({
     mutationFn: (v: ExpenseForm) =>
-      api.post('/expenses', { ...v, amount: Math.round(Number(v.amount) * 100) }),
+      api.post('/expenses', {
+        ...v,
+        amount: Math.round(Number(v.amount) * 100),
+        recurring: v.recurring === 'true',
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['expenses'] });
+      void qc.invalidateQueries({ queryKey: ['expenses-summary'] });
       void qc.invalidateQueries({ queryKey: ['finance-summary'] });
       setDrawerOpen(false);
       reset();
@@ -74,6 +85,15 @@ export default function ExpensesPage() {
       key: 'amount',
       header: tc('amount'),
       render: (r) => <span className="font-semibold text-danger tabular-nums">−{formatMoney(r.amount)}</span>,
+    },
+    {
+      key: 'recurring',
+      header: t('expenses.frequency'),
+      render: (r) => (
+        <span className="inline-flex rounded-full bg-muted-bg px-2 py-0.5 text-xs font-medium text-muted">
+          {r.recurring ? t('expenses.recurring') : t('expenses.oneTime')}
+        </span>
+      ),
     },
     { key: 'vendor', header: t('vendor'), render: (r) => r.vendor ?? '—' },
     { key: 'note', header: tc('notes'), render: (r) => <span className="text-muted">{r.note ?? '—'}</span> },
@@ -92,6 +112,23 @@ export default function ExpensesPage() {
             <Plus className="h-4 w-4" /> {t('expenses.newExpense')}
           </Button>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+            {t('expenses.recurringExpenses')}
+          </div>
+          <div className="mt-1 text-2xl font-bold tabular-nums text-danger">
+            {formatMoney(summary?.recurring ?? 0)}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+            {t('expenses.oneTimeExpenses')}
+          </div>
+          <div className="mt-1 text-2xl font-bold tabular-nums">{formatMoney(summary?.oneTime ?? 0)}</div>
+        </div>
       </div>
 
       <DataTable
@@ -148,6 +185,16 @@ export default function ExpensesPage() {
               <Label>{tc('date')} *</Label>
               <Input type="date" {...register('date', { required: true })} />
             </div>
+          </div>
+          <div>
+            <Label>{t('expenses.frequency')}</Label>
+            <Select
+              options={[
+                { value: 'true', label: t('expenses.recurring') },
+                { value: 'false', label: t('expenses.oneTime') },
+              ]}
+              {...register('recurring')}
+            />
           </div>
           <div>
             <Label>{t('vendor')}</Label>

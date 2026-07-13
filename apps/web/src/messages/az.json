@@ -467,7 +467,12 @@
       "title": "Xərclər",
       "newExpense": "Yeni xərc",
       "emptyTitle": "Xərc yoxdur",
-      "selectCategory": "Kateqoriya seçin"
+      "selectCategory": "Kateqoriya seçin",
+      "frequency": "Tezlik",
+      "recurring": "Təkrar",
+      "oneTime": "Birdəfəlik",
+      "recurringExpenses": "Aylıq təkrar xərclər",
+      "oneTimeExpenses": "Birdəfəlik xərclər"
     },
     "payroll": {
       "title": "Əməkhaqqı",

@@ -249,31 +249,26 @@ export default function LeadsPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} placeholder="Bütün statuslar"
-            options={LEAD_STATUS_ORDER.map((s) => ({ value: s, label: LEAD_STATUS_LABELS[s] }))} className="min-w-[150px] flex-1" />
+            options={LEAD_STATUS_ORDER.map((s) => ({ value: s, label: LEAD_STATUS_LABELS[s] }))} className="w-40 shrink-0" />
           <Select value={priority} onChange={(e) => { setPriority(e.target.value); setPage(1); }} placeholder="Prioritet (hamısı)"
-            options={[{ value: 'hot', label: 'HOT' }, { value: 'warm', label: 'WARM' }, { value: 'cold', label: 'COLD' }]} className="min-w-[150px] flex-1" />
+            options={[{ value: 'hot', label: 'HOT' }, { value: 'warm', label: 'WARM' }, { value: 'cold', label: 'COLD' }]} className="w-36 shrink-0" />
           <Select value={trainingId} onChange={(e) => { setTrainingId(e.target.value); setPage(1); }} placeholder="Bütün təlimlər"
-            options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} className="min-w-[150px] flex-1" />
+            options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} className="w-40 shrink-0" />
           <Select value={source} onChange={(e) => { setSource(e.target.value); setPage(1); }} placeholder="Bütün mənbələr"
-            options={(meta?.sources ?? []).map((s) => ({ value: s, label: SOURCE_LABELS[s] ?? s }))} className="min-w-[150px] flex-1" />
+            options={(meta?.sources ?? []).map((s) => ({ value: s, label: SOURCE_LABELS[s] ?? s }))} className="w-40 shrink-0" />
           <Select value={assignedTo} onChange={(e) => { setAssignedTo(e.target.value); setPage(1); }} placeholder="Bütün menecerlər"
-            options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} className="min-w-[150px] flex-1" />
+            options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} className="w-44 shrink-0" />
           <input type="number" min={0} max={100} value={minScore} onChange={(e) => { setMinScore(e.target.value); setPage(1); }} placeholder="Skor ≥"
-            className="h-9 w-24 rounded-lg border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-wide text-muted">Tarix aralığı:</span>
-          <input type="date" lang="az" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-          <span className="text-muted">—</span>
-          <input type="date" lang="az" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-          <div className="ml-auto flex items-center gap-3">
-            {activeFilterCount > 0 && <span className="text-xs text-muted">{activeFilterCount} filtr aktivdir</span>}
-            {activeFilterCount > 0 && <Button variant="ghost" size="sm" onClick={resetFilters}>Filtrləri sıfırla</Button>}
-          </div>
+            className="h-9 w-24 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input type="date" lang="az" title="Tarixdən" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="h-9 w-36 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <input type="date" lang="az" title="Tarixə" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="h-9 w-36 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="shrink-0 whitespace-nowrap">Sıfırla</Button>
+          )}
         </div>
       </div>
 

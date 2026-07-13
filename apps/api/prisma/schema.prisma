@@ -879,6 +879,7 @@ model Expense {
   amount        Int
   currency      String          @default("AZN")
   date          DateTime        @db.Date
+  recurring     Boolean         @default(false) // true = monthly recurring, false = one-time
   vendor        String?
   note          String?
   branchId      String?

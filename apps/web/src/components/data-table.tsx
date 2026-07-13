@@ -52,9 +52,9 @@ export function DataTable<T extends { id: string }>({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {onSearchChange && (
-          <div className="relative w-64">
+          <div className="relative w-64 shrink-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input
               value={localSearch}

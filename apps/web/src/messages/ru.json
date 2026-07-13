@@ -467,7 +467,12 @@
       "title": "Расходы",
       "newExpense": "Новый расход",
       "emptyTitle": "Нет расходов",
-      "selectCategory": "Выберите категорию"
+      "selectCategory": "Выберите категорию",
+      "frequency": "Периодичность",
+      "recurring": "Повторяющийся",
+      "oneTime": "Разовый",
+      "recurringExpenses": "Ежемесячные регулярные расходы",
+      "oneTimeExpenses": "Разовые расходы"
     },
     "payroll": {
       "title": "Зарплата",
