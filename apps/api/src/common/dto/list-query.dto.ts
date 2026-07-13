@@ -37,6 +37,11 @@ export class ListQueryDto {
   @IsString()
   to?: string; // ISO date
 
+  /** Export format on report/export endpoints (xlsx|csv). Ignored elsewhere. */
+  @IsOptional()
+  @IsIn(['xlsx', 'csv'])
+  format?: string;
+
   @IsOptional()
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   branchId?: string[];

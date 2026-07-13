@@ -918,6 +918,46 @@ model AdSpend {
   @@map("ad_spends")
 }
 
+// ============ HR (tenant-scoped) ============
+
+model Employee {
+  id           String    @id @default(uuid())
+  tenantId     String
+  userId       String    @unique
+  position     String?
+  contractType String? // full_time|part_time|contract
+  branchId     String?
+  salaryQepik  Int       @default(0)
+  hiredAt      DateTime? @db.Date
+  firedAt      DateTime? @db.Date
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  leaveRequests LeaveRequest[]
+
+  @@index([tenantId])
+  @@map("employees")
+}
+
+model LeaveRequest {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  fromDate   DateTime  @db.Date
+  toDate     DateTime  @db.Date
+  type       String // vacation|sick|unpaid|other
+  reason     String?
+  status     String    @default("pending") // pending|approved|rejected
+  approverId String?
+  decidedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
+  @@map("leave_requests")
+}
+
 // ============ AI (tenant-scoped) ============
 
 model AiConversation {
