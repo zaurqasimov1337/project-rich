@@ -23,6 +23,10 @@ import { GroupsModule } from './modules/groups/groups.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { ExamsModule } from './modules/exams/exams.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { CrmModule } from './modules/crm/crm.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -62,6 +66,10 @@ import type { NextFunction, Request, Response } from 'express';
     ScheduleModule,
     ExamsModule,
     DashboardModule,
+    CrmModule,
+    FinanceModule,
+    TasksModule,
+    MarketingModule,
   ],
 })
 export class AppModule implements NestModule {

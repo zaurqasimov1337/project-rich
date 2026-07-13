@@ -641,6 +641,284 @@ model ExamResult {
   @@map("exam_results")
 }
 
+// ============ CRM (tenant-scoped) ============
+
+model LeadStage {
+  id       String  @id @default(uuid())
+  tenantId String
+  name     String
+  order    Int     @default(0)
+  color    String  @default("#4F46E5")
+  isWon    Boolean @default(false)
+  isLost   Boolean @default(false)
+
+  leads Lead[]
+
+  @@index([tenantId, order])
+  @@map("lead_stages")
+}
+
+model LeadSource {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String
+
+  leads Lead[]
+
+  @@index([tenantId])
+  @@map("lead_sources")
+}
+
+model Lead {
+  id                 String      @id @default(uuid())
+  tenantId           String
+  name               String
+  phone              String?
+  email              String?
+  sourceId           String?
+  source             LeadSource? @relation(fields: [sourceId], references: [id])
+  stageId            String
+  stage              LeadStage   @relation(fields: [stageId], references: [id])
+  ownerId            String?
+  courseInterestId   String?
+  value              Int? // expected value, minor units
+  branchId           String?
+  lostReason         String?
+  convertedStudentId String?
+  utm                Json        @default("{}")
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  deletedAt          DateTime?
+
+  activities LeadActivity[]
+
+  @@index([tenantId, stageId])
+  @@index([tenantId, ownerId])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id        String    @id @default(uuid())
+  tenantId  String
+  leadId    String
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String // call|meeting|note|sms|email|whatsapp|stage_change
+  body      String?
+  dueAt     DateTime?
+  doneAt    DateTime?
+  userId    String?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, leadId])
+  @@map("lead_activities")
+}
+
+model Task {
+  id         String    @id @default(uuid())
+  tenantId   String
+  title      String
+  body       String?
+  assigneeId String?
+  dueAt      DateTime?
+  priority   String    @default("medium") // low|medium|high|urgent
+  status     String    @default("todo") // todo|in_progress|done|cancelled
+  entityType String?
+  entityId   String?
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId, assigneeId, status])
+  @@map("tasks")
+}
+
+// ============ FINANCE (tenant-scoped) ============
+
+model CashAccount {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  type      String    @default("cash") // cash|bank|online
+  branchId  String?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  payments     Payment[]
+  transactions Transaction[]
+  expenses     Expense[]
+
+  @@index([tenantId])
+  @@map("cash_accounts")
+}
+
+model Invoice {
+  id         String    @id @default(uuid())
+  tenantId   String
+  studentId  String
+  groupId    String?
+  number     String
+  amount     Int
+  discount   Int       @default(0)
+  total      Int
+  currency   String    @default("AZN")
+  status     String    @default("open") // draft|open|partial|paid|overdue|void
+  dueAt      DateTime
+  periodFrom DateTime? @db.Date
+  periodTo   DateTime? @db.Date
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  payments Payment[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status, dueAt])
+  @@index([tenantId, studentId])
+  @@map("invoices")
+}
+
+model Payment {
+  id             String      @id @default(uuid())
+  tenantId       String
+  invoiceId      String?
+  invoice        Invoice?    @relation(fields: [invoiceId], references: [id])
+  studentId      String
+  cashAccountId  String
+  cashAccount    CashAccount @relation(fields: [cashAccountId], references: [id])
+  method         String // cash|card|transfer|online
+  amount         Int
+  currency       String      @default("AZN")
+  paidAt         DateTime    @default(now())
+  reference      String?
+  idempotencyKey String?
+  receivedById   String?
+  refundedAmount Int         @default(0)
+  createdAt      DateTime    @default(now())
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, studentId])
+  @@index([tenantId, paidAt])
+  @@map("payments")
+}
+
+model ExpenseCategory {
+  id       String @id @default(uuid())
+  tenantId String
+  name     String
+
+  expenses Expense[]
+
+  @@index([tenantId])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id            String          @id @default(uuid())
+  tenantId      String
+  categoryId    String
+  category      ExpenseCategory @relation(fields: [categoryId], references: [id])
+  cashAccountId String
+  cashAccount   CashAccount     @relation(fields: [cashAccountId], references: [id])
+  amount        Int
+  currency      String          @default("AZN")
+  date          DateTime        @db.Date
+  vendor        String?
+  note          String?
+  branchId      String?
+  createdById   String?
+  createdAt     DateTime        @default(now())
+
+  @@index([tenantId, date])
+  @@map("expenses")
+}
+
+model Transaction {
+  id            String      @id @default(uuid())
+  tenantId      String
+  cashAccountId String
+  cashAccount   CashAccount @relation(fields: [cashAccountId], references: [id])
+  type          String // income|expense|transfer_in|transfer_out|payroll|refund
+  amount        Int // signed by type semantics; stored positive
+  currency      String      @default("AZN")
+  category      String?
+  entityType    String?
+  entityId      String?
+  date          DateTime    @default(now())
+  note          String?
+
+  @@index([tenantId, cashAccountId, date])
+  @@index([tenantId, type, date])
+  @@map("transactions")
+}
+
+model PayrollRun {
+  id        String   @id @default(uuid())
+  tenantId  String
+  period    String // "2026-07"
+  status    String   @default("draft") // draft|approved|paid
+  total     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items PayrollItem[]
+
+  @@unique([tenantId, period])
+  @@map("payroll_runs")
+}
+
+model PayrollItem {
+  id        String     @id @default(uuid())
+  tenantId  String
+  runId     String
+  run       PayrollRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  teacherId String?
+  userId    String?
+  base      Int        @default(0)
+  lessonPay Int        @default(0)
+  bonus     Int        @default(0)
+  deduction Int        @default(0)
+  total     Int        @default(0)
+  detail    Json       @default("{}")
+
+  @@index([tenantId, runId])
+  @@map("payroll_items")
+}
+
+// ============ MARKETING (tenant-scoped) ============
+
+model Campaign {
+  id          String    @id @default(uuid())
+  tenantId    String
+  name        String
+  channel     String // meta|google|tiktok|instagram|offline|other
+  budget      Int       @default(0)
+  startAt     DateTime  @db.Date
+  endAt       DateTime? @db.Date
+  utmCampaign String?
+  status      String    @default("active") // active|paused|finished
+  createdAt   DateTime  @default(now())
+
+  adSpends AdSpend[]
+
+  @@index([tenantId, status])
+  @@map("campaigns")
+}
+
+model AdSpend {
+  id         String    @id @default(uuid())
+  tenantId   String
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  channel    String
+  amount     Int
+  date       DateTime  @db.Date
+  note       String?
+
+  @@index([tenantId, date])
+  @@map("ad_spends")
+}
+
 // ============ SYSTEM (tenant-scoped) ============
 
 model AuditLog {

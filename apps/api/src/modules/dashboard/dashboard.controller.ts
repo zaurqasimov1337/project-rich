@@ -36,6 +36,7 @@ export class DashboardController {
       attendanceAgg,
       newStudentsMonth,
       upcoming,
+      monthIncome,
     ] = await Promise.all([
       this.prisma.scoped.student.count({ where: { deletedAt: null, status: 'active' } }),
       this.prisma.scoped.group.count({ where: { deletedAt: null, status: 'active' } }),
@@ -56,6 +57,10 @@ export class DashboardController {
         orderBy: { startAt: 'asc' },
         take: 5,
       }),
+      this.prisma.scoped.transaction.aggregate({
+        where: { type: 'income', date: { gte: monthStart } },
+        _sum: { amount: true },
+      }),
     ]);
 
     const attTotal = attendanceAgg.reduce((s, r) => s + r._count, 0);
@@ -69,7 +74,7 @@ export class DashboardController {
       todayLessons,
       newStudentsMonth,
       attendanceRate: attTotal > 0 ? Math.round((attPresent / attTotal) * 100) : null,
-      monthRevenue: 0, // finance module (Phase 4) fills this
+      monthRevenue: monthIncome._sum.amount ?? 0,
       upcomingLessons: upcoming.map((l) => ({
         id: l.id,
         startAt: l.startAt,
