@@ -31,10 +31,22 @@ export class CreateSalesLeadDto {
   @IsOptional() @IsString() @MaxLength(120) educationStatus?: string;
   @IsOptional() @IsString() @MaxLength(120) currentField?: string;
   @IsOptional() @IsUUID() interestedTrainingId?: string;
+  @IsOptional() @IsUUID() campaignId?: string;
   @IsOptional() @IsIn(SRC) source?: string;
   @IsOptional() @IsIn(STR) status?: string;
   @IsOptional() @IsUUID() assignedTo?: string;
+  @IsOptional() @IsDateString() firstContactAt?: string;
+  @IsOptional() @IsDateString() nextFollowupAt?: string;
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+
+  // scoring flags (optional at creation)
+  @IsOptional() @IsBoolean() askedDemo?: boolean;
+  @IsOptional() @IsBoolean() askedPrice?: boolean;
+  @IsOptional() @IsBoolean() callAnswered?: boolean;
+  @IsOptional() @IsBoolean() parentInvolved?: boolean;
+  @IsOptional() @IsBoolean() budgetOk?: boolean;
+  @IsOptional() @IsBoolean() notResponding?: boolean;
+  @IsOptional() @IsBoolean() passive7d?: boolean;
 }
 
 export class UpdateSalesLeadDto {

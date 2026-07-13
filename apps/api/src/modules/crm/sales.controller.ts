@@ -40,7 +40,7 @@ export class SalesController {
   @Get('sales/meta')
   @RequirePermissions('leads.read')
   async meta() {
-    const [trainings, managers] = await Promise.all([
+    const [trainings, managers, campaigns] = await Promise.all([
       this.prisma.scoped.course.findMany({
         where: { deletedAt: null, status: 'active' },
         select: { id: true, name: true },
@@ -51,12 +51,18 @@ export class SalesController {
         select: { id: true, firstName: true, lastName: true },
         orderBy: { firstName: 'asc' },
       }),
+      this.prisma.scoped.campaign.findMany({
+        where: { status: { not: 'finished' } },
+        select: { id: true, name: true },
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
     return {
       statuses: LEAD_STATUSES,
       sources: LEAD_SOURCES,
       columns: PIPELINE_COLUMNS.map((c) => ({ key: c.key, label: c.label })),
       trainings,
+      campaigns,
       managers: managers.map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}`.trim() })),
     };
   }

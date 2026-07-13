@@ -685,6 +685,7 @@ model Lead {
   sourceId           String?
   source             LeadSource? @relation(fields: [sourceId], references: [id])
   sourceKey          String? // instagram_dm|whatsapp|telefon|referans|website|event|organic|paid_ads|tiktok
+  campaignId         String? // marketing campaign attribution
   stageId            String
   stage              LeadStage   @relation(fields: [stageId], references: [id])
   status             String      @default("yeni_lead") // 14-value CRM status

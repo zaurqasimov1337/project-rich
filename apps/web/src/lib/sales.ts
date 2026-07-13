@@ -2,19 +2,19 @@
 
 export const LEAD_STATUS_LABELS: Record<string, string> = {
   yeni_lead: 'Yeni Lead',
-  ilk_yazisma: 'İlk yazışma',
-  demo_gozleyir: 'Demo gözləyir',
-  demo_verildi: 'Demo verildi',
-  zeng_edildi: 'Zəng edildi',
+  ilk_yazisma: 'İlk Yazışma',
+  demo_gozleyir: 'Demo Gözləyir',
+  demo_verildi: 'Demo Verildi',
+  zeng_edildi: 'Zəng Edildi',
   follow_up: 'Follow-up',
-  hot_lead: 'Hot lead',
+  hot_lead: 'Hot Lead',
   qerarsiz: 'Qərarsız',
-  qiymet_problemi: 'Qiymət problemi',
-  odenis_gozleyir: 'Ödəniş gözləyir',
-  qeydiyyat_oldu: 'Qeydiyyat oldu',
-  satis_baglandi: 'Satış bağlandı',
+  qiymet_problemi: 'Qiymət Problemi',
+  odenis_gozleyir: 'Ödəniş Gözləyir',
+  qeydiyyat_oldu: 'Qeydiyyat Oldu',
+  satis_baglandi: 'Satış Bağlandı',
   imtina: 'İmtina',
-  gelecek_potensial: 'Gələcək potensial',
+  gelecek_potensial: 'Gələcək Potensial',
 };
 
 export const LEAD_STATUS_COLORS: Record<string, string> = {
@@ -71,11 +71,11 @@ export const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 export const SCORE_FLAG_LABELS: { key: string; label: string }[] = [
-  { key: 'askedDemo', label: 'Demo istədi (+25)' },
-  { key: 'askedPrice', label: 'Qiymət soruşdu (+20)' },
-  { key: 'callAnswered', label: 'Zəngə cavab verdi (+15)' },
-  { key: 'parentInvolved', label: 'Valideyn cəlb olunub (+20)' },
-  { key: 'budgetOk', label: 'Büdcə uyğundur (+20)' },
+  { key: 'askedDemo', label: 'Demo istəyib (+25)' },
+  { key: 'askedPrice', label: 'Qiymət soruşub (+20)' },
+  { key: 'callAnswered', label: 'Zəng açıb (+15)' },
+  { key: 'parentInvolved', label: 'Valideynlə gələcək (+20)' },
+  { key: 'budgetOk', label: 'Büdcə uyğun (+20)' },
   { key: 'notResponding', label: 'Cavab vermir (−15)' },
   { key: 'passive7d', label: '7 gün passiv (−20)' },
 ];

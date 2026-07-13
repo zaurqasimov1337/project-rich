@@ -1,7 +1,7 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, Search, UserCog } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, Search, UserCog, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -9,15 +9,16 @@ import { api } from '@/lib/api';
 import { useDebounced } from '@/lib/hooks';
 import { useAuth } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { Drawer } from '@/components/ui/drawer';
 import {
   fmtDate,
+  GENDER_LABELS,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_ORDER,
   priorityBadgeStyle,
   PRIORITY_LABELS,
+  SCORE_FLAG_LABELS,
   SOURCE_LABELS,
   statusBadgeStyle,
 } from '@/lib/sales';
@@ -46,20 +47,47 @@ interface Meta {
   statuses: string[];
   sources: string[];
   trainings: { id: string; name: string }[];
+  campaigns: { id: string; name: string }[];
   managers: { id: string; name: string }[];
 }
 interface LeadForm {
   fullName: string;
   phone?: string;
   instagram?: string;
-  source?: string;
+  email?: string;
+  age?: string;
+  gender?: string;
+  city?: string;
+  educationStatus?: string;
+  currentField?: string;
   interestedTrainingId?: string;
+  campaignId?: string;
+  source?: string;
   status?: string;
   assignedTo?: string;
+  firstContactAt?: string;
+  nextFollowupAt?: string;
   notes?: string;
+  askedDemo?: boolean;
+  askedPrice?: boolean;
+  callAnswered?: boolean;
+  parentInvolved?: boolean;
+  budgetOk?: boolean;
 }
 
 const LIMIT = 25;
+
+function FF({ label, req, hint, children }: { label: string; req?: boolean; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+        {label} {req && <span className="text-danger">*</span>}
+      </label>
+      {children}
+      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+    </div>
+  );
+}
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -101,20 +129,42 @@ export default function LeadsPage() {
     placeholderData: keepPreviousData,
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadForm>();
+  const today = new Date().toISOString().slice(0, 10);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadForm>({
+    defaultValues: { firstContactAt: today, source: 'instagram_dm', status: 'yeni_lead' },
+  });
   const createMut = useMutation({
-    mutationFn: (v: LeadForm) =>
-      api.post('/leads', {
-        ...v,
-        source: v.source || undefined,
+    mutationFn: (v: LeadForm) => {
+      const payload: Record<string, unknown> = {
+        fullName: v.fullName,
+        phone: v.phone || undefined,
+        instagram: v.instagram || undefined,
+        email: v.email || undefined,
+        age: v.age ? Number(v.age) : undefined,
+        gender: v.gender || undefined,
+        city: v.city || undefined,
+        educationStatus: v.educationStatus || undefined,
+        currentField: v.currentField || undefined,
         interestedTrainingId: v.interestedTrainingId || undefined,
+        campaignId: v.campaignId || undefined,
+        source: v.source || undefined,
         status: v.status || undefined,
         assignedTo: v.assignedTo || undefined,
-      }),
+        firstContactAt: v.firstContactAt ? new Date(v.firstContactAt).toISOString() : undefined,
+        nextFollowupAt: v.nextFollowupAt ? new Date(v.nextFollowupAt).toISOString() : undefined,
+        notes: v.notes || undefined,
+        askedDemo: !!v.askedDemo,
+        askedPrice: !!v.askedPrice,
+        callAnswered: !!v.callAnswered,
+        parentInvolved: !!v.parentInvolved,
+        budgetOk: !!v.budgetOk,
+      };
+      return api.post('/leads', payload);
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['sales-leads'] });
       setDrawerOpen(false);
-      reset();
+      reset({ firstContactAt: today, source: 'instagram_dm', status: 'yeni_lead' });
     },
   });
 
@@ -318,40 +368,81 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* new lead */}
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Yeni müraciət"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setDrawerOpen(false)}>Ləğv et</Button>
-            <Button loading={createMut.isPending} onClick={handleSubmit((v) => createMut.mutate(v))}>Yadda saxla</Button>
-          </>
-        }>
-        <form className="space-y-4">
-          <div>
-            <Label>Ad Soyad *</Label>
-            <Input error={errors.fullName?.message} {...register('fullName', { required: 'Tələb olunur' })} />
+      {/* new lead modal */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setDrawerOpen(false)} />
+          <div className="relative z-10 my-4 w-full max-w-3xl rounded-2xl border border-border bg-surface shadow-2xl">
+            <div className="flex items-start justify-between border-b border-border px-6 py-4">
+              <div>
+                <h2 className="text-lg font-bold">Yeni lead</h2>
+                <p className="text-sm text-muted">Bütün vacib məlumatları doldurun</p>
+              </div>
+              <button type="button" onClick={() => setDrawerOpen(false)}
+                className="rounded-md p-1 text-muted hover:bg-muted-bg hover:text-foreground" aria-label="Bağla">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit((v) => createMut.mutate(v))} className="max-h-[68vh] space-y-4 overflow-y-auto px-6 py-5">
+              <FF label="Ad Soyad" req>
+                <Input placeholder="Ad Soyad" error={errors.fullName?.message} {...register('fullName', { required: 'Tələb olunur' })} />
+              </FF>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FF label="Telefon"><Input placeholder="+994501234567" {...register('phone')} /></FF>
+                <FF label="Instagram"><Input placeholder="@username" {...register('instagram')} /></FF>
+                <FF label="Yaş"><Input type="number" min={0} max={120} {...register('age')} /></FF>
+                <FF label="Cins">
+                  <Select placeholder="—" options={Object.entries(GENDER_LABELS).map(([v, l]) => ({ value: v, label: l }))} {...register('gender')} className="w-full" />
+                </FF>
+                <FF label="Şəhər"><Input {...register('city')} /></FF>
+                <FF label="Təhsil / İş statusu"><Input {...register('educationStatus')} /></FF>
+                <FF label="Hazırkı sahə"><Input {...register('currentField')} /></FF>
+                <FF label="Maraqlandığı təlim">
+                  <Select placeholder="—" options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} {...register('interestedTrainingId')} className="w-full" />
+                </FF>
+                <FF label="Lead mənbəyi">
+                  <Select options={Object.entries(SOURCE_LABELS).map(([v, l]) => ({ value: v, label: l }))} {...register('source')} className="w-full" />
+                </FF>
+                <FF label="Reklam kampaniyası">
+                  <Select placeholder="—" options={(meta?.campaigns ?? []).map((c) => ({ value: c.id, label: c.name }))} {...register('campaignId')} className="w-full" />
+                </FF>
+                <FF label="Təyin edilmiş sales manager">
+                  <Select placeholder="—" options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} {...register('assignedTo')} className="w-full" />
+                </FF>
+                <FF label="Status">
+                  <Select options={LEAD_STATUS_ORDER.map((s) => ({ value: s, label: LEAD_STATUS_LABELS[s] }))} {...register('status')} className="w-full" />
+                </FF>
+                <FF label="İlk müraciət tarixi" hint="Müştəri ilk dəfə nə vaxt müraciət edib?">
+                  <input type="date" lang="az" {...register('firstContactAt')}
+                    className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </FF>
+                <FF label="Növbəti follow-up">
+                  <input type="datetime-local" {...register('nextFollowupAt')}
+                    className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                </FF>
+              </div>
+              <FF label="Qeydlər">
+                <textarea {...register('notes')}
+                  className="h-24 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+              </FF>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {SCORE_FLAG_LABELS.slice(0, 5).map((f) => (
+                  <label key={f.key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm hover:bg-muted-bg">
+                    <input type="checkbox" className="h-4 w-4 accent-primary" {...register(f.key as keyof LeadForm)} />
+                    {f.label}
+                  </label>
+                ))}
+              </div>
+            </form>
+
+            <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
+              <Button variant="ghost" onClick={() => setDrawerOpen(false)}>Ləğv et</Button>
+              <Button loading={createMut.isPending} onClick={handleSubmit((v) => createMut.mutate(v))}>Əlavə et</Button>
+            </div>
           </div>
-          <div><Label>Telefon</Label><Input placeholder="055 690 40 25" {...register('phone')} /></div>
-          <div><Label>Instagram</Label><Input placeholder="@istifadeci" {...register('instagram')} /></div>
-          <div>
-            <Label>Mənbə</Label>
-            <Select placeholder="Mənbə seçin" options={Object.entries(SOURCE_LABELS).map(([v, l]) => ({ value: v, label: l }))} {...register('source')} />
-          </div>
-          <div>
-            <Label>Maraqlandığı təlim</Label>
-            <Select placeholder="Təlim seçin" options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} {...register('interestedTrainingId')} />
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select placeholder="Yeni Lead" options={LEAD_STATUS_ORDER.map((s) => ({ value: s, label: LEAD_STATUS_LABELS[s] }))} {...register('status')} />
-          </div>
-          <div>
-            <Label>Təyin olunan menecer</Label>
-            <Select placeholder="Menecer seçin" options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} {...register('assignedTo')} />
-          </div>
-          <div><Label>Qeyd</Label><Input {...register('notes')} /></div>
-        </form>
-      </Drawer>
+        </div>
+      )}
     </div>
   );
 }

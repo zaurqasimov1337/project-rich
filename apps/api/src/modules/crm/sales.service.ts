@@ -233,6 +233,11 @@ export class SalesService {
     const stageId = await this.resolveStageId(stageBucketForStatus(status));
     const leadNo = await this.nextLeadNo(tenantId);
 
+    const flags: Partial<ScoreFlags> = {};
+    for (const k of FLAG_KEYS) flags[k] = Boolean(dto[k]);
+    const score = computeScore(flags);
+    const priority = computePriority(score);
+
     const lead = await this.prisma.scoped.lead.create({
       data: {
         tenantId,
@@ -248,18 +253,30 @@ export class SalesService {
         educationStatus: dto.educationStatus,
         currentField: dto.currentField,
         courseInterestId: dto.interestedTrainingId,
+        campaignId: dto.campaignId,
         sourceKey: dto.source,
         status,
         stageId,
+        score,
+        priority,
+        ...flags,
         assignedTo: dto.assignedTo ?? userId,
         ownerId: userId,
         createdBy: userId,
         notes: dto.notes,
+        nextFollowupAt: dto.nextFollowupAt ? new Date(dto.nextFollowupAt) : undefined,
+        ...(dto.firstContactAt ? { createdAt: new Date(dto.firstContactAt) } : {}),
       },
     });
     await this.prisma.scoped.leadActivity.create({
       data: { tenantId, leadId: lead.id, type: 'created', title: 'Lead yaradıldı', userId },
     });
+    // optional first follow-up
+    if (dto.nextFollowupAt) {
+      await this.prisma.scoped.followup.create({
+        data: { tenantId, leadId: lead.id, dueAt: new Date(dto.nextFollowupAt), createdBy: userId },
+      });
+    }
     this.audit.log({ action: 'create', entityType: 'lead', entityId: lead.id, after: lead });
     return lead;
   }
