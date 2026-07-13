@@ -28,6 +28,8 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { PlanModule } from './core/plan/plan.module';
+import { AiModule } from './modules/ai/ai.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -72,6 +74,8 @@ import type { NextFunction, Request, Response } from 'express';
     TasksModule,
     MarketingModule,
     PlatformModule,
+    PlanModule,
+    AiModule,
   ],
 })
 export class AppModule implements NestModule {

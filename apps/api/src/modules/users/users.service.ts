@@ -10,6 +10,7 @@ import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
 import { MailService } from '../../core/mail/mail.service';
 import { AuthService } from '../auth/auth.service';
+import { PlanService } from '../../core/plan/plan.service';
 import { ListQueryDto, paginated } from '../../common/dto/list-query.dto';
 import type { InviteUserDto, UpdateUserDto } from './dto/users.dto';
 
@@ -20,6 +21,7 @@ export class UsersService {
     private readonly mail: MailService,
     private readonly auth: AuthService,
     private readonly config: ConfigService,
+    private readonly plan: PlanService,
   ) {}
 
   async list(q: ListQueryDto) {
@@ -63,6 +65,8 @@ export class UsersService {
   }
 
   async invite(dto: InviteUserDto, invitedBy: string) {
+    const userCount = await this.prisma.scoped.user.count({ where: { deletedAt: null } });
+    await this.plan.assertLimit('users', userCount);
     const email = dto.email.toLowerCase().trim();
     const existingUser = await this.prisma.user.findFirst({ where: { email } });
     if (existingUser) {

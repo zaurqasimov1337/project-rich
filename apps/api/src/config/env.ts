@@ -20,6 +20,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().default(''),
   MAIL_FROM: z.string().default('no-reply@edusphere.local'),
   AI_PROVIDER: z.enum(['anthropic', 'openai', 'none']).default('none'),
+  AI_MODEL: z.string().default('claude-opus-4-8'),
   ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
 });

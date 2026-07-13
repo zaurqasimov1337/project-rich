@@ -16,6 +16,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
 import { AuditService } from '../../core/audit/audit.service';
+import { PlanService } from '../../core/plan/plan.service';
 
 class BranchDto {
   @IsString()
@@ -73,6 +74,7 @@ export class BranchesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly plan: PlanService,
   ) {}
 
   @Get()
@@ -89,6 +91,8 @@ export class BranchesController {
   @Post()
   @RequirePermissions('branches.manage')
   async create(@Body() dto: BranchDto) {
+    const count = await this.prisma.scoped.branch.count({ where: { deletedAt: null } });
+    await this.plan.assertLimit('branches', count);
     const branch = await this.prisma.scoped.branch.create({
       data: {
         tenantId: requireTenantId(),

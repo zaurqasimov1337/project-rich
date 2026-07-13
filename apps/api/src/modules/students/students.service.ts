@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
 import { AuditService } from '../../core/audit/audit.service';
+import { PlanService } from '../../core/plan/plan.service';
 import { ListQueryDto, paginated } from '../../common/dto/list-query.dto';
 import type { CreateStudentDto, UpdateStudentDto } from './dto/students.dto';
 
@@ -10,6 +11,7 @@ export class StudentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly plan: PlanService,
   ) {}
 
   private async nextCode(): Promise<string> {
@@ -125,6 +127,8 @@ export class StudentsService {
   }
 
   async create(dto: CreateStudentDto) {
+    const activeCount = await this.prisma.scoped.student.count({ where: { deletedAt: null } });
+    await this.plan.assertLimit('students', activeCount);
     const student = await this.prisma.scoped.student.create({
       data: {
         tenantId: requireTenantId(),

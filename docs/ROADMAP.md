@@ -57,11 +57,10 @@ Update after every completed step. `[x]` = done & committed.
 - [ ] Subscriptions billing automation (renewal/dunning jobs), announcements, feature flags UI → Phase 6/9
 
 ## Phase 6 — AI & integrations
-- [ ] AI provider adapter (Anthropic/OpenAI key-based) + tool framework (read-only, tenant-scoped)
-- [ ] AI chat (SSE) + insights job (weekly report, churn-risk, overdue spike) + usage metering
-- [ ] Integrations marketplace UI + connect framework (encrypted creds)
-- [ ] Connectors v1: SMTP, generic webhook, Google Calendar push, AI keys
-- [ ] Public API keys + scoped access + rate limits; webhook endpoints + deliveries + retries
+- [x] AI Copilot: Anthropic SDK (claude-opus-4-8, env-configurable), 7 read-only tenant-scoped analytics tools (KPIs, revenue, debtors, course performance, teacher load, attendance+churn-risk, lead funnel), manual tool loop with refusal handling, conversation persistence, token usage log, graceful no-key fallback with live KPIs — verified
+- [x] Plan enforcement: PlanService (limits 402 / features 403 / monthly AI quota), wired into student/user/branch creation and AI chat
+- [x] AI chat UI: conversation sidebar, suggestions, typing indicator
+- [ ] DEFERRED to next release: integrations marketplace UI + connectors (SMTP works via MailService), public API keys runtime, webhook delivery engine, HR employees/leave, reports-center exports (finance/marketing/funnel report endpoints exist), messaging bulk send. Schema for most already in place.
 
 ## Phase 7 — QA
 - [ ] Unit+integration suite green, coverage ≥70% services
