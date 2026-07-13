@@ -133,7 +133,7 @@ export default function LeadDetailPage() {
         <div className="space-y-4 lg:col-span-2">
           <div className="rounded-xl border border-border bg-surface p-4">
             <h2 className="mb-3 text-sm font-semibold">Profil məlumatları</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div><Label>Ad Soyad</Label><Input disabled={!editable} value={form.fullName as string ?? ''} onChange={(e) => set('fullName', e.target.value)} /></div>
               <div><Label>Telefon</Label><Input disabled={!editable} value={form.phone as string ?? ''} onChange={(e) => set('phone', e.target.value)} /></div>
               <div><Label>Instagram</Label><Input disabled={!editable} value={form.instagram as string ?? ''} onChange={(e) => set('instagram', e.target.value)} /></div>
@@ -165,7 +165,7 @@ export default function LeadDetailPage() {
           {/* scoring */}
           <div className="rounded-xl border border-border bg-surface p-4">
             <h2 className="mb-3 text-sm font-semibold">Skorinq (cari: {lead.score} — {PRIORITY_LABELS[lead.priority]})</h2>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {SCORE_FLAG_LABELS.map((f) => (
                 <label key={f.key} className={`flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm ${editable ? 'cursor-pointer hover:bg-muted-bg' : 'opacity-70'}`}>
                   <input type="checkbox" className="h-4 w-4 accent-primary" disabled={!editable}
