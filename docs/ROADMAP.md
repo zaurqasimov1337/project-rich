@@ -49,12 +49,12 @@ Update after every completed step. `[x]` = done & committed.
 - [ ] Reports center + Collections (saved filters + bulk ops) + async exports
 
 ## Phase 5 — Super admin
-- [ ] Platform auth + users/roles
-- [ ] Tenants management (lifecycle, impersonation)
-- [ ] Plans & feature matrix editor → runtime gates + usage metering + limits (402)
-- [ ] Subscriptions & billing (invoices, manual payments, dunning job)
-- [ ] Platform analytics dashboard (MRR, churn, usage)
-- [ ] Announcements, feature flags, integration catalog admin, jobs monitor, platform audit
+- [x] Platform auth (separate realm, cookie `prt`, refresh rotation) + /superadmin login
+- [x] Tenants management: list w/ usage counts, detail, suspend/restore, plan switch, impersonation endpoint (30-min token, audited)
+- [x] Plans & feature matrix (read UI + update API) — runtime gates/metering → Phase 6
+- [x] Platform analytics (MRR/ARR from active subscriptions, tenants by status, recent signups) — verified in browser
+- [x] Platform audit log (writes on tenant update/impersonate + viewer UI)
+- [ ] Subscriptions billing automation (renewal/dunning jobs), announcements, feature flags UI → Phase 6/9
 
 ## Phase 6 — AI & integrations
 - [ ] AI provider adapter (Anthropic/OpenAI key-based) + tool framework (read-only, tenant-scoped)

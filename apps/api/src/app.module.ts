@@ -27,6 +27,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { PlatformModule } from './modules/platform/platform.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -70,6 +71,7 @@ import type { NextFunction, Request, Response } from 'express';
     FinanceModule,
     TasksModule,
     MarketingModule,
+    PlatformModule,
   ],
 })
 export class AppModule implements NestModule {

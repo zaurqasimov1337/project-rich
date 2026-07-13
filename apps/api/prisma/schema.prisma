@@ -200,7 +200,6 @@ model User {
   deletedAt    DateTime?
 
   roles         UserRole[]
-  refreshTokens RefreshToken[]
   notifications Notification[]
 
   @@unique([tenantId, email])
@@ -246,8 +245,8 @@ model UserRole {
 
 model RefreshToken {
   id        String    @id @default(uuid())
+  // No FK: userId references users OR platform_users depending on realm.
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   realm     String    @default("tenant") // tenant|platform
   familyId  String
   tokenHash String    @unique
