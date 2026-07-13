@@ -106,9 +106,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * acting on behalf of a specific tenant outside an HTTP request.
    */
   forTenant<T>(tenantId: string, fn: (db: TenantPrismaClient) => Promise<T>): Promise<T> {
+    // Await INSIDE run(): Prisma promises are lazy — awaiting outside the ALS
+    // scope would execute the query without tenant context.
     return requestContext.run(
       { requestId: `job-${Date.now()}`, realm: 'tenant', tenantId },
-      () => fn(this.scoped),
+      async () => await fn(this.scoped),
     );
   }
 }

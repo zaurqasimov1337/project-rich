@@ -6,8 +6,14 @@ import { validateEnv } from './config/env';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { RedisModule } from './core/redis/redis.module';
 import { MailModule } from './core/mail/mail.module';
+import { AuditModule } from './core/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FilesModule } from './modules/files/files.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -30,8 +36,14 @@ import type { NextFunction, Request, Response } from 'express';
     PrismaModule,
     RedisModule,
     MailModule,
+    AuditModule,
     AuthModule,
     HealthModule,
+    UsersModule,
+    RolesModule,
+    SettingsModule,
+    NotificationsModule,
+    FilesModule,
   ],
 })
 export class AppModule implements NestModule {

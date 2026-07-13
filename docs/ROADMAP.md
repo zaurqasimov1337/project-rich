@@ -17,14 +17,15 @@ Update after every completed step. `[x]` = done & committed.
 
 ## Phase 2 — Core platform
 - [x] Auth: register-tenant, login, refresh rotation (family reuse detection), logout, forgot/reset, invitations/accept, me — verified live
-- [x] Tenant context (AsyncLocalStorage + Prisma extension) — isolation tests pending
-- [ ] RBAC: permissions catalog, seeded roles, guards, /roles CRUD, custom roles
-- [ ] Users & invitations
-- [ ] Settings module + holidays
-- [ ] Audit log (interceptor + viewer API)
-- [ ] Files (MinIO presigned)
-- [ ] Notifications engine (in-app + mail queue + templates)
-- [ ] Web: auth pages, app shell, dashboard placeholder wired to /auth/me, settings/users/roles UI
+- [x] Tenant context (AsyncLocalStorage + Prisma extension) + 6 isolation tests passing
+- [x] RBAC: permissions catalog, seeded roles, global AuthGuard, /roles CRUD (custom roles)
+- [x] Users & invitations (invite by email, role assignment, owner protection)
+- [x] Settings module (whitelisted keys) + holidays CRUD
+- [x] Audit log (AuditService + viewer API) — call-site wiring expands with modules
+- [x] Files (MinIO presigned upload/download, MIME+size whitelist, bucket bootstrap)
+- [x] Notifications (in-app list/read; mail via MailService; queue delivery in Phase 4)
+- [x] Web: login/register/forgot/reset pages, auth store with silent refresh, app shell (collapsible sidebar with permission gating, topbar, dark mode), dashboard v0 — login→dashboard verified in browser
+- [ ] Settings/users/roles UI pages (with education modules in Phase 3)
 
 ## Phase 3 — Education core
 - [ ] Branches (API+UI) → Rooms (+occupancy) → Course categories & Courses

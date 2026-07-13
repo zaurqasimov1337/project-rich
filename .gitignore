@@ -15,3 +15,4 @@ pg-data/
 .turbo/
 playwright-report/
 test-results/
+.gstack/
