@@ -136,17 +136,44 @@ class EnrollmentStatusDto {
 export class GroupsController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Get('category-counts')
+  @RequirePermissions('groups.read')
+  async categoryCounts() {
+    const groups = await this.prisma.scoped.group.findMany({
+      where: { deletedAt: null },
+      select: { course: { select: { categoryId: true, category: { select: { name: true } } } } },
+    });
+    const counts = new Map<string, { id: string; name: string; count: number }>();
+    let uncategorized = 0;
+    for (const g of groups) {
+      const cat = g.course?.category;
+      const catId = g.course?.categoryId;
+      if (cat && catId) {
+        const cur = counts.get(catId) ?? { id: catId, name: cat.name, count: 0 };
+        cur.count++;
+        counts.set(catId, cur);
+      } else {
+        uncategorized++;
+      }
+    }
+    const result = [...counts.values()].sort((a, b) => b.count - a.count);
+    if (uncategorized > 0) result.push({ id: 'none', name: 'Kateqoriyasız', count: uncategorized });
+    return result;
+  }
+
   @Get()
   @RequirePermissions('groups.read')
   async list(
     @Query() q: ListQueryDto,
     @Query('courseId') courseId?: string,
     @Query('teacherId') teacherId?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
     const where = {
       deletedAt: null,
       ...(courseId ? { courseId } : {}),
       ...(teacherId ? { teacherId } : {}),
+      ...(categoryId ? { course: categoryId === 'none' ? { categoryId: null } : { categoryId } } : {}),
       ...(q.branchId?.length ? { branchId: { in: q.branchId } } : {}),
       ...(q.status?.length ? { status: { in: q.status } } : {}),
       ...(q.search ? { name: { contains: q.search, mode: 'insensitive' as const } } : {}),

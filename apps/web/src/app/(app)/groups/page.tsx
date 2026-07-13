@@ -48,17 +48,24 @@ export default function GroupsPage() {
   const can = useAuth((s) => s.can);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const debouncedSearch = useDebounced(search);
 
+  const { data: catCounts } = useQuery({
+    queryKey: ['group-category-counts'],
+    queryFn: () => api.get<{ id: string; name: string; count: number }[]>('/groups/category-counts'),
+  });
+
   const { data, isLoading } = useQuery({
-    queryKey: ['groups', page, debouncedSearch],
+    queryKey: ['groups', page, debouncedSearch, category],
     queryFn: () =>
       api.list<GroupRow>(
-        `/groups?page=${page}&limit=20${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}`,
+        `/groups?page=${page}&limit=20${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}${category ? `&categoryId=${category}` : ''}`,
       ),
     placeholderData: keepPreviousData,
   });
+  const totalGroups = (catCounts ?? []).reduce((s, c) => s + c.count, 0);
 
   const { data: courses } = useQuery({
     queryKey: ['courses-options'],
@@ -148,6 +155,32 @@ export default function GroupsPage() {
           </Button>
         )}
       </div>
+
+      {(catCounts?.length ?? 0) > 0 && (
+        <div className="flex flex-nowrap gap-1 overflow-x-auto border-b border-border">
+          <button
+            onClick={() => { setCategory(''); setPage(1); }}
+            className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              category === '' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-foreground'
+            }`}
+          >
+            {tc('all')}
+            <span className="rounded-full bg-muted-bg px-1.5 py-0.5 text-[11px] font-semibold text-muted">{totalGroups}</span>
+          </button>
+          {(catCounts ?? []).map((c) => (
+            <button
+              key={c.id}
+              onClick={() => { setCategory(c.id); setPage(1); }}
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                category === c.id ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-foreground'
+              }`}
+            >
+              {c.name}
+              <span className="rounded-full bg-muted-bg px-1.5 py-0.5 text-[11px] font-semibold text-muted">{c.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <DataTable
         columns={columns}
