@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.next/
+build/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+minio-data/
+pg-data/
+*.log
+.turbo/
+playwright-report/
+test-results/

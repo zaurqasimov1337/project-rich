@@ -1,0 +1,53 @@
+{
+  "common": {
+    "appName": "EduSphere",
+    "loading": "Yüklənir...",
+    "save": "Yadda saxla",
+    "cancel": "Ləğv et",
+    "delete": "Sil",
+    "edit": "Redaktə et",
+    "create": "Yarat",
+    "search": "Axtar...",
+    "export": "İxrac",
+    "print": "Çap",
+    "actions": "Əməliyyatlar",
+    "status": "Status",
+    "noData": "Məlumat yoxdur",
+    "error": "Xəta baş verdi",
+    "retry": "Yenidən cəhd et",
+    "confirm": "Təsdiq et",
+    "yes": "Bəli",
+    "no": "Xeyr"
+  },
+  "auth": {
+    "login": "Daxil ol",
+    "logout": "Çıxış",
+    "email": "E-poçt",
+    "password": "Şifrə",
+    "forgotPassword": "Şifrəni unutmusan?",
+    "register": "Qeydiyyat",
+    "invalidCredentials": "E-poçt və ya şifrə yanlışdır",
+    "welcomeBack": "Xoş gəldin"
+  },
+  "nav": {
+    "dashboard": "İdarə paneli",
+    "crm": "CRM / Müraciətlər",
+    "students": "Tələbələr",
+    "teachers": "Müəllimlər",
+    "courses": "Kurslar",
+    "groups": "Qruplar",
+    "schedule": "Cədvəl",
+    "attendance": "Davamiyyət",
+    "exams": "İmtahanlar",
+    "rooms": "Otaqlar",
+    "branches": "Filiallar",
+    "finance": "Maliyyə",
+    "hr": "HR",
+    "marketing": "Marketinq",
+    "tasks": "Tapşırıqlar",
+    "reports": "Hesabatlar",
+    "ai": "AI Copilot",
+    "integrations": "İnteqrasiyalar",
+    "settings": "Parametrlər"
+  }
+}

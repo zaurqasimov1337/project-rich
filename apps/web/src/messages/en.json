@@ -1,0 +1,53 @@
+{
+  "common": {
+    "appName": "EduSphere",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search...",
+    "export": "Export",
+    "print": "Print",
+    "actions": "Actions",
+    "status": "Status",
+    "noData": "No data",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "register": "Register",
+    "invalidCredentials": "Invalid email or password",
+    "welcomeBack": "Welcome back"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "crm": "CRM / Leads",
+    "students": "Students",
+    "teachers": "Teachers",
+    "courses": "Courses",
+    "groups": "Groups",
+    "schedule": "Schedule",
+    "attendance": "Attendance",
+    "exams": "Exams",
+    "rooms": "Rooms",
+    "branches": "Branches",
+    "finance": "Finance",
+    "hr": "HR",
+    "marketing": "Marketing",
+    "tasks": "Tasks",
+    "reports": "Reports",
+    "ai": "AI Copilot",
+    "integrations": "Integrations",
+    "settings": "Settings"
+  }
+}

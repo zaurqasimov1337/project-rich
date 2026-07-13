@@ -7,17 +7,17 @@ Update after every completed step. `[x]` = done & committed.
 - [x] README, PRD, ARCHITECTURE, DATABASE, API, UI, SECURITY, ROADMAP
 
 ## Phase 1 — Foundation
-- [ ] pnpm workspace + tooling (tsconfig, eslint, prettier)
-- [ ] docker-compose (postgres, redis, minio, mailpit)
-- [ ] packages/shared (enums, permissions, zod schemas skeleton)
-- [ ] apps/api NestJS skeleton (config zod, prisma service, health, logging, envelope, filters)
-- [ ] prisma schema v1 (platform + identity + org) + first migration
-- [ ] apps/web Next.js skeleton (tailwind tokens, shell layout, theme, i18n az/en/ru/tr)
-- [ ] CI workflow (lint, typecheck, test, build)
+- [x] pnpm workspace + tooling (tsconfig, prettier, editorconfig, gitattributes)
+- [x] docker-compose (postgres:5439, redis:6380, minio:9002, mailpit:8025 — ports shifted for host conflicts)
+- [x] packages/shared (permissions catalog, enums, constants — built with tsup)
+- [x] apps/api NestJS skeleton (zod env, prisma tenant-scoped client, health, pino, envelope, exception filter)
+- [x] prisma schema v1 (platform + identity + org + system) + init migration + seed (plans, root@edusphere.app, demo tenant)
+- [x] apps/web Next.js skeleton (tailwind v4 tokens, dark mode, next-intl az/en/ru/tr, query provider, api client)
+- [x] CI workflow (lint, typecheck, test, build)
 
 ## Phase 2 — Core platform
-- [ ] Auth: register-tenant, login, refresh rotation, logout, forgot/reset, me
-- [ ] Tenant context (AsyncLocalStorage + Prisma extension) + isolation tests
+- [x] Auth: register-tenant, login, refresh rotation (family reuse detection), logout, forgot/reset, invitations/accept, me — verified live
+- [x] Tenant context (AsyncLocalStorage + Prisma extension) — isolation tests pending
 - [ ] RBAC: permissions catalog, seeded roles, guards, /roles CRUD, custom roles
 - [ ] Users & invitations
 - [ ] Settings module + holidays

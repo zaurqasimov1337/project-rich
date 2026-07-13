@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2023"],
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "noUncheckedIndexedAccess": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "sourceMap": true,
+    "incremental": true,
+    "declaration": false
+  },
+  "include": ["src", "prisma/seed.ts"]
+}

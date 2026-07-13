@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Brand */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+  --admin-primary: #0f766e;
+  --accent: #f59e0b;
+
+  /* Semantic */
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #0284c7;
+
+  /* Neutrals */
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --muted-bg: #f1f5f9;
+
+  --radius: 8px;
+}
+
+.dark {
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --admin-primary: #14b8a6;
+  --accent: #fbbf24;
+
+  --background: #0b1220;
+  --surface: #111827;
+  --border: #1e293b;
+  --foreground: #f1f5f9;
+  --muted: #94a3b8;
+  --muted-bg: #1e293b;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-admin-primary: var(--admin-primary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+  --font-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --radius-DEFAULT: var(--radius);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+* {
+  border-color: var(--border);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

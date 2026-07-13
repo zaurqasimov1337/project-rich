@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ PLATFORM (no tenantId) ============
+
+enum TenantStatus {
+  trial
+  active
+  past_due
+  suspended
+  cancelled
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  status      TenantStatus @default(trial)
+  planId      String?
+  plan        Plan?        @relation(fields: [planId], references: [id])
+  trialEndsAt DateTime?
+  timezone    String       @default("Asia/Baku")
+  currency    String       @default("AZN")
+  locale      String       @default("az")
+  settings    Json         @default("{}")
+  branding    Json         @default("{}")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  subscriptions Subscription[]
+  usageRecords  UsageRecord[]
+
+  @@map("tenants")
+}
+
+model Plan {
+  id           String   @id @default(uuid())
+  code         String   @unique // starter|professional|business|enterprise|custom:*
+  name         String
+  priceMonthly Int // minor units
+  priceYearly  Int
+  currency     String   @default("AZN")
+  limits       Json // {users, students, teachers, branches, aiRequests, storageMb, apiCalls}
+  features     Json // {crm, finance, marketing, ai, lms, hr, payroll, api, whiteLabel, multiBranch, whatsapp, webhooks}
+  isCustom     Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenants       Tenant[]
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  cancelled
+}
+
+model Subscription {
+  id               String             @id @default(uuid())
+  tenantId         String
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  planId           String
+  plan             Plan               @relation(fields: [planId], references: [id])
+  period           String // monthly|yearly
+  status           SubscriptionStatus @default(trialing)
+  currentPeriodEnd DateTime
+  cancelAt         DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  invoices SubscriptionInvoice[]
+
+  @@index([tenantId])
+  @@map("subscriptions")
+}
+
+model SubscriptionInvoice {
+  id             String       @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  number         String       @unique
+  amount         Int
+  currency       String       @default("AZN")
+  status         String       @default("open") // draft|open|paid|void|uncollectible
+  dueAt          DateTime
+  paidAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([subscriptionId, status])
+  @@map("subscription_invoices")
+}
+
+model UsageRecord {
+  id       String   @id @default(uuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  metric   String // users|students|teachers|branches|aiRequests|storageMb|apiCalls
+  value    Int
+  date     DateTime @db.Date
+
+  @@unique([tenantId, metric, date])
+  @@map("usage_records")
+}
+
+model PlatformUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         String // super_admin|support|finance|analyst
+  totpSecret   String?
+  status       String    @default("active")
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("platform_users")
+}
+
+model FeatureFlag {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  enabled   Boolean  @default(false)
+  perTenant Json     @default("{}") // {tenantId: bool}
+  updatedAt DateTime @updatedAt
+
+  @@map("feature_flags")
+}
+
+model Announcement {
+  id         String    @id @default(uuid())
+  title      String
+  body       String
+  audience   Json      @default("{}") // {plans:[], statuses:[]}
+  activeFrom DateTime
+  activeTo   DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("announcements")
+}
+
+model IntegrationCatalog {
+  id       String  @id @default(uuid())
+  key      String  @unique
+  category String // ai|social|ads|payment|calendar|meeting|storage|communication|sms|automation
+  name     String
+  logo     String?
+  enabled  Boolean @default(false)
+  minPlan  String?
+  config   Json    @default("{}")
+
+  @@map("integration_catalog")
+}
+
+model PlatformAudit {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  targetType String?
+  targetId   String?
+  diff       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@map("audit_platform")
+}
+
+// ============ IDENTITY (tenant-scoped) ============
+
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String
+  email        String
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  avatarFileId String?
+  status       String    @default("active") // active|invited|disabled
+  locale       String    @default("az")
+  totpSecret   String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  roles         UserRole[]
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@map("users")
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  tenantId  String
+  key       String // owner|admin|... or custom slug
+  name      String
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([tenantId, key])
+  @@map("roles")
+}
+
+model RolePermission {
+  roleId     String
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String
+
+  @@id([roleId, permission])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId   String
+  role     Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  branchId String? // optional branch scoping
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  realm     String    @default("tenant") // tenant|platform
+  familyId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, familyId])
+  @@map("refresh_tokens")
+}
+
+model Invitation {
+  id         String    @id @default(uuid())
+  tenantId   String
+  email      String
+  roleId     String
+  branchId   String?
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  invitedBy  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId, email])
+  @@map("invitations")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  tenantId   String
+  name       String
+  prefix     String    @unique
+  keyHash    String
+  scopes     String[]
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId])
+  @@map("api_keys")
+}
+
+// ============ ORG (tenant-scoped) ============
+
+model Branch {
+  id           String    @id @default(uuid())
+  tenantId     String
+  name         String
+  address      String?
+  phone        String?
+  workingHours Json      @default("{}") // {mon:{from:"09:00",to:"20:00"},...}
+  isMain       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  rooms Room[]
+
+  @@index([tenantId])
+  @@map("branches")
+}
+
+model Room {
+  id        String    @id @default(uuid())
+  tenantId  String
+  branchId  String
+  branch    Branch    @relation(fields: [branchId], references: [id])
+  name      String
+  number    String?
+  capacity  Int
+  floor     Int?
+  equipment String[]
+  status    String    @default("active") // active|maintenance|inactive
+  photos    String[] // file ids
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  reservations RoomReservation[]
+
+  @@index([tenantId, branchId])
+  @@map("rooms")
+}
+
+model RoomReservation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id])
+  title       String
+  startAt     DateTime
+  endAt       DateTime
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, roomId, startAt])
+  @@map("room_reservations")
+}
+
+model Holiday {
+  id       String   @id @default(uuid())
+  tenantId String
+  date     DateTime @db.Date
+  name     String
+  branchId String?
+
+  @@unique([tenantId, date, branchId])
+  @@map("holidays")
+}
+
+model Setting {
+  tenantId  String
+  key       String
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@id([tenantId, key])
+  @@map("settings")
+}
+
+// ============ SYSTEM (tenant-scoped) ============
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  action     String // create|update|delete|login|export|...
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, entityType, createdAt])
+  @@index([tenantId, userId, createdAt])
+  @@map("audit_log")
+}
+
+model File {
+  id           String   @id @default(uuid())
+  tenantId     String
+  key          String   @unique
+  name         String
+  mime         String
+  size         Int
+  entityType   String?
+  entityId     String?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@map("files")
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  tenantId   String
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  body       String?
+  entityType String?
+  entityId   String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId, userId, readAt])
+  @@map("notifications")
+}
+
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  tenantId  String
+  key       String
+  channel   String // email|sms
+  subject   String?
+  body      String
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key, channel])
+  @@map("message_templates")
+}
+
+model SavedFilter {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  entity    String // students|leads|invoices|...
+  name      String
+  filters   Json
+  isShared  Boolean  @default(false)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, entity])
+  @@map("saved_filters")
+}
