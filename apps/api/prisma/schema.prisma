@@ -371,6 +371,276 @@ model Setting {
   @@map("settings")
 }
 
+// ============ EDUCATION (tenant-scoped) ============
+
+model CourseCategory {
+  id       String  @id @default(uuid())
+  tenantId String
+  name     String
+  parentId String?
+
+  courses Course[]
+
+  @@index([tenantId])
+  @@map("course_categories")
+}
+
+enum PricingModel {
+  monthly
+  course
+  lesson
+}
+
+model Course {
+  id              String          @id @default(uuid())
+  tenantId        String
+  categoryId      String?
+  category        CourseCategory? @relation(fields: [categoryId], references: [id])
+  name            String
+  level           String?
+  description     String?
+  pricingModel    PricingModel    @default(monthly)
+  price           Int // minor units
+  currency        String          @default("AZN")
+  durationWeeks   Int?
+  defaultCapacity Int             @default(12)
+  syllabus        Json            @default("[]")
+  status          String          @default("active") // active|archived
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  groups Group[]
+
+  @@index([tenantId, status])
+  @@map("courses")
+}
+
+model Student {
+  id          String    @id @default(uuid())
+  tenantId    String
+  code        String // human-readable, per tenant sequence
+  firstName   String
+  lastName    String
+  phone       String?
+  email       String?
+  birthDate   DateTime? @db.Date
+  gender      String?
+  address     String?
+  parentName  String?
+  parentPhone String?
+  leadId      String?
+  status      String    @default("active") // active|inactive|graduated|archived
+  photoFileId String?
+  notes       String?
+  branchId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  enrollments GroupStudent[]
+  attendance  Attendance[]
+  examResults ExamResult[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, branchId])
+  @@map("students")
+}
+
+model Teacher {
+  id             String    @id @default(uuid())
+  tenantId       String
+  userId         String    @unique
+  subjects       String[]
+  bio            String?
+  hiredAt        DateTime? @db.Date
+  workingHours   Json      @default("{}") // {mon:{from,to},...} empty = branch hours
+  maxWeeklyHours Int       @default(40)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  rates          TeacherRate[]
+  groups         Group[]        @relation("GroupTeacher")
+  assistantIn    Group[]        @relation("GroupAssistant")
+  lessons        Lesson[]       @relation("LessonTeacher")
+
+  @@index([tenantId])
+  @@map("teachers")
+}
+
+model TeacherRate {
+  id        String   @id @default(uuid())
+  tenantId  String
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  type      String // per_lesson|per_student|fixed_monthly|revenue_pct
+  amount    Int // minor units or percent*100 for revenue_pct
+  courseId  String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, teacherId])
+  @@map("teacher_rates")
+}
+
+model Group {
+  id            String    @id @default(uuid())
+  tenantId      String
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id])
+  branchId      String
+  teacherId     String?
+  teacher       Teacher?  @relation("GroupTeacher", fields: [teacherId], references: [id])
+  assistantId   String?
+  assistant     Teacher?  @relation("GroupAssistant", fields: [assistantId], references: [id])
+  roomId        String?
+  name          String
+  capacity      Int       @default(12)
+  priceOverride Int?
+  startDate     DateTime? @db.Date
+  endDate       DateTime? @db.Date
+  status        String    @default("planned") // planned|active|finished|archived
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  students      GroupStudent[]
+  scheduleRules ScheduleRule[]
+  lessons       Lesson[]
+  exams         Exam[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, branchId])
+  @@map("groups")
+}
+
+model GroupStudent {
+  id            String    @id @default(uuid())
+  tenantId      String
+  groupId       String
+  group         Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status        String    @default("active") // active|frozen|finished|dropped
+  joinedAt      DateTime  @default(now())
+  leftAt        DateTime?
+  priceOverride Int?
+
+  @@unique([groupId, studentId])
+  @@index([tenantId, studentId])
+  @@map("group_students")
+}
+
+enum LessonType {
+  offline
+  online
+  hybrid
+}
+
+model ScheduleRule {
+  id         String     @id @default(uuid())
+  tenantId   String
+  groupId    String
+  group      Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  weekdays   Int[] // 0=Mon .. 6=Sun
+  startTime  String // "18:00"
+  endTime    String // "19:30"
+  roomId     String?
+  teacherId  String?
+  type       LessonType @default(offline)
+  validFrom  DateTime   @db.Date
+  validUntil DateTime?  @db.Date
+  createdAt  DateTime   @default(now())
+
+  lessons Lesson[]
+
+  @@index([tenantId, groupId])
+  @@map("schedule_rules")
+}
+
+model Lesson {
+  id              String        @id @default(uuid())
+  tenantId        String
+  groupId         String
+  group           Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  ruleId          String?
+  rule            ScheduleRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  teacherId       String
+  teacherRef      Teacher       @relation("LessonTeacher", fields: [teacherId], references: [id])
+  assistantId     String?
+  roomId          String?
+  date            DateTime      @db.Date
+  startAt         DateTime
+  endAt           DateTime
+  type            LessonType    @default(offline)
+  status          String        @default("scheduled") // scheduled|done|cancelled
+  cancelReason    String?
+  topic           String?
+  homework        String?
+  journalNotes    String?
+  maxParticipants Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  attendance Attendance[]
+
+  @@index([tenantId, date])
+  @@index([tenantId, teacherId, startAt])
+  @@index([tenantId, roomId, startAt])
+  @@index([tenantId, groupId, startAt])
+  @@map("lessons")
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  tenantId  String
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    String // present|absent|late|excused
+  note      String?
+  markedAt  DateTime @default(now())
+
+  @@unique([lessonId, studentId])
+  @@index([tenantId, studentId])
+  @@map("attendance")
+}
+
+model Exam {
+  id        String   @id @default(uuid())
+  tenantId  String
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name      String
+  type      String   @default("exam") // exam|quiz|midterm|final
+  date      DateTime @db.Date
+  maxScore  Int      @default(100)
+  weight    Int      @default(100) // percent
+  createdAt DateTime @default(now())
+
+  results ExamResult[]
+
+  @@index([tenantId, groupId])
+  @@map("exams")
+}
+
+model ExamResult {
+  id        String  @id @default(uuid())
+  tenantId  String
+  examId    String
+  exam      Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score     Int
+  comment   String?
+
+  @@unique([examId, studentId])
+  @@index([tenantId, studentId])
+  @@map("exam_results")
+}
+
 // ============ SYSTEM (tenant-scoped) ============
 
 model AuditLog {

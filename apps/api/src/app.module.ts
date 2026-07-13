@@ -14,6 +14,14 @@ import { RolesModule } from './modules/roles/roles.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FilesModule } from './modules/files/files.module';
+import { BranchesModule } from './modules/branches/branches.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
+import { CoursesModule } from './modules/courses/courses.module';
+import { StudentsModule } from './modules/students/students.module';
+import { TeachersModule } from './modules/teachers/teachers.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { ScheduleModule } from './modules/schedule/schedule.module';
+import { ExamsModule } from './modules/exams/exams.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -44,6 +52,14 @@ import type { NextFunction, Request, Response } from 'express';
     SettingsModule,
     NotificationsModule,
     FilesModule,
+    BranchesModule,
+    RoomsModule,
+    CoursesModule,
+    StudentsModule,
+    TeachersModule,
+    GroupsModule,
+    ScheduleModule,
+    ExamsModule,
   ],
 })
 export class AppModule implements NestModule {
