@@ -2,139 +2,158 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, Phone } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
+import { fmtDateTime } from '@/lib/sales';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-type Filter = 'overdue' | 'today' | 'tomorrow' | 'open' | 'done';
+type Bucket = 'today' | 'overdue' | 'tomorrow' | 'all' | 'done';
 
-interface Activity {
+interface FollowUpItem {
   id: string;
-  type: string;
-  body: string | null;
-  dueAt: string | null;
+  leadId: string;
+  dueAt: string;
   doneAt: string | null;
-  lead: { id: string; name: string; phone: string | null; stage: { name: string; color: string } | null } | null;
+  isDone: boolean;
+  note: string | null;
+  leadName: string;
+  leadPhone: string | null;
+  trainingName: string | null;
+  assigneeName: string | null;
 }
-interface FollowUpData {
-  activities: Activity[];
+interface FollowUpsResp {
   counts: { overdue: number; today: number; tomorrow: number };
+  items: FollowUpItem[];
 }
 
-function fmtDateTime(s: string | null) {
-  if (!s) return '—';
-  return new Date(s).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
+const TABS: { key: Bucket; label: string }[] = [
+  { key: 'today', label: 'Bugün' },
+  { key: 'overdue', label: 'Gecikmiş' },
+  { key: 'tomorrow', label: 'Sabah' },
+  { key: 'all', label: 'Hamısı' },
+  { key: 'done', label: 'Bitmiş' },
+];
 
 export default function FollowUpsPage() {
-  const t = useTranslations('crm');
+  const router = useRouter();
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
-  const [filter, setFilter] = useState<Filter>('today');
+  const [bucket, setBucket] = useState<Bucket>('today');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['follow-ups', filter],
-    queryFn: () => api.get<FollowUpData>(`/leads/activities?filter=${filter}`),
+    queryKey: ['followups', bucket],
+    queryFn: () => api.get<FollowUpsResp>(`/followups?bucket=${bucket}`),
   });
 
-  const markDone = useMutation({
-    mutationFn: (id: string) => api.patch(`/leads/activities/${id}/done`),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['follow-ups'] }),
+  const completeMut = useMutation({
+    mutationFn: (id: string) => api.patch(`/followups/${id}`, { isDone: true }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['followups'] }),
   });
 
-  const tabs: { key: Filter; label: string; badge?: number }[] = [
-    { key: 'overdue', label: t('tabOverdue'), badge: data?.counts.overdue },
-    { key: 'today', label: t('tabToday'), badge: data?.counts.today },
-    { key: 'tomorrow', label: t('tabTomorrow'), badge: data?.counts.tomorrow },
-    { key: 'open', label: t('tabOpen') },
-    { key: 'done', label: t('tabDone') },
-  ];
+  const counts = data?.counts;
+  const items = data?.items ?? [];
 
-  const activities = data?.activities ?? [];
+  const badgeFor = (key: Bucket): number | undefined => {
+    if (key === 'overdue') return counts?.overdue;
+    if (key === 'today') return counts?.today;
+    if (key === 'tomorrow') return counts?.tomorrow;
+    return undefined;
+  };
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold">{t('followUpsTitle')}</h1>
-        <p className="mt-0.5 text-sm text-muted">{t('followUpsSubtitle')}</p>
+        <h1 className="text-xl font-bold">Follow-up-lar</h1>
+        <p className="mt-0.5 text-sm text-muted">Heç bir müraciəti unutmayın.</p>
       </div>
 
+      {/* buckets */}
       <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface p-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              filter === tab.key ? 'bg-primary/10 text-primary' : 'text-muted hover:bg-muted-bg hover:text-foreground',
-            )}
-          >
-            {tab.label}
-            {tab.badge != null && tab.badge > 0 && (
-              <span
-                className={cn(
-                  'rounded-full px-1.5 py-0.5 text-[11px] font-semibold',
-                  tab.key === 'overdue' ? 'bg-danger/15 text-danger' : 'bg-muted-bg text-muted',
-                )}
-              >
-                {tab.badge}
-              </span>
-            )}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const badge = badgeFor(tab.key);
+          const active = bucket === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setBucket(tab.key)}
+              className={cn(
+                'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                active ? 'bg-primary/10 text-primary' : 'text-muted hover:bg-muted-bg hover:text-foreground',
+              )}
+            >
+              {tab.label}
+              {badge != null && badge > 0 && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.5 text-[11px] font-semibold',
+                    tab.key === 'overdue' ? 'bg-danger/15 text-danger' : 'bg-muted-bg text-muted',
+                  )}
+                >
+                  {badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
+      {/* list */}
       <div className="rounded-xl border border-border bg-surface">
         {isLoading ? (
           <div className="space-y-2 p-4">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-16 animate-pulse rounded-lg bg-muted-bg" />
             ))}
           </div>
-        ) : activities.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted-bg text-muted">
               <Bell className="h-6 w-6" />
             </div>
-            <div className="mt-3 font-semibold">{t('noFollowUps')}</div>
-            <div className="mt-1 text-sm text-muted">{t('noFollowUpsHint')}</div>
+            <div className="mt-3 font-semibold">Bu kateqoriyada follow-up yoxdur</div>
+            <div className="mt-1 text-sm text-muted">Müraciət detalından follow-up əlavə edin.</div>
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {activities.map((a) => {
-              const overdue = a.dueAt && !a.doneAt && new Date(a.dueAt) < new Date();
+            {items.map((it) => {
+              const overdue = !it.isDone && new Date(it.dueAt) < new Date();
               return (
-                <div key={a.id} className="flex items-center gap-3 px-4 py-3">
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ background: a.lead?.stage?.color ?? 'var(--color-muted)' }}
-                  />
+                <div
+                  key={it.id}
+                  onClick={() => router.push(`/crm/leads/${it.leadId}`)}
+                  className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-muted-bg/50"
+                >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-medium">{a.lead?.name ?? '—'}</span>
-                      {a.lead?.phone && (
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="truncate font-bold">{it.leadName}</span>
+                      {it.leadPhone && (
                         <span className="flex items-center gap-1 text-xs text-muted">
                           <Phone className="h-3 w-3" />
-                          {a.lead.phone}
+                          {it.leadPhone}
                         </span>
                       )}
                     </div>
-                    {a.body && <div className="truncate text-sm text-muted">{a.body}</div>}
+                    {it.trainingName && <div className="mt-0.5 truncate text-sm text-muted">{it.trainingName}</div>}
+                    {it.note && <div className="mt-0.5 truncate text-sm text-foreground/80">{it.note}</div>}
+                    {it.assigneeName && <div className="mt-0.5 text-xs text-muted">{it.assigneeName}</div>}
                   </div>
                   <span className={cn('shrink-0 text-xs', overdue ? 'font-medium text-danger' : 'text-muted')}>
-                    {fmtDateTime(a.dueAt)}
+                    {fmtDateTime(it.dueAt)}
                   </span>
-                  {!a.doneAt && can('leads.update') && (
+                  {!it.isDone && can('leads.update') && (
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => markDone.mutate(a.id)}
-                      disabled={markDone.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        completeMut.mutate(it.id);
+                      }}
+                      disabled={completeMut.isPending}
                     >
-                      <Check className="h-3.5 w-3.5" /> {t('markDone')}
+                      <Check className="h-3.5 w-3.5" /> Tamamla
                     </Button>
                   )}
                 </div>

@@ -175,6 +175,22 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[] | '*'> = {
     'messages.send', 'messages.templates',
     'ai.use',
   ],
+  // Sales CRM: manager can work leads but sees only own dashboard stats (no leads.settings).
+  sales_manager: [
+    'dashboard.view',
+    'leads.read', 'leads.create', 'leads.update', 'leads.convert',
+    'students.read',
+    'courses.read', 'groups.read',
+    'tasks.read', 'tasks.manage',
+    'ai.use',
+  ],
+  // Sales CRM: read-only observer — can view everything, edit nothing.
+  sales_viewer: [
+    'dashboard.view',
+    'leads.read',
+    'tasks.read',
+    'reports.view',
+  ],
 };
 
 /** Platform (super admin) realm roles. */

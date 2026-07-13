@@ -56,6 +56,10 @@ class CreateTaskDto {
   @IsOptional()
   @IsUUID()
   entityId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  leadId?: string;
 }
 
 class UpdateTaskDto {
@@ -84,6 +88,24 @@ class UpdateTaskDto {
   @IsOptional()
   @IsIn(TASK_STATUSES as unknown as string[])
   status?: string;
+
+  @IsOptional()
+  @IsUUID()
+  leadId?: string;
+}
+
+class TaskListQueryDto extends ListQueryDto {
+  @IsOptional()
+  @IsString()
+  mine?: string;
+
+  @IsOptional()
+  @IsUUID()
+  assigneeId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  leadId?: string;
 }
 
 @ApiTags('tasks')
@@ -94,13 +116,10 @@ export class TasksController {
 
   @Get()
   @RequirePermissions('tasks.read')
-  async list(
-    @Query() q: ListQueryDto,
-    @CurrentUser() user: AuthUser,
-    @Query('mine') mine?: string,
-  ) {
+  async list(@Query() q: TaskListQueryDto, @CurrentUser() user: AuthUser) {
     const where = {
-      ...(mine === 'true' ? { assigneeId: user.userId } : {}),
+      ...(q.mine === 'true' ? { assigneeId: user.userId } : q.assigneeId ? { assigneeId: q.assigneeId } : {}),
+      ...(q.leadId ? { leadId: q.leadId } : {}),
       ...(q.status?.length ? { status: { in: q.status } } : {}),
       ...(q.search ? { title: { contains: q.search, mode: 'insensitive' as const } } : {}),
     };
@@ -113,7 +132,16 @@ export class TasksController {
       }),
       this.prisma.scoped.task.count({ where }),
     ]);
-    return paginated(data, total, q);
+    const leadIds = [...new Set(data.map((t) => t.leadId).filter(Boolean) as string[])];
+    const leads = leadIds.length
+      ? await this.prisma.scoped.lead.findMany({
+          where: { id: { in: leadIds } },
+          select: { id: true, fullName: true, name: true },
+        })
+      : [];
+    const leadMap = new Map(leads.map((l) => [l.id, l.fullName ?? l.name]));
+    const enriched = data.map((t) => ({ ...t, leadName: t.leadId ? (leadMap.get(t.leadId) ?? null) : null }));
+    return paginated(enriched, total, q);
   }
 
   @Post()
@@ -124,11 +152,12 @@ export class TasksController {
         tenantId: requireTenantId(),
         title: dto.title,
         body: dto.body,
+        leadId: dto.leadId,
         assigneeId: dto.assigneeId ?? user.userId,
         dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
         priority: dto.priority ?? 'medium',
-        entityType: dto.entityType,
-        entityId: dto.entityId,
+        entityType: dto.entityType ?? (dto.leadId ? 'lead' : undefined),
+        entityId: dto.entityId ?? dto.leadId,
         createdBy: user.userId,
       },
     });
@@ -139,15 +168,19 @@ export class TasksController {
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTaskDto) {
     const task = await this.prisma.scoped.task.findFirst({ where: { id } });
     if (!task) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Task not found' });
+    const completedAt =
+      dto.status === 'done' ? new Date() : dto.status && dto.status !== 'done' ? null : undefined;
     return this.prisma.scoped.task.update({
       where: { id },
       data: {
         title: dto.title ?? undefined,
         body: dto.body ?? undefined,
+        leadId: dto.leadId ?? undefined,
         assigneeId: dto.assigneeId ?? undefined,
         dueAt: dto.dueAt ? new Date(dto.dueAt) : undefined,
         priority: dto.priority ?? undefined,
         status: dto.status ?? undefined,
+        completedAt,
       },
     });
   }

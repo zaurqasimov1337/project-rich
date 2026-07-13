@@ -671,18 +671,44 @@ model LeadSource {
 model Lead {
   id                 String      @id @default(uuid())
   tenantId           String
+  leadNo             Int? // per-tenant sequence, shown as #312
   name               String
+  fullName           String?
   phone              String?
   email              String?
+  instagram          String?
+  age                Int?
+  gender             String? // kisi|qadin|diger
+  city               String?
+  educationStatus    String?
+  currentField       String?
   sourceId           String?
   source             LeadSource? @relation(fields: [sourceId], references: [id])
+  sourceKey          String? // instagram_dm|whatsapp|telefon|referans|website|event|organic|paid_ads|tiktok
   stageId            String
   stage              LeadStage   @relation(fields: [stageId], references: [id])
+  status             String      @default("yeni_lead") // 14-value CRM status
+  priority           String      @default("cold") // hot|warm|cold (auto)
+  score              Int         @default(0) // 0-100 (auto)
+  askedDemo          Boolean     @default(false)
+  askedPrice         Boolean     @default(false)
+  callAnswered       Boolean     @default(false)
+  parentInvolved     Boolean     @default(false)
+  budgetOk           Boolean     @default(false)
+  notResponding      Boolean     @default(false)
+  passive7d          Boolean     @default(false)
   ownerId            String?
-  courseInterestId   String?
+  assignedTo         String?
+  closedBy           String?
+  createdBy          String?
+  courseInterestId   String? // interested training/course
   value              Int? // expected value, minor units
   branchId           String?
+  followupCount      Int         @default(0)
+  lastContactAt      DateTime?
+  nextFollowupAt     DateTime?
   lostReason         String?
+  objectionReason    String?
   convertedStudentId String?
   utm                Json        @default("{}")
   notes              String?
@@ -691,44 +717,73 @@ model Lead {
   deletedAt          DateTime?
 
   activities LeadActivity[]
+  followups  Followup[]
 
   @@index([tenantId, stageId])
   @@index([tenantId, ownerId])
+  @@index([tenantId, status])
+  @@index([tenantId, priority])
+  @@index([tenantId, assignedTo])
+  @@index([tenantId, phone])
+  @@index([tenantId, nextFollowupAt])
+  @@index([tenantId, createdAt])
   @@map("leads")
 }
 
 model LeadActivity {
-  id        String    @id @default(uuid())
-  tenantId  String
-  leadId    String
-  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  type      String // call|meeting|note|sms|email|whatsapp|stage_change
-  body      String?
-  dueAt     DateTime?
-  doneAt    DateTime?
-  userId    String?
-  createdAt DateTime  @default(now())
+  id          String    @id @default(uuid())
+  tenantId    String
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        String // created|status_changed|followup|call|demo_scheduled|demo_done|payment|registration|note
+  title       String?
+  body        String? // description
+  meta        Json      @default("{}")
+  dueAt       DateTime?
+  doneAt      DateTime?
+  userId      String?
+  createdAt   DateTime  @default(now())
 
   @@index([tenantId, leadId])
   @@map("lead_activities")
 }
 
+model Followup {
+  id        String    @id @default(uuid())
+  tenantId  String
+  leadId    String
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  dueAt     DateTime
+  doneAt    DateTime?
+  isDone    Boolean   @default(false)
+  note      String?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId, leadId])
+  @@index([tenantId, isDone, dueAt])
+  @@map("followups")
+}
+
 model Task {
-  id         String    @id @default(uuid())
-  tenantId   String
-  title      String
-  body       String?
-  assigneeId String?
-  dueAt      DateTime?
-  priority   String    @default("medium") // low|medium|high|urgent
-  status     String    @default("todo") // todo|in_progress|done|cancelled
-  entityType String?
-  entityId   String?
-  createdBy  String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String    @id @default(uuid())
+  tenantId    String
+  title       String
+  body        String?
+  leadId      String?
+  assigneeId  String?
+  dueAt       DateTime?
+  priority    String    @default("medium") // low|medium|high|urgent
+  status      String    @default("todo") // todo|in_progress|done|cancelled
+  entityType  String?
+  entityId    String?
+  createdBy   String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([tenantId, assigneeId, status])
+  @@index([tenantId, leadId])
   @@map("tasks")
 }
 
