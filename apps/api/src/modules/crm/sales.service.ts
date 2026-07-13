@@ -36,6 +36,7 @@ interface ListParams {
   trainingId?: string;
   source?: string;
   assignedTo?: string;
+  minScore?: number;
   dateFrom?: string;
   dateTo?: string;
   sort?: string;
@@ -90,6 +91,9 @@ export class SalesService {
     if (p.trainingId) conds.push(Prisma.sql`l."courseInterestId" = ${p.trainingId}`);
     if (p.source) conds.push(Prisma.sql`l."sourceKey" = ${p.source}`);
     if (p.assignedTo) conds.push(Prisma.sql`l."assignedTo" = ${p.assignedTo}`);
+    if (p.minScore != null && !Number.isNaN(Number(p.minScore))) {
+      conds.push(Prisma.sql`l.score >= ${Number(p.minScore)}`);
+    }
     if (p.dateFrom) conds.push(Prisma.sql`l."createdAt" >= ${new Date(p.dateFrom + 'T00:00:00.000Z')}`);
     if (p.dateTo) {
       const end = new Date(p.dateTo + 'T00:00:00.000Z');
