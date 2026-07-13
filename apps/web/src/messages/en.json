@@ -338,7 +338,8 @@
     "students": "Students",
     "noStudents": "No students in this group",
     "removeStudent": "Remove from group",
-    "selectStudent": "Select student"
+    "selectStudent": "Select student",
+    "monthlyRevenue": "Monthly revenue"
   },
   "courses": {
     "title": "Courses",

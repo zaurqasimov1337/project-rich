@@ -338,7 +338,8 @@
     "students": "Öğrenciler",
     "noStudents": "Grupta öğrenci yok",
     "removeStudent": "Gruptan çıkar",
-    "selectStudent": "Öğrenci seçin"
+    "selectStudent": "Öğrenci seçin",
+    "monthlyRevenue": "Aylık gelir"
   },
   "courses": {
     "title": "Kurslar",

@@ -26,6 +26,8 @@ interface GroupRow {
   startDate: string | null;
   course: { id: string; name: string; price: number };
   priceOverride: number | null;
+  teacherName: string | null;
+  monthlyRevenue: number;
 }
 
 interface GroupForm {
@@ -107,9 +109,10 @@ export default function GroupsPage() {
   const columns: Column<GroupRow>[] = [
     { key: 'name', header: t('group'), render: (r) => <span className="font-medium">{r.name}</span> },
     { key: 'course', header: t('course'), render: (r) => r.course.name },
+    { key: 'teacher', header: t('teacher'), render: (r) => r.teacherName ?? '—' },
     {
       key: 'fill',
-      header: t('fill'),
+      header: t('students'),
       render: (r) => (
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted-bg">
@@ -125,14 +128,12 @@ export default function GroupsPage() {
       ),
     },
     {
-      key: 'price',
-      header: tc('price'),
-      render: (r) => formatMoney(r.priceOverride ?? r.course.price),
-    },
-    {
-      key: 'start',
-      header: t('start'),
-      render: (r) => (r.startDate ? new Date(r.startDate).toLocaleDateString('az-AZ') : '—'),
+      key: 'revenue',
+      header: t('monthlyRevenue'),
+      render: (r) => (
+        <span className="font-semibold tabular-nums text-success">{formatMoney(r.monthlyRevenue)}</span>
+      ),
+      className: 'text-right',
     },
     { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];

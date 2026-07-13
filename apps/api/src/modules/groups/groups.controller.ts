@@ -156,6 +156,7 @@ export class GroupsController {
         where,
         include: {
           course: { select: { id: true, name: true, price: true, pricingModel: true } },
+          teacher: { select: { id: true, userId: true } },
           _count: { select: { students: { where: { status: 'active' } } } },
         },
         orderBy: q.orderBy('createdAt', ['createdAt', 'name', 'startDate']),
@@ -164,11 +165,21 @@ export class GroupsController {
       }),
       this.prisma.scoped.group.count({ where }),
     ]);
+    const teacherUserIds = [...new Set(data.map((g) => g.teacher?.userId).filter(Boolean) as string[])];
+    const teacherUsers = teacherUserIds.length
+      ? await this.prisma.scoped.user.findMany({
+          where: { id: { in: teacherUserIds } },
+          select: { id: true, firstName: true, lastName: true },
+        })
+      : [];
+    const nameMap = new Map(teacherUsers.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
     return paginated(
       data.map((g) => ({
         ...g,
         activeStudents: g._count.students,
         fillRate: g.capacity > 0 ? Math.round((g._count.students / g.capacity) * 100) : 0,
+        teacherName: g.teacher?.userId ? (nameMap.get(g.teacher.userId) ?? null) : null,
+        monthlyRevenue: g._count.students * (g.priceOverride ?? g.course.price),
         _count: undefined,
       })),
       total,

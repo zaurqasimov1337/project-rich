@@ -338,7 +338,8 @@
     "students": "Студенты",
     "noStudents": "В группе нет студентов",
     "removeStudent": "Убрать из группы",
-    "selectStudent": "Выберите студента"
+    "selectStudent": "Выберите студента",
+    "monthlyRevenue": "Месячный доход"
   },
   "courses": {
     "title": "Курсы",
