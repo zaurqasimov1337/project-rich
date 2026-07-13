@@ -9,7 +9,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000,
+            staleTime: 60_000, // 1 min — cached pages open instantly on re-navigation
+            gcTime: 10 * 60_000, // keep data cached for 10 min
+            refetchOnWindowFocus: false, // no refetch when returning to the tab
+            refetchOnReconnect: false,
             retry: (failureCount, error: unknown) => {
               const status = (error as { status?: number })?.status;
               if (status && status >= 400 && status < 500) return false;
