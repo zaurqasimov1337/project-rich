@@ -22,6 +22,7 @@ import { TeachersModule } from './modules/teachers/teachers.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { ExamsModule } from './modules/exams/exams.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -60,6 +61,7 @@ import type { NextFunction, Request, Response } from 'express';
     GroupsModule,
     ScheduleModule,
     ExamsModule,
+    DashboardModule,
   ],
 })
 export class AppModule implements NestModule {
