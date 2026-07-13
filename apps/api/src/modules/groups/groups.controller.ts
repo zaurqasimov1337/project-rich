@@ -130,6 +130,12 @@ class EnrollmentStatusDto {
   status!: string;
 }
 
+class GroupListQueryDto extends ListQueryDto {
+  @IsOptional() @IsUUID() courseId?: string;
+  @IsOptional() @IsUUID() teacherId?: string;
+  @IsOptional() @IsString() categoryId?: string;
+}
+
 @ApiTags('groups')
 @ApiBearerAuth()
 @Controller('groups')
@@ -163,12 +169,8 @@ export class GroupsController {
 
   @Get()
   @RequirePermissions('groups.read')
-  async list(
-    @Query() q: ListQueryDto,
-    @Query('courseId') courseId?: string,
-    @Query('teacherId') teacherId?: string,
-    @Query('categoryId') categoryId?: string,
-  ) {
+  async list(@Query() q: GroupListQueryDto) {
+    const { courseId, teacherId, categoryId } = q;
     const where = {
       deletedAt: null,
       ...(courseId ? { courseId } : {}),
