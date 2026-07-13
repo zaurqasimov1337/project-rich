@@ -21,11 +21,15 @@ export class AuditService {
         data: {
           tenantId: ctx.tenantId,
           userId: ctx.userId,
-          action: entry.action,
+          // Prefix action when acting under impersonation so tenant-side audit
+          // distinguishes real-owner from platform-impersonated actions.
+          action: ctx.impersonatedBy ? `impersonated:${entry.action}` : entry.action,
           entityType: entry.entityType,
           entityId: entry.entityId,
           before: (entry.before as object) ?? undefined,
-          after: (entry.after as object) ?? undefined,
+          after: ctx.impersonatedBy
+            ? ({ ...(entry.after as object), _impersonatedBy: ctx.impersonatedBy } as object)
+            : ((entry.after as object) ?? undefined),
           ip: ctx.ip,
         },
       })

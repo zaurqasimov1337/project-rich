@@ -6,11 +6,19 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../core/prisma/prisma.service';
-import { requireTenantId } from '../../core/context/request-context';
+import { getContext, requireTenantId } from '../../core/context/request-context';
+import type { AuthUser } from '../../common/decorators/current-user.decorator';
 
 const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
@@ -95,9 +103,16 @@ export class FilesService implements OnModuleInit {
     return { fileId: record.id, uploadUrl };
   }
 
-  async presignDownload(fileId: string) {
+  async presignDownload(fileId: string, user: AuthUser) {
     const file = await this.prisma.scoped.file.findFirst({ where: { id: fileId } });
     if (!file) throw new NotFoundException({ code: 'NOT_FOUND', message: 'File not found' });
+
+    // Object-level authorization: uploader, or a manager with files.manage.
+    const perms = getContext()?.permissions;
+    const canManage = perms?.has('files.manage') ?? false;
+    if (file.uploadedById !== user.userId && !canManage) {
+      throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Not authorized for this file' });
+    }
     const url = await getSignedUrl(
       this.s3,
       new GetObjectCommand({

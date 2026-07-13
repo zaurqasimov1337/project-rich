@@ -273,6 +273,7 @@ export class PlatformController {
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: IMPERSONATION_TTL_SEC,
+        algorithm: 'HS256',
       },
     );
     await this.prisma.platformAudit.create({

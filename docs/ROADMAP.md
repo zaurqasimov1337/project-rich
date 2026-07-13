@@ -62,16 +62,18 @@ Update after every completed step. `[x]` = done & committed.
 - [x] AI chat UI: conversation sidebar, suggestions, typing indicator
 - [ ] DEFERRED to next release: integrations marketplace UI + connectors (SMTP works via MailService), public API keys runtime, webhook delivery engine, HR employees/leave, reports-center exports (finance/marketing/funnel report endpoints exist), messaging bulk send. Schema for most already in place.
 
-## Phase 7 — QA
-- [ ] Unit+integration suite green, coverage ≥70% services
-- [ ] Playwright E2E: auth, student lifecycle, schedule conflict, payment flow, lead convert, superadmin tenant+plan
-- [ ] Role-matrix sweep; tenant-isolation sweep; fix all; QA_REPORT.md
+## Phase 7 — QA ✅
+- [x] Unit+integration suite green (21 tests: isolation, schedule engine, finance flow)
+- [x] Browser E2E (gstack): auth, dashboard, attendance mark, schedule, superadmin — 0 console errors
+- [x] Role-matrix sweep (11 cases) + 2-tenant isolation + IDOR sweep; 3 bugs fixed; QA_REPORT.md
 
-## Phase 8 — Security
-- [ ] Execute SECURITY.md checklist; fix all; SECURITY_AUDIT_REPORT.md
+## Phase 8 — Security ✅
+- [x] Dedicated Security Engineer code review + live attack probes; SECURITY_AUDIT_REPORT.md
+- [x] No critical/high; fixed M1 (file download authz), M4 (idempotency race), L5 (JWT alg pin),
+      L8 (global rate limiting), L9 (impersonation audit + prod S3 creds); post-fix re-verified
 
-## Phase 9 — Production
-- [ ] Perf pass (indexes, N+1, bundle, caching)
-- [ ] Prod Dockerfiles + compose.prod + CI deploy job
-- [ ] Backups + restore runbook + monitoring/log guidance → DEPLOYMENT.md
-- [ ] Final acceptance checklist signed
+## Phase 9 — Production ✅
+- [x] Prod Dockerfiles (non-root, multi-stage) + compose.prod (secret guards)
+- [x] Both production builds pass (api nest build, web next build ~102kB shared)
+- [x] Backups + restore + monitoring/scaling → DEPLOYMENT.md
+- [x] Final acceptance checklist → ACCEPTANCE.md

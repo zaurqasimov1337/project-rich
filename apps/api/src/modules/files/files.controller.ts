@@ -43,7 +43,8 @@ export class FilesController {
   }
 
   @Get(':id/download')
-  presignDownload(@Param('id', ParseUUIDPipe) id: string) {
-    return this.files.presignDownload(id);
+  @RequirePermissions('files.read')
+  presignDownload(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+    return this.files.presignDownload(id, user);
   }
 }

@@ -35,5 +35,14 @@ export function validateEnv(config: Record<string, unknown>): Env {
       .join('\n');
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
+  // In production, storage credentials must be present — don't silently degrade.
+  if (parsed.data.NODE_ENV === 'production') {
+    const missing = (['S3_ACCESS_KEY', 'S3_SECRET_KEY'] as const).filter(
+      (k) => !parsed.data[k],
+    );
+    if (missing.length) {
+      throw new Error(`Missing required production env: ${missing.join(', ')}`);
+    }
+  }
   return parsed.data;
 }

@@ -34,6 +34,7 @@ export class TokenService {
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: ACCESS_TOKEN_TTL_SEC,
+        algorithm: 'HS256',
       },
     );
   }
@@ -42,6 +43,7 @@ export class TokenService {
     try {
       return this.jwt.verify<AccessPayload>(token, {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+        algorithms: ['HS256'],
       });
     } catch {
       throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Invalid token' });

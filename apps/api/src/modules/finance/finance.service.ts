@@ -179,7 +179,34 @@ export class FinanceService {
 
     const cashAccountId = dto.cashAccountId ?? (await this.ensureDefaultAccount());
 
-    const payment = await this.prisma.$transaction(async (tx) => {
+    let payment;
+    try {
+      payment = await this.createPaymentTx(dto, tenantId, cashAccountId, userId, idempotencyKey);
+    } catch (err) {
+      // Unique (tenantId, idempotencyKey) violation → concurrent duplicate; return the winner.
+      if (
+        idempotencyKey &&
+        typeof err === 'object' &&
+        err !== null &&
+        (err as { code?: string }).code === 'P2002'
+      ) {
+        const existing = await this.prisma.scoped.payment.findFirst({ where: { idempotencyKey } });
+        if (existing) return existing;
+      }
+      throw err;
+    }
+    this.audit.log({ action: 'create', entityType: 'payment', entityId: payment.id, after: payment });
+    return payment;
+  }
+
+  private async createPaymentTx(
+    dto: CreatePaymentDto,
+    tenantId: string,
+    cashAccountId: string,
+    userId: string,
+    idempotencyKey?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
       let invoice = null;
       if (dto.invoiceId) {
         invoice = await tx.invoice.findFirst({ where: { id: dto.invoiceId, tenantId } });
@@ -227,8 +254,6 @@ export class FinanceService {
       }
       return p;
     });
-    this.audit.log({ action: 'create', entityType: 'payment', entityId: payment.id, after: payment });
-    return payment;
   }
 
   // ---------- summary ----------

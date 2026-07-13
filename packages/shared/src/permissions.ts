@@ -110,6 +110,7 @@ export const PERMISSIONS = {
   'audit.read': 'audit.read',
   'billing.manage': 'billing.manage', // subscription/plan — owner only by default
   'files.manage': 'files.manage',
+  'files.read': 'files.read',
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
