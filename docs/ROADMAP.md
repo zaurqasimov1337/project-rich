@@ -28,15 +28,16 @@ Update after every completed step. `[x]` = done & committed.
 - [ ] Settings/users/roles UI pages (with education modules in Phase 3)
 
 ## Phase 3 — Education core
-- [ ] Branches (API+UI) → Rooms (+occupancy) → Course categories & Courses
-- [ ] Students (CRUD, filters, import, detail tabs skeleton)
-- [ ] Teachers (profile, rates, load)
-- [ ] Groups (+roster & enrollment statuses)
-- [ ] Schedule engine: rules, materialization job, validate endpoint (7 conflict types), lessons CRUD, series edits, cancel+notify
-- [ ] Schedule UI: week/day/month/timeline + drag&drop + live validation
-- [ ] Attendance + journal (API+UI quick-mark)
-- [ ] Exams & grades + certificates
-- [ ] Dashboard v1 (real KPIs)
+- [x] Branches (API+UI cards) · Rooms (API+occupancy+reservations, UI cards) · Categories & Courses (API+UI)
+- [x] Students (CRUD, search/filters, detail tabs: profile/groups/attendance/grades; import → Phase 4 Collections)
+- [x] Teachers (profile over user, rates, weekly load endpoint, UI list)
+- [x] Groups (CRUD, roster, enroll/drop/freeze, fill-rate, detail UI)
+- [x] Schedule engine: 8 conflict rules, rule materialization (12 weeks), validate endpoint, series edits (one/following), cancel+notify — 8 integration tests passing
+- [x] Schedule UI: week grid + navigation (drag&drop + timeline views → Phase 9 polish)
+- [x] Attendance quick-mark UI (today's lessons, one-tap) + journal API
+- [x] Exams: create, bulk results entry UI, student grades (certificates → Phase 4)
+- [x] Dashboard v1: real KPIs (students, groups, today lessons, attendance rate) + upcoming lessons, 60s cache
+- [ ] Settings UI (users/roles/holidays) — with Phase 4 batch
 
 ## Phase 4 — Business modules
 - [ ] CRM: stages, sources, leads kanban/table, activities, convert-to-student, funnel metrics
