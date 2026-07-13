@@ -93,7 +93,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Parametrlər</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">Parametrlər</h1>
+        {(can('apikeys.manage') || can('webhooks.manage')) && (
+          <a
+            href="/settings/developer"
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-muted-bg"
+          >
+            Developer (API açarları · Webhooks)
+          </a>
+        )}
+      </div>
 
       <div className="flex gap-1 border-b border-border">
         {TABS.map((t) => (

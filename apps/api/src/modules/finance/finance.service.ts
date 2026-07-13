@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
 import { AuditService } from '../../core/audit/audit.service';
+import { WebhooksService } from '../integrations/webhooks.service';
 import { ListQueryDto, paginated, resolveDateRange } from '../../common/dto/list-query.dto';
 import type { CreateInvoiceDto, CreatePaymentDto } from './dto/finance.dto';
 
@@ -10,6 +11,7 @@ export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async ensureDefaultAccount(): Promise<string> {
@@ -196,6 +198,14 @@ export class FinanceService {
       throw err;
     }
     this.audit.log({ action: 'create', entityType: 'payment', entityId: payment.id, after: payment });
+    this.webhooks
+      .dispatch('payment.received', {
+        paymentId: payment.id,
+        studentId: payment.studentId,
+        amount: payment.amount,
+        method: payment.method,
+      })
+      .catch(() => undefined);
     return payment;
   }
 

@@ -958,6 +958,54 @@ model LeaveRequest {
   @@map("leave_requests")
 }
 
+// ============ INTEGRATIONS & WEBHOOKS (tenant-scoped) ============
+
+model TenantIntegration {
+  id             String    @id @default(uuid())
+  tenantId       String
+  catalogKey     String // matches integration_catalog.key
+  status         String    @default("connected") // connected|disconnected|error
+  config         Json      @default("{}")
+  credentialsEnc String? // AES-256-GCM encrypted blob (iv:tag:ciphertext)
+  connectedById  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([tenantId, catalogKey])
+  @@map("tenant_integrations")
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(uuid())
+  tenantId  String
+  url       String
+  secret    String // HMAC signing secret
+  events    String[] // subscribed event keys
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id         String          @id @default(uuid())
+  tenantId   String
+  endpointId String
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  event      String
+  payload    Json
+  status     String          @default("pending") // pending|success|failed
+  attempts   Int             @default(0)
+  lastError  String?
+  createdAt  DateTime        @default(now())
+
+  @@index([tenantId, endpointId])
+  @@map("webhook_deliveries")
+}
+
 // ============ AI (tenant-scoped) ============
 
 model AiConversation {

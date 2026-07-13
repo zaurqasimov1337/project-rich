@@ -16,7 +16,8 @@ describe('FinanceService payment flow', () => {
   beforeAll(async () => {
     prisma = new PrismaService();
     await prisma.$connect();
-    service = new FinanceService(prisma, new AuditService(prisma));
+    const webhooks = { dispatch: async () => undefined } as never;
+    service = new FinanceService(prisma, new AuditService(prisma), webhooks);
 
     await cleanup();
     await prisma.tenant.create({ data: { id: T, name: 'FinTest', slug: 'fin-test' } });
