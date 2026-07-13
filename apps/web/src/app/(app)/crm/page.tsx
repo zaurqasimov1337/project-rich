@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { api } from '@/lib/api';
 import { fmtDate, LEAD_STATUS_LABELS, statusBadgeStyle } from '@/lib/sales';
+import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 
 interface CrmSummary {
@@ -119,26 +120,42 @@ export default function CrmDashboardPage() {
           <h1 className="text-xl font-bold">Satış paneli</h1>
           <p className="mt-0.5 text-sm text-muted">Satış komandasının cari vəziyyəti.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          {summary?.seeAll && (
-            <Select
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              options={managerOptions}
-              className="w-48"
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-muted">Tarixdən</label>
+            <input
+              type="date"
+              lang="az"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-muted">Tarixə</label>
+            <input
+              type="date"
+              lang="az"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          {summary?.seeAll && (
+            <div>
+              <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-muted">Menecer</label>
+              <Select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                options={managerOptions}
+                className="w-48"
+              />
+            </div>
+          )}
+          {(dateFrom || dateTo || assignedTo) && (
+            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(''); setDateTo(''); setAssignedTo(''); }}>
+              Sıfırla
+            </Button>
           )}
         </div>
       </div>

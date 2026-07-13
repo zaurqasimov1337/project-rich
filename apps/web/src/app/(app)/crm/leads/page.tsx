@@ -61,6 +61,15 @@ interface LeadForm {
 
 const LIMIT = 25;
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-muted">{label}</label>
+      {children}
+    </div>
+  );
+}
+
 export default function LeadsPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -128,6 +137,7 @@ export default function LeadsPage() {
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
+  const activeFilterCount = [status, priority, trainingId, source, assignedTo, dateFrom, dateTo].filter(Boolean).length;
 
   function toggleSort(col: string) {
     if (sort === col) setOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
@@ -182,7 +192,7 @@ export default function LeadsPage() {
       </div>
 
       {/* search + filters */}
-      <div className="space-y-3 rounded-xl border border-border bg-surface p-3">
+      <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <Input
@@ -195,25 +205,42 @@ export default function LeadsPage() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} placeholder="Bütün statuslar"
-            options={LEAD_STATUS_ORDER.map((s) => ({ value: s, label: LEAD_STATUS_LABELS[s] }))} className="w-40" />
-          <Select value={priority} onChange={(e) => { setPriority(e.target.value); setPage(1); }} placeholder="Prioritet"
-            options={[{ value: 'hot', label: 'HOT' }, { value: 'warm', label: 'WARM' }, { value: 'cold', label: 'COLD' }]} className="w-32" />
-          <Select value={trainingId} onChange={(e) => { setTrainingId(e.target.value); setPage(1); }} placeholder="Bütün təlimlər"
-            options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} className="w-40" />
-          <Select value={source} onChange={(e) => { setSource(e.target.value); setPage(1); }} placeholder="Bütün mənbələr"
-            options={(meta?.sources ?? []).map((s) => ({ value: s, label: SOURCE_LABELS[s] ?? s }))} className="w-40" />
-          <Select value={assignedTo} onChange={(e) => { setAssignedTo(e.target.value); setPage(1); }} placeholder="Bütün menecerlər"
-            options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} className="w-44" />
-          <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="h-9 rounded-lg border border-border bg-surface px-2 text-sm text-foreground" />
-          <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="h-9 rounded-lg border border-border bg-surface px-2 text-sm text-foreground" />
-          {(status || priority || trainingId || source || assignedTo || dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" onClick={resetFilters}>Filtrləri sıfırla</Button>
-          )}
+        <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Field label="Status">
+            <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} placeholder="Bütün statuslar"
+              options={LEAD_STATUS_ORDER.map((s) => ({ value: s, label: LEAD_STATUS_LABELS[s] }))} className="w-full" />
+          </Field>
+          <Field label="Prioritet">
+            <Select value={priority} onChange={(e) => { setPriority(e.target.value); setPage(1); }} placeholder="Bütün prioritetlər"
+              options={[{ value: 'hot', label: 'HOT' }, { value: 'warm', label: 'WARM' }, { value: 'cold', label: 'COLD' }]} className="w-full" />
+          </Field>
+          <Field label="Təlim">
+            <Select value={trainingId} onChange={(e) => { setTrainingId(e.target.value); setPage(1); }} placeholder="Bütün təlimlər"
+              options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} className="w-full" />
+          </Field>
+          <Field label="Mənbə">
+            <Select value={source} onChange={(e) => { setSource(e.target.value); setPage(1); }} placeholder="Bütün mənbələr"
+              options={(meta?.sources ?? []).map((s) => ({ value: s, label: SOURCE_LABELS[s] ?? s }))} className="w-full" />
+          </Field>
+          <Field label="Təyin olunan menecer">
+            <Select value={assignedTo} onChange={(e) => { setAssignedTo(e.target.value); setPage(1); }} placeholder="Bütün menecerlər"
+              options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} className="w-full" />
+          </Field>
+          <Field label="Tarixdən">
+            <input type="date" lang="az" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+              className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </Field>
+          <Field label="Tarixə">
+            <input type="date" lang="az" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+              className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          </Field>
         </div>
+        {activeFilterCount > 0 && (
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <span className="text-xs text-muted">{activeFilterCount} filtr aktivdir</span>
+            <Button variant="ghost" size="sm" onClick={resetFilters}>Filtrləri sıfırla</Button>
+          </div>
+        )}
       </div>
 
       {/* bulk bar */}
