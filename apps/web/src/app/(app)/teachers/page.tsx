@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useDebounced } from '@/lib/hooks';
-import { initials } from '@/lib/utils';
+import { initials, formatMoney } from '@/lib/utils';
 import { DataTable, type Column } from '@/components/data-table';
 
 interface TeacherRow {
@@ -14,6 +14,8 @@ interface TeacherRow {
   subjects: string[];
   maxWeeklyHours: number;
   activeGroups: { id: string; name: string }[];
+  revenuePct: number;
+  monthlyEarnings: number;
 }
 
 export default function TeachersPage() {
@@ -51,26 +53,13 @@ export default function TeachersPage() {
     },
     {
       key: 'subjects',
-      header: t('subjects'),
+      header: t('specialty'),
       render: (r) => (
         <div className="flex flex-wrap gap-1">
-          {r.subjects.map((s) => (
-            <span key={s} className="rounded bg-muted-bg px-1.5 py-0.5 text-xs">
-              {s}
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: 'groups',
-      header: t('activeGroups'),
-      render: (r) => (
-        <div className="flex flex-wrap gap-1">
-          {r.activeGroups.length ? (
-            r.activeGroups.map((g) => (
-              <span key={g.id} className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-                {g.name}
+          {r.subjects.length ? (
+            r.subjects.map((s) => (
+              <span key={s} className="rounded bg-muted-bg px-1.5 py-0.5 text-xs">
+                {s}
               </span>
             ))
           ) : (
@@ -79,7 +68,24 @@ export default function TeachersPage() {
         </div>
       ),
     },
-    { key: 'hours', header: t('weeklyLimit'), render: (r) => t('hours', { count: r.maxWeeklyHours }) },
+    {
+      key: 'salaryModel',
+      header: t('salaryModel'),
+      render: (r) => <span className="tabular-nums">{r.revenuePct}%</span>,
+    },
+    {
+      key: 'groups',
+      header: t('activeGroups'),
+      render: (r) => <span className="tabular-nums">{r.activeGroups.length}</span>,
+    },
+    {
+      key: 'earnings',
+      header: t('monthlyEarnings'),
+      render: (r) => (
+        <span className="font-semibold tabular-nums text-success">{formatMoney(r.monthlyEarnings)}</span>
+      ),
+      className: 'text-right',
+    },
   ];
 
   return (

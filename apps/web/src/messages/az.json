@@ -309,7 +309,10 @@
     "hours": "{count} saat",
     "title": "Müəllimlər",
     "inviteHint": "Müəllim əlavə etmək üçün əvvəlcə Parametrlər → İstifadəçilər bölməsindən «teacher» rolu ilə istifadəçi dəvət edin, sonra onu müəllim profili ilə əlaqələndirin.",
-    "emptyTitle": "Hələ müəllim yoxdur"
+    "emptyTitle": "Hələ müəllim yoxdur",
+    "specialty": "İxtisas",
+    "salaryModel": "Maaş Modeli",
+    "monthlyEarnings": "Aylıq Qazanc"
   },
   "groups": {
     "title": "Qruplar",

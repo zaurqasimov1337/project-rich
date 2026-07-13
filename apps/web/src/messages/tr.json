@@ -309,7 +309,10 @@
     "hours": "{count} saat",
     "title": "Öğretmenler",
     "inviteHint": "Öğretmen eklemek için önce Ayarlar → Kullanıcılar bölümünden «teacher» rolüyle bir kullanıcı davet edin, ardından onu bir öğretmen profiliyle ilişkilendirin.",
-    "emptyTitle": "Henüz öğretmen yok"
+    "emptyTitle": "Henüz öğretmen yok",
+    "specialty": "Uzmanlık",
+    "salaryModel": "Maaş modeli",
+    "monthlyEarnings": "Aylık kazanç"
   },
   "groups": {
     "title": "Gruplar",

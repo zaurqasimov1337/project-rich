@@ -114,7 +114,17 @@ export class TeachersController {
       this.prisma.scoped.teacher.findMany({
         where,
         include: {
-          groups: { where: { deletedAt: null, status: 'active' }, select: { id: true, name: true } },
+          rates: true,
+          groups: {
+            where: { deletedAt: null, status: 'active' },
+            select: {
+              id: true,
+              name: true,
+              priceOverride: true,
+              course: { select: { price: true } },
+              _count: { select: { students: { where: { status: 'active' } } } },
+            },
+          },
         },
         orderBy: { createdAt: 'asc' },
         skip: q.skip,
@@ -128,15 +138,25 @@ export class TeachersController {
       select: { id: true, firstName: true, lastName: true, email: true, phone: true },
     });
     const userMap = new Map(users.map((u) => [u.id, u]));
-    let rows = teachers.map((t) => ({
-      id: t.id,
-      userId: t.userId,
-      user: userMap.get(t.userId) ?? null,
-      subjects: t.subjects,
-      maxWeeklyHours: t.maxWeeklyHours,
-      hiredAt: t.hiredAt,
-      activeGroups: t.groups,
-    }));
+    let rows = teachers.map((t) => {
+      const revPctRate = t.rates.find((r) => r.type === 'revenue_pct');
+      const revenuePct = revPctRate ? revPctRate.amount / 100 : 0; // percent value
+      const monthlyEarnings = t.groups.reduce((sum, g) => {
+        const price = g.priceOverride ?? g.course?.price ?? 0;
+        return sum + Math.round(g._count.students * price * (revenuePct / 100));
+      }, 0);
+      return {
+        id: t.id,
+        userId: t.userId,
+        user: userMap.get(t.userId) ?? null,
+        subjects: t.subjects,
+        maxWeeklyHours: t.maxWeeklyHours,
+        hiredAt: t.hiredAt,
+        activeGroups: t.groups.map((g) => ({ id: g.id, name: g.name })),
+        revenuePct,
+        monthlyEarnings,
+      };
+    });
     if (q.search) {
       const s = q.search.toLowerCase();
       rows = rows.filter(
