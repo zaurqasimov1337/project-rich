@@ -2,24 +2,31 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  /* Brand */
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-foreground: #ffffff;
-  --admin-primary: #0f766e;
-  --accent: #f59e0b;
+/* ================================================================
+   Enterprise SaaS color system — restrained navy/slate + single
+   primary blue. 80% neutral · 15% primary · 5% semantic.
+   ================================================================ */
 
-  /* Semantic */
+:root {
+  /* Brand — single primary blue for all interaction/active states */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-foreground: #ffffff;
+  /* superadmin realm — muted indigo accent, subtle distinction only */
+  --admin-primary: #6e65c8;
+  --accent: #6e65c8;
+
+  /* Semantic — calm, not neon */
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
-  --info: #0284c7;
+  --info: #2563eb;
 
-  /* Neutrals */
+  /* Neutrals (light) */
   --background: #f8fafc;
   --surface: #ffffff;
-  --border: #e2e8f0;
+  --elevated: #ffffff;
+  --border: #e5e9f0;
   --foreground: #0f172a;
   --muted: #64748b;
   --muted-bg: #f1f5f9;
@@ -28,17 +35,26 @@
 }
 
 .dark {
-  --primary: #6366f1;
-  --primary-hover: #818cf8;
-  --admin-primary: #14b8a6;
-  --accent: #fbbf24;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-foreground: #ffffff;
+  --admin-primary: #6e65c8;
+  --accent: #6e65c8;
 
+  /* Semantic (dark) — desaturated, professional */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+
+  /* Neutrals (dark navy/slate) */
   --background: #0b1220;
   --surface: #111827;
-  --border: #1e293b;
+  --elevated: #172033;
+  --border: #243044;
   --foreground: #f1f5f9;
   --muted: #94a3b8;
-  --muted-bg: #1e293b;
+  --muted-bg: #1f2937;
 }
 
 @theme inline {
@@ -53,6 +69,7 @@
   --color-info: var(--info);
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
   --color-border: var(--border);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);

@@ -34,16 +34,9 @@ export default function PlatformLoginPage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
       {/* Brand panel */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-[#0b0b14] p-12 text-white lg:flex">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            background:
-              'radial-gradient(60% 50% at 15% 0%, rgba(124,58,237,0.20), transparent 60%), radial-gradient(50% 50% at 100% 100%, rgba(168,85,247,0.14), transparent 60%)',
-          }}
-        />
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-[#243044] bg-[#0B1220] p-12 text-white lg:flex">
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-admin-primary text-white shadow-lg shadow-admin-primary/30">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-admin-primary text-white">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
@@ -130,7 +123,7 @@ export default function PlatformLoginPage() {
               type="submit"
               size="lg"
               loading={isSubmitting}
-              className="w-full !bg-admin-primary shadow-lg shadow-admin-primary/30 hover:opacity-90"
+              className="w-full !bg-admin-primary hover:opacity-90"
             >
               {t('login')}
             </Button>

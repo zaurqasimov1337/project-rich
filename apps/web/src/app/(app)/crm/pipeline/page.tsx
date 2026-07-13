@@ -25,7 +25,8 @@ interface PipelineColumn {
   leads: PipelineLead[];
 }
 
-const COLUMN_COLORS = ['#64748b', '#3b82f6', '#06b6d4', '#f59e0b', '#8b5cf6', '#16a34a', '#dc2626'];
+// Muted, status-aligned column accents (enterprise SaaS — no neon).
+const COLUMN_COLORS = ['#94a3b8', '#60a5fa', '#7dd3fc', '#fbbf24', '#6e65c8', '#4ade80', '#f87171'];
 
 export default function PipelinePage() {
   const router = useRouter();

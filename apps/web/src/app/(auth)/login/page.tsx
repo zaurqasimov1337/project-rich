@@ -45,16 +45,9 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
       {/* Brand panel */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-[#0a0f1e] p-12 text-white lg:flex">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            background:
-              'radial-gradient(60% 50% at 15% 0%, rgba(59,130,246,0.18), transparent 60%), radial-gradient(50% 50% at 100% 100%, rgba(56,189,248,0.14), transparent 60%)',
-          }}
-        />
+      <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-[#243044] bg-[#0B1220] p-12 text-white lg:flex">
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <GraduationCap className="h-6 w-6" />
           </div>
           <div>
@@ -153,7 +146,7 @@ export default function LoginPage() {
               type="submit"
               size="lg"
               loading={isSubmitting}
-              className="w-full shadow-lg shadow-primary/30"
+              className="w-full"
             >
               {t('login')}
             </Button>

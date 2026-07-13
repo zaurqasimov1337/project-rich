@@ -159,7 +159,7 @@ export default function ReportDetailPage() {
                     fontSize: 12,
                   }}
                 />
-                <Bar dataKey="value" fill="#4F46E5" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="value" fill="#4f7fd9" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

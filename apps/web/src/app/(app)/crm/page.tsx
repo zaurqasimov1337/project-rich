@@ -15,7 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { api } from '@/lib/api';
-import { fmtDate, LEAD_STATUS_LABELS, statusBadgeStyle } from '@/lib/sales';
+import { CHART_SERIES, fmtDate, LEAD_STATUS_LABELS, statusBadgeStyle } from '@/lib/sales';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 
@@ -46,18 +46,9 @@ interface SalesMeta {
   managers: { id: string; name: string }[];
 }
 
-const BAR_COLORS = [
-  '#3b82f6',
-  '#06b6d4',
-  '#8b5cf6',
-  '#f59e0b',
-  '#16a34a',
-  '#dc2626',
-  '#0ea5e9',
-  '#ec4899',
-  '#14b8a6',
-  '#f97316',
-];
+// Muted, professional chart palette (no rainbow) — extends the shared
+// financial-SaaS palette by repeating it for longer category lists.
+const BAR_COLORS = [...CHART_SERIES, ...CHART_SERIES];
 
 function SummarySkeleton() {
   return (

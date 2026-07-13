@@ -1,5 +1,12 @@
 // Sales CRM domain labels, colors and helpers (Azerbaijani).
 
+// Professional muted chart palette (financial SaaS style — no rainbow).
+// Use these for all bar/pie/line series; add the single secondary accent only
+// when categories are hard to tell apart.
+export const CHART_PALETTE = ['#4f7fd9', '#5b8db8', '#7187a6', '#8a96a8', '#a3acb9'];
+export const CHART_ACCENT = '#6e65c8';
+export const CHART_SERIES = [...CHART_PALETTE, CHART_ACCENT];
+
 export const LEAD_STATUS_LABELS: Record<string, string> = {
   yeni_lead: 'Yeni Lead',
   ilk_yazisma: 'İlk Yazışma',
@@ -17,21 +24,22 @@ export const LEAD_STATUS_LABELS: Record<string, string> = {
   gelecek_potensial: 'Gələcək Potensial',
 };
 
+// Desaturated, professional badge colors (enterprise SaaS — no neon).
 export const LEAD_STATUS_COLORS: Record<string, string> = {
-  yeni_lead: '#64748b',
-  ilk_yazisma: '#3b82f6',
-  zeng_edildi: '#3b82f6',
-  demo_gozleyir: '#06b6d4',
-  demo_verildi: '#06b6d4',
-  follow_up: '#f59e0b',
-  hot_lead: '#f59e0b',
-  qerarsiz: '#f59e0b',
-  qiymet_problemi: '#f59e0b',
-  odenis_gozleyir: '#8b5cf6',
-  qeydiyyat_oldu: '#16a34a',
-  satis_baglandi: '#16a34a',
-  imtina: '#dc2626',
-  gelecek_potensial: '#64748b',
+  yeni_lead: '#94a3b8', // neutral slate
+  ilk_yazisma: '#60a5fa', // blue
+  zeng_edildi: '#cbd5e1', // light slate
+  demo_gozleyir: '#7dd3fc', // muted sky
+  demo_verildi: '#4ade80', // green
+  follow_up: '#fbbf24', // amber
+  hot_lead: '#f87171', // red
+  qerarsiz: '#94a3b8', // neutral slate
+  qiymet_problemi: '#fbbf24', // amber
+  odenis_gozleyir: '#6e65c8', // secondary accent (muted indigo)
+  qeydiyyat_oldu: '#4ade80', // green (won)
+  satis_baglandi: '#4ade80', // green (won)
+  imtina: '#f87171', // red (lost)
+  gelecek_potensial: '#94a3b8', // neutral slate
 };
 
 export const LEAD_STATUS_ORDER = [
@@ -41,7 +49,7 @@ export const LEAD_STATUS_ORDER = [
 ];
 
 export const PRIORITY_LABELS: Record<string, string> = { hot: 'HOT', warm: 'WARM', cold: 'COLD' };
-export const PRIORITY_COLORS: Record<string, string> = { hot: '#dc2626', warm: '#f59e0b', cold: '#3b82f6' };
+export const PRIORITY_COLORS: Record<string, string> = { hot: '#f87171', warm: '#fbbf24', cold: '#60a5fa' };
 
 export const SOURCE_LABELS: Record<string, string> = {
   instagram_dm: 'Instagram DM',
