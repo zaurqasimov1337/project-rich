@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -19,15 +20,17 @@ interface PaymentRow {
   cashAccount: { name: string };
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  cash: 'Nağd',
-  card: 'Kart',
-  transfer: 'Köçürmə',
-  online: 'Onlayn',
-};
-
 export default function PaymentsPage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
   const [page, setPage] = useState(1);
+
+  const METHOD_LABELS: Record<string, string> = {
+    cash: t('methods.cash'),
+    card: t('methods.card'),
+    transfer: t('methods.transfer'),
+    online: t('methods.online'),
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['payments', page],
@@ -38,7 +41,7 @@ export default function PaymentsPage() {
   const columns: Column<PaymentRow>[] = [
     {
       key: 'paidAt',
-      header: 'Tarix',
+      header: tc('date'),
       render: (r) => (
         <span className="tabular-nums">
           {new Date(r.paidAt).toLocaleDateString('az-Latn-AZ')}{' '}
@@ -48,7 +51,7 @@ export default function PaymentsPage() {
     },
     {
       key: 'student',
-      header: 'Tələbə',
+      header: t('student'),
       render: (r) =>
         r.student ? (
           <span className="font-medium">
@@ -60,20 +63,20 @@ export default function PaymentsPage() {
     },
     {
       key: 'amount',
-      header: 'Məbləğ',
+      header: tc('amount'),
       render: (r) => <span className="font-semibold text-success tabular-nums">{formatMoney(r.amount)}</span>,
     },
-    { key: 'method', header: 'Üsul', render: (r) => METHOD_LABELS[r.method] ?? r.method },
-    { key: 'invoice', header: 'Faktura', render: (r) => <span className="font-mono text-xs">{r.invoice?.number ?? '—'}</span> },
-    { key: 'account', header: 'Kassa', render: (r) => r.cashAccount.name },
+    { key: 'method', header: t('method'), render: (r) => METHOD_LABELS[r.method] ?? r.method },
+    { key: 'invoice', header: t('invoice'), render: (r) => <span className="font-mono text-xs">{r.invoice?.number ?? '—'}</span> },
+    { key: 'account', header: t('cashAccount'), render: (r) => r.cashAccount.name },
   ];
 
   return (
     <div className="space-y-4">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Maliyyə
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <h1 className="text-xl font-bold">Ödənişlər</h1>
+      <h1 className="text-xl font-bold">{t('payments.title')}</h1>
       <DataTable
         columns={columns}
         data={data?.data}
@@ -82,7 +85,7 @@ export default function PaymentsPage() {
         page={page}
         limit={20}
         onPageChange={setPage}
-        emptyTitle="Ödəniş yoxdur"
+        emptyTitle={t('payments.emptyTitle')}
       />
     </div>
   );

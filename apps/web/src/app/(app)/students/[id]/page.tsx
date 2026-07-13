@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -48,13 +49,15 @@ interface GradeRow {
 }
 
 const TABS = [
-  { key: 'profile', label: 'Profil' },
-  { key: 'groups', label: 'Qruplar' },
-  { key: 'attendance', label: 'Davamiyyət' },
-  { key: 'grades', label: 'Qiymətlər' },
+  { key: 'profile', labelKey: 'tabProfile' },
+  { key: 'groups', labelKey: 'groups' },
+  { key: 'attendance', labelKey: 'attendance' },
+  { key: 'grades', labelKey: 'grades' },
 ] as const;
 
 export default function StudentDetailPage() {
+  const t = useTranslations('students');
+  const tc = useTranslations('common');
   const { id } = useParams<{ id: string }>();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('profile');
 
@@ -78,19 +81,19 @@ export default function StudentDetailPage() {
   }
 
   const info: [string, string | null][] = [
-    ['Telefon', student.phone],
-    ['E-poçt', student.email],
-    ['Doğum tarixi', student.birthDate ? new Date(student.birthDate).toLocaleDateString('az-Latn-AZ') : null],
-    ['Valideyn', student.parentName],
-    ['Valideyn telefonu', student.parentPhone],
-    ['Ünvan', student.address],
-    ['Qeydiyyat', new Date(student.createdAt).toLocaleDateString('az-Latn-AZ')],
+    [tc('phone'), student.phone],
+    [tc('email'), student.email],
+    [t('birthDate'), student.birthDate ? new Date(student.birthDate).toLocaleDateString('az-Latn-AZ') : null],
+    [t('parent'), student.parentName],
+    [t('parentPhone'), student.parentPhone],
+    [tc('address'), student.address],
+    [t('registered'), new Date(student.createdAt).toLocaleDateString('az-Latn-AZ')],
   ];
 
   return (
     <div className="space-y-5">
       <Link href="/students" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Tələbələr
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
 
       <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-5 shadow-sm">
@@ -112,18 +115,18 @@ export default function StudentDetailPage() {
       </div>
 
       <div className="flex gap-1 border-b border-border">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={cn(
               'border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-              tab === t.key
+              tab === tabItem.key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted hover:text-foreground',
             )}
           >
-            {t.label}
+            {t(tabItem.labelKey)}
           </button>
         ))}
       </div>
@@ -147,7 +150,7 @@ export default function StudentDetailPage() {
       {tab === 'groups' && (
         <div className="rounded-xl border border-border bg-surface shadow-sm">
           {student.enrollments.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted">Qrup üzvlüyü yoxdur</div>
+            <div className="p-8 text-center text-sm text-muted">{t('noGroups')}</div>
           ) : (
             <div className="divide-y divide-border">
               {student.enrollments.map((e) => (
@@ -175,10 +178,10 @@ export default function StudentDetailPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              ['present', 'Gəlib'],
-              ['late', 'Gecikib'],
-              ['absent', 'Gəlməyib'],
-              ['excused', 'Üzrlü'],
+              ['present', t('present')],
+              ['late', t('late')],
+              ['absent', t('absent')],
+              ['excused', t('excused')],
             ].map(([key, label]) => (
               <div key={key} className="rounded-xl border border-border bg-surface p-4 text-center shadow-sm">
                 <div className="text-2xl font-bold tabular-nums">
@@ -190,7 +193,7 @@ export default function StudentDetailPage() {
           </div>
           <div className="rounded-xl border border-border bg-surface shadow-sm">
             {!attendance || attendance.recent.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted">Davamiyyət qeydi yoxdur</div>
+              <div className="p-8 text-center text-sm text-muted">{t('noAttendance')}</div>
             ) : (
               <div className="divide-y divide-border">
                 {attendance.recent.map((a) => (
@@ -214,7 +217,7 @@ export default function StudentDetailPage() {
       {tab === 'grades' && (
         <div className="rounded-xl border border-border bg-surface shadow-sm">
           {!grades || grades.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted">Qiymət yoxdur</div>
+            <div className="p-8 text-center text-sm text-muted">{t('noGrades')}</div>
           ) : (
             <div className="divide-y divide-border">
               {grades.map((g) => (

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Plug, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
@@ -20,20 +21,22 @@ interface Provider {
   hasSecret: boolean;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ai: 'AI',
-  social: 'Sosial media',
-  ads: 'Reklam',
-  payment: 'Ödəniş',
-  calendar: 'Təqvim',
-  meeting: 'Görüş',
-  storage: 'Yaddaş',
-  communication: 'Kommunikasiya',
-  sms: 'SMS',
-  automation: 'Avtomatlaşdırma',
+const CATEGORY_KEYS: Record<string, string> = {
+  ai: 'catAi',
+  social: 'catSocial',
+  ads: 'catAds',
+  payment: 'catPayment',
+  calendar: 'catCalendar',
+  meeting: 'catMeeting',
+  storage: 'catStorage',
+  communication: 'catCommunication',
+  sms: 'catSms',
+  automation: 'catAutomation',
 };
 
 export default function IntegrationsPage() {
+  const t = useTranslations('integrations');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [connectKey, setConnectKey] = useState<Provider | null>(null);
@@ -65,16 +68,14 @@ export default function IntegrationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">İnteqrasiyalar</h1>
-        <p className="mt-1 text-sm text-muted">
-          Xarici xidmətləri qoşun. Açarlar AES-256 ilə şifrələnərək saxlanılır.
-        </p>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
+        <p className="mt-1 text-sm text-muted">{t('subtitle')}</p>
       </div>
 
       {Object.entries(byCategory).map(([cat, providers]) => (
         <div key={cat}>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
-            {CATEGORY_LABELS[cat] ?? cat}
+            {CATEGORY_KEYS[cat] ? t(CATEGORY_KEYS[cat]) : cat}
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {providers.map((p) => (
@@ -93,12 +94,12 @@ export default function IntegrationsPage() {
                     <div className="font-medium">{p.name}</div>
                     {p.connected ? (
                       <span className="inline-flex items-center gap-1 text-xs text-success">
-                        <Check className="h-3 w-3" /> Qoşulub
+                        <Check className="h-3 w-3" /> {t('connected')}
                       </span>
                     ) : p.comingSoon ? (
-                      <span className="text-xs text-muted">Tezliklə</span>
+                      <span className="text-xs text-muted">{t('comingSoon')}</span>
                     ) : (
-                      <span className="text-xs text-muted">Mövcuddur</span>
+                      <span className="text-xs text-muted">{t('available')}</span>
                     )}
                   </div>
                 </div>
@@ -109,11 +110,11 @@ export default function IntegrationsPage() {
                       size="sm"
                       onClick={() => disconnectMutation.mutate(p.key)}
                     >
-                      Ayır
+                      {t('disconnect')}
                     </Button>
                   ) : (
                     <Button size="sm" onClick={() => setConnectKey(p)}>
-                      <Plus className="h-4 w-4" /> Qoş
+                      <Plus className="h-4 w-4" /> {t('connect')}
                     </Button>
                   )
                 )}
@@ -126,26 +127,24 @@ export default function IntegrationsPage() {
       <Drawer
         open={!!connectKey}
         onClose={() => setConnectKey(null)}
-        title={`${connectKey?.name ?? ''} qoşulması`}
+        title={t('connectTitle', { name: connectKey?.name ?? '' })}
         footer={
           <>
             <Button variant="outline" onClick={() => setConnectKey(null)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button loading={connectMutation.isPending} onClick={() => connectMutation.mutate()}>
-              Qoş
+              {t('connect')}
             </Button>
           </>
         }
       >
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            {connectKey?.category === 'ai'
-              ? 'API açarınızı daxil edin. Şifrələnərək saxlanılacaq.'
-              : 'Bu inteqrasiyanı aktivləşdirin.'}
+            {connectKey?.category === 'ai' ? t('aiConnectHint') : t('defaultConnectHint')}
           </p>
           <div>
-            <Label>API açarı / Token</Label>
+            <Label>{t('apiKeyLabel')}</Label>
             <Input
               type="password"
               placeholder="sk-..."

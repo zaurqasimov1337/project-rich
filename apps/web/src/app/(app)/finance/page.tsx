@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import { AlertCircle, ArrowDownRight, ArrowUpRight, Banknote, Wallet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { formatMoney } from '@/lib/utils';
 
@@ -23,31 +24,32 @@ interface Summary {
   series: { month: string; income: number; expense: number }[];
 }
 
-const LINKS = [
-  { href: '/finance/invoices', label: 'Fakturalar' },
-  { href: '/finance/payments', label: 'Ödənişlər' },
-  { href: '/finance/debts', label: 'Borclar' },
-  { href: '/finance/expenses', label: 'Xərclər' },
-  { href: '/finance/payroll', label: 'Əməkhaqqı' },
-];
-
 export default function FinancePage() {
+  const t = useTranslations('finance');
   const { data, isLoading } = useQuery({
     queryKey: ['finance-summary'],
     queryFn: () => api.get<Summary>('/finance/summary?range=this_month'),
   });
 
+  const LINKS = [
+    { href: '/finance/invoices', label: t('invoices.title') },
+    { href: '/finance/payments', label: t('payments.title') },
+    { href: '/finance/debts', label: t('debts.title') },
+    { href: '/finance/expenses', label: t('expenses.title') },
+    { href: '/finance/payroll', label: t('payroll.title') },
+  ];
+
   const kpis = [
-    { label: 'Gəlir (bu ay)', value: data?.income, icon: ArrowUpRight, cls: 'text-success' },
-    { label: 'Xərc (bu ay)', value: data?.expense, icon: ArrowDownRight, cls: 'text-danger' },
-    { label: 'Mənfəət (bu ay)', value: data?.profit, icon: Wallet, cls: 'text-primary' },
-    { label: 'Ümumi borc', value: data?.outstandingDebt, icon: AlertCircle, cls: 'text-warning' },
+    { label: t('kpi.income'), value: data?.income, icon: ArrowUpRight, cls: 'text-success' },
+    { label: t('kpi.expense'), value: data?.expense, icon: ArrowDownRight, cls: 'text-danger' },
+    { label: t('kpi.profit'), value: data?.profit, icon: Wallet, cls: 'text-primary' },
+    { label: t('kpi.debt'), value: data?.outstandingDebt, icon: AlertCircle, cls: 'text-warning' },
   ];
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">Maliyyə</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         <div className="flex gap-2">
           {LINKS.map((l) => (
             <Link
@@ -84,7 +86,7 @@ export default function FinancePage() {
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-2 font-semibold">
-          <Banknote className="h-4 w-4 text-muted" /> Son 12 ay — gəlir və xərc
+          <Banknote className="h-4 w-4 text-muted" /> {t('chart.title')}
         </div>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -101,8 +103,8 @@ export default function FinancePage() {
                   fontSize: 12,
                 }}
               />
-              <Bar dataKey="income" name="Gəlir" fill="#16A34A" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="expense" name="Xərc" fill="#DC2626" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="income" name={t('chart.income')} fill="#16A34A" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="expense" name={t('chart.expense')} fill="#DC2626" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

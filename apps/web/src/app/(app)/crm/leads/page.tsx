@@ -1,41 +1,29 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Phone, Plus } from 'lucide-react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Download, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { api } from '@/lib/api';
+import { api, getAccessToken } from '@/lib/api';
+import { useDebounced } from '@/lib/hooks';
 import { useAuth } from '@/lib/auth-store';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
+import { DataTable, type Column } from '@/components/data-table';
 
-interface Stage {
-  id: string;
-  name: string;
-  color: string;
-  isWon: boolean;
-  isLost: boolean;
-}
-
-interface Lead {
+interface LeadRow {
   id: string;
   name: string;
   phone: string | null;
-  stageId: string;
+  email: string | null;
   value: number | null;
-  source: { name: string } | null;
+  stage: { id: string; name: string; color: string; isWon: boolean; isLost: boolean } | null;
+  source: { id: string; name: string } | null;
   createdAt: string;
 }
-
-interface BoardData {
-  stages: Stage[];
-  leads: Lead[];
-  closedCounts: Record<string, number>;
-}
-
 interface LeadForm {
   name: string;
   phone?: string;
@@ -44,223 +32,205 @@ interface LeadForm {
   notes?: string;
 }
 
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
+
+function money(v: number | null) {
+  if (v == null) return '—';
+  return (v / 100).toLocaleString('az-AZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₼';
+}
+function fmtDate(s: string) {
+  return new Date(s).toLocaleDateString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 export default function LeadsPage() {
+  const t = useTranslations('crm');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [stageId, setStageId] = useState('');
+  const [sourceId, setSourceId] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [convertLead, setConvertLead] = useState<Lead | null>(null);
-  const [convertGroupId, setConvertGroupId] = useState('');
-  const [dragging, setDragging] = useState<string | null>(null);
+  const debouncedSearch = useDebounced(search);
 
-  const { data: board, isLoading } = useQuery({
-    queryKey: ['leads-board'],
-    queryFn: () => api.get<BoardData>('/leads/board'),
+  const filterQs = `${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}${stageId ? `&stageId=${stageId}` : ''}${sourceId ? `&sourceId=${sourceId}` : ''}`;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['crm-leads', page, debouncedSearch, stageId, sourceId],
+    queryFn: () => api.list<LeadRow>(`/leads?page=${page}&limit=20${filterQs}`),
+    placeholderData: keepPreviousData,
+  });
+  const { data: stages } = useQuery({
+    queryKey: ['lead-stages'],
+    queryFn: () => api.get<{ id: string; name: string }[]>('/lead-stages'),
   });
   const { data: sources } = useQuery({
     queryKey: ['lead-sources'],
     queryFn: () => api.get<{ id: string; name: string }[]>('/lead-sources'),
-    enabled: drawerOpen,
-  });
-  const { data: groups } = useQuery({
-    queryKey: ['groups-options'],
-    queryFn: () => api.list<{ id: string; name: string }>('/groups?limit=100&status=active'),
-    enabled: !!convertLead,
   });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadForm>();
-
   const createMutation = useMutation({
     mutationFn: (v: LeadForm) => api.post('/leads', { ...v, sourceId: v.sourceId || undefined }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['leads-board'] });
+      void qc.invalidateQueries({ queryKey: ['crm-leads'] });
       setDrawerOpen(false);
       reset();
     },
   });
 
-  const moveMutation = useMutation({
-    mutationFn: ({ leadId, stageId }: { leadId: string; stageId: string }) =>
-      api.patch(`/leads/${leadId}/stage`, { stageId }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['leads-board'] }),
-  });
+  async function exportCsv() {
+    const res = await fetch(`${BASE}/leads?page=1&limit=1000${filterQs}`, {
+      credentials: 'include',
+      headers: { ...(getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {}) },
+    });
+    const body = await res.json();
+    const rows: LeadRow[] = body?.data ?? [];
+    const header = [tc('name'), t('formPhone'), t('formEmail'), t('stage'), t('source'), t('value'), t('created')];
+    const lines = rows.map((r) =>
+      [r.name, r.phone ?? '', r.email ?? '', r.stage?.name ?? '', r.source?.name ?? '', r.value != null ? (r.value / 100).toFixed(2) : '', fmtDate(r.createdAt)]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(','),
+    );
+    const csv = '﻿' + [header.map((h) => `"${h}"`).join(','), ...lines].join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
-  const convertMutation = useMutation({
-    mutationFn: () =>
-      api.post(`/leads/${convertLead!.id}/convert`, {
-        groupId: convertGroupId || undefined,
-      }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['leads-board'] });
-      void qc.invalidateQueries({ queryKey: ['students'] });
-      setConvertLead(null);
-      setConvertGroupId('');
+  const columns: Column<LeadRow>[] = [
+    {
+      key: 'name',
+      header: t('contact'),
+      render: (r) => (
+        <div>
+          <div className="font-medium">{r.name}</div>
+          <div className="text-xs text-muted">{r.phone ?? r.email ?? '—'}</div>
+        </div>
+      ),
     },
-  });
-
-  const openStages = board?.stages.filter((s) => !s.isWon && !s.isLost) ?? [];
-  const closedStages = board?.stages.filter((s) => s.isWon || s.isLost) ?? [];
+    {
+      key: 'stage',
+      header: t('stage'),
+      render: (r) =>
+        r.stage ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted-bg px-2 py-0.5 text-xs font-medium">
+            <span className="h-2 w-2 rounded-full" style={{ background: r.stage.color }} />
+            {r.stage.name}
+          </span>
+        ) : (
+          '—'
+        ),
+    },
+    { key: 'source', header: t('source'), render: (r) => r.source?.name ?? '—' },
+    { key: 'value', header: t('value'), render: (r) => <span className="tabular-nums">{money(r.value)}</span>, className: 'text-right' },
+    { key: 'created', header: t('created'), render: (r) => <span className="text-muted">{fmtDate(r.createdAt)}</span> },
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">CRM — Müraciətlər</h1>
-        {can('leads.create') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni müraciət
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">{t('leadsTitle')}</h1>
+          <p className="mt-0.5 text-sm text-muted">{t('leadsCount', { count: data?.meta.total ?? 0 })}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={exportCsv}>
+            <Download className="h-4 w-4" /> CSV
           </Button>
-        )}
+          {can('leads.create') && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('newLead')}
+            </Button>
+          )}
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-64 animate-pulse rounded-xl bg-muted-bg" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${openStages.length}, minmax(240px, 1fr))` }}>
-            {openStages.map((stage) => {
-              const stageLeads = board?.leads.filter((l) => l.stageId === stage.id) ?? [];
-              return (
-                <div
-                  key={stage.id}
-                  className="rounded-xl border border-border bg-muted-bg/40"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => {
-                    if (dragging) moveMutation.mutate({ leadId: dragging, stageId: stage.id });
-                    setDragging(null);
-                  }}
-                >
-                  <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: stage.color }} />
-                    <span className="text-sm font-semibold">{stage.name}</span>
-                    <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs text-muted">
-                      {stageLeads.length}
-                    </span>
-                  </div>
-                  <div className="min-h-[120px] space-y-2 p-2">
-                    {stageLeads.map((lead) => (
-                      <div
-                        key={lead.id}
-                        draggable
-                        onDragStart={() => setDragging(lead.id)}
-                        className={cn(
-                          'cursor-grab rounded-lg border border-border bg-surface p-3 shadow-sm active:cursor-grabbing',
-                          dragging === lead.id && 'opacity-50',
-                        )}
-                      >
-                        <div className="font-medium">{lead.name}</div>
-                        <div className="mt-1 flex items-center justify-between text-xs text-muted">
-                          <span className="flex items-center gap-1">
-                            {lead.phone && (
-                              <>
-                                <Phone className="h-3 w-3" /> {lead.phone}
-                              </>
-                            )}
-                          </span>
-                          <span>{lead.source?.name}</span>
-                        </div>
-                        {can('leads.convert') && (
-                          <button
-                            onClick={() => setConvertLead(lead)}
-                            className="mt-2 w-full rounded-md bg-success/10 px-2 py-1 text-xs font-medium text-success hover:bg-success/20"
-                          >
-                            Tələbəyə çevir
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+      <DataTable
+        columns={columns}
+        data={data?.data}
+        isLoading={isLoading}
+        total={data?.meta.total ?? 0}
+        page={page}
+        limit={20}
+        onPageChange={setPage}
+        search={search}
+        onSearchChange={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        emptyTitle={tc('noResults')}
+        toolbar={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={stageId}
+              onChange={(e) => {
+                setStageId(e.target.value);
+                setPage(1);
+              }}
+              placeholder={t('allStages')}
+              options={(stages ?? []).map((s) => ({ value: s.id, label: s.name }))}
+              className="w-44"
+            />
+            <Select
+              value={sourceId}
+              onChange={(e) => {
+                setSourceId(e.target.value);
+                setPage(1);
+              }}
+              placeholder={t('allSources')}
+              options={(sources ?? []).map((s) => ({ value: s.id, label: s.name }))}
+              className="w-44"
+            />
           </div>
-
-          <div className="flex gap-4 text-sm text-muted">
-            {closedStages.map((s) => (
-              <span key={s.id} className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                {s.name}: {board?.closedCounts[s.id] ?? 0}
-              </span>
-            ))}
-          </div>
-        </>
-      )}
+        }
+      />
 
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni müraciət"
+        title={t('newLead')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
-            <Button
-              loading={createMutation.isPending}
-              onClick={handleSubmit((v) => createMutation.mutate(v))}
-            >
-              Yadda saxla
+            <Button loading={createMutation.isPending} onClick={handleSubmit((v) => createMutation.mutate(v))}>
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Ad Soyad *</Label>
-            <Input error={errors.name?.message} {...register('name', { required: 'Tələb olunur' })} />
+            <Label>{t('formName')} *</Label>
+            <Input error={errors.name?.message} {...register('name', { required: tc('required') })} />
           </div>
           <div>
-            <Label>Telefon</Label>
+            <Label>{t('formPhone')}</Label>
             <Input placeholder="+994 50 123 45 67" {...register('phone')} />
           </div>
           <div>
-            <Label>E-poçt</Label>
+            <Label>{t('formEmail')}</Label>
             <Input type="email" {...register('email')} />
           </div>
           <div>
-            <Label>Mənbə</Label>
+            <Label>{t('formSource')}</Label>
             <Select
-              placeholder="Mənbə seçin"
+              placeholder={t('selectSource')}
               options={(sources ?? []).map((s) => ({ value: s.id, label: s.name }))}
               {...register('sourceId')}
             />
           </div>
           <div>
-            <Label>Qeyd</Label>
+            <Label>{t('formNote')}</Label>
             <Input {...register('notes')} />
           </div>
         </form>
-      </Drawer>
-
-      <Drawer
-        open={!!convertLead}
-        onClose={() => setConvertLead(null)}
-        title={`Tələbəyə çevir: ${convertLead?.name ?? ''}`}
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setConvertLead(null)}>
-              Ləğv et
-            </Button>
-            <Button loading={convertMutation.isPending} onClick={() => convertMutation.mutate()}>
-              Çevir
-            </Button>
-          </>
-        }
-      >
-        {convertMutation.isError && (
-          <div className="mb-3 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-            {(convertMutation.error as Error).message}
-          </div>
-        )}
-        <Label>Qrupa yaz (opsional)</Label>
-        <Select
-          placeholder="Qrup seçin"
-          value={convertGroupId}
-          onChange={(e) => setConvertGroupId(e.target.value)}
-          options={(groups?.data ?? []).map((g) => ({ value: g.id, label: g.name }))}
-        />
       </Drawer>
     </div>
   );

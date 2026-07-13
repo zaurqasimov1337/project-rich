@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import {
   Bar,
@@ -32,23 +33,23 @@ interface ReportResult {
   chart?: { label: string; value: number }[];
 }
 
-const RANGES = [
-  { value: 'today', label: 'Bu gün' },
-  { value: 'this_week', label: 'Bu həftə' },
-  { value: 'this_month', label: 'Bu ay' },
-  { value: 'last_month', label: 'Keçən ay' },
-  { value: 'this_quarter', label: 'Bu rüb' },
-  { value: 'this_year', label: 'Bu il' },
+const RANGE_TKEYS: { value: string; tkey: string }[] = [
+  { value: 'today', tkey: 'today' },
+  { value: 'this_week', tkey: 'thisWeek' },
+  { value: 'this_month', tkey: 'thisMonth' },
+  { value: 'last_month', tkey: 'lastMonth' },
+  { value: 'this_quarter', tkey: 'thisQuarter' },
+  { value: 'this_year', tkey: 'thisYear' },
 ];
 
-const NAMES: Record<string, string> = {
-  revenue: 'Gəlir hesabatı',
-  debts: 'Borclar',
-  attendance: 'Davamiyyət',
-  'group-fill': 'Qrup doluluğu',
-  'teacher-load': 'Müəllim yükü',
-  'course-roi': 'Kurs gəlirliliyi',
-  'lead-funnel': 'Müraciət konversiyası',
+const NAME_TKEYS: Record<string, string> = {
+  revenue: 'nameRevenue',
+  debts: 'nameDebts',
+  attendance: 'nameAttendance',
+  'group-fill': 'nameGroupFill',
+  'teacher-load': 'nameTeacherLoad',
+  'course-roi': 'nameCourseRoi',
+  'lead-funnel': 'nameLeadFunnel',
 };
 
 function formatCell(value: unknown, type?: Column['type']): string {
@@ -59,9 +60,13 @@ function formatCell(value: unknown, type?: Column['type']): string {
 }
 
 export default function ReportDetailPage() {
+  const t = useTranslations('reports');
+  const tc = useTranslations('common');
+  const td = useTranslations('dateRange');
   const { key } = useParams<{ key: string }>();
   const can = useAuth((s) => s.can);
   const [range, setRange] = useState('this_month');
+  const rangeOptions = RANGE_TKEYS.map((r) => ({ value: r.value, label: td(r.tkey) }));
 
   const { data, isLoading } = useQuery({
     queryKey: ['report', key, range],
@@ -92,17 +97,17 @@ export default function ReportDetailPage() {
     <div className="space-y-4">
       <div className="print:hidden">
         <Link href="/reports" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Hesabatlar
+          <ArrowLeft className="h-4 w-4" /> {t('title')}
         </Link>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{NAMES[key] ?? key}</h1>
+        <h1 className="text-xl font-bold">{NAME_TKEYS[key] ? t(NAME_TKEYS[key]) : key}</h1>
         <div className="flex items-center gap-2 print:hidden">
           <Select
             value={range}
             onChange={(e) => setRange(e.target.value)}
-            options={RANGES}
+            options={rangeOptions}
             className="w-40"
           />
           {can('reports.export') && (
@@ -116,7 +121,7 @@ export default function ReportDetailPage() {
             </>
           )}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="h-4 w-4" /> Çap
+            <Printer className="h-4 w-4" /> {tc('print')}
           </Button>
         </div>
       </div>
@@ -185,7 +190,7 @@ export default function ReportDetailPage() {
             ) : data?.rows.length === 0 ? (
               <tr>
                 <td colSpan={data.columns.length} className="px-4 py-10 text-center text-muted">
-                  Bu dövr üçün məlumat yoxdur
+                  {t('noDataPeriod')}
                 </td>
               </tr>
             ) : (

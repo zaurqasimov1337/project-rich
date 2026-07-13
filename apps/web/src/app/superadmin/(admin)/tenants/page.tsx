@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { platformApi } from '@/lib/platform';
 import { useDebounced } from '@/lib/hooks';
 import { DataTable, StatusBadge, type Column } from '@/components/data-table';
@@ -20,6 +21,8 @@ interface TenantRow {
 }
 
 export default function TenantsPage() {
+  const t = useTranslations('platform');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -37,7 +40,7 @@ export default function TenantsPage() {
   const columns: Column<TenantRow>[] = [
     {
       key: 'name',
-      header: 'Mərkəz',
+      header: t('center'),
       render: (r) => (
         <div>
           <div className="font-medium">{r.name}</div>
@@ -45,20 +48,20 @@ export default function TenantsPage() {
         </div>
       ),
     },
-    { key: 'plan', header: 'Plan', render: (r) => r.plan?.name ?? '—' },
-    { key: 'students', header: 'Tələbə', render: (r) => <span className="tabular-nums">{r.studentCount}</span> },
-    { key: 'users', header: 'İstifadəçi', render: (r) => <span className="tabular-nums">{r.userCount}</span> },
+    { key: 'plan', header: t('plan'), render: (r) => r.plan?.name ?? '—' },
+    { key: 'students', header: t('studentsCol'), render: (r) => <span className="tabular-nums">{r.studentCount}</span> },
+    { key: 'users', header: t('usersCol'), render: (r) => <span className="tabular-nums">{r.userCount}</span> },
     {
       key: 'created',
-      header: 'Qeydiyyat',
+      header: t('registered'),
       render: (r) => <span className="tabular-nums">{new Date(r.createdAt).toLocaleDateString('az-Latn-AZ')}</span>,
     },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Tədris mərkəzləri</h1>
+      <h1 className="text-xl font-bold">{t('centersTitle')}</h1>
       <DataTable
         columns={columns}
         data={data?.data}
@@ -73,7 +76,7 @@ export default function TenantsPage() {
           setPage(1);
         }}
         onRowClick={(r) => router.push(`/superadmin/tenants/${r.id}`)}
-        emptyTitle="Mərkəz yoxdur"
+        emptyTitle={t('noCenters')}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,12 +41,14 @@ export function DataTable<T extends { id: string }>({
   search,
   onSearchChange,
   onRowClick,
-  emptyTitle = 'Məlumat yoxdur',
+  emptyTitle,
   emptyDescription,
   toolbar,
 }: DataTableProps<T>) {
+  const t = useTranslations('common');
   const [localSearch, setLocalSearch] = useState(search ?? '');
   const pages = Math.max(1, Math.ceil(total / limit));
+  const emptyLabel = emptyTitle ?? t('noData');
 
   return (
     <div className="space-y-3">
@@ -59,7 +62,7 @@ export function DataTable<T extends { id: string }>({
                 setLocalSearch(e.target.value);
                 onSearchChange(e.target.value);
               }}
-              placeholder="Axtar..."
+              placeholder={t('search')}
               className="pl-9"
             />
           </div>
@@ -99,7 +102,7 @@ export function DataTable<T extends { id: string }>({
             ) : !data || data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-12 text-center">
-                  <div className="font-medium text-foreground">{emptyTitle}</div>
+                  <div className="font-medium text-foreground">{emptyLabel}</div>
                   {emptyDescription && (
                     <div className="mt-1 text-sm text-muted">{emptyDescription}</div>
                   )}
@@ -130,7 +133,7 @@ export function DataTable<T extends { id: string }>({
       {total > limit && (
         <div className="flex items-center justify-between text-sm text-muted">
           <span>
-            {total} nəticədən {(page - 1) * limit + 1}–{Math.min(page * limit, total)}
+            {(page - 1) * limit + 1}–{Math.min(page * limit, total)} / {total}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -159,28 +162,42 @@ export function DataTable<T extends { id: string }>({
   );
 }
 
+const STATUS_CLS: Record<string, string> = {
+  active: 'bg-success/10 text-success',
+  inactive: 'bg-muted-bg text-muted',
+  planned: 'bg-info/10 text-info',
+  finished: 'bg-muted-bg text-muted',
+  archived: 'bg-muted-bg text-muted',
+  graduated: 'bg-info/10 text-info',
+  frozen: 'bg-warning/10 text-warning',
+  dropped: 'bg-danger/10 text-danger',
+  scheduled: 'bg-info/10 text-info',
+  done: 'bg-success/10 text-success',
+  cancelled: 'bg-danger/10 text-danger',
+  trial: 'bg-warning/10 text-warning',
+  invited: 'bg-info/10 text-info',
+  disabled: 'bg-danger/10 text-danger',
+  maintenance: 'bg-warning/10 text-warning',
+  pending: 'bg-warning/10 text-warning',
+  approved: 'bg-success/10 text-success',
+  rejected: 'bg-danger/10 text-danger',
+  paid: 'bg-success/10 text-success',
+  unpaid: 'bg-danger/10 text-danger',
+  overdue: 'bg-danger/10 text-danger',
+};
+
 export function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    active: { label: 'Aktiv', cls: 'bg-success/10 text-success' },
-    inactive: { label: 'Qeyri-aktiv', cls: 'bg-muted-bg text-muted' },
-    planned: { label: 'Planlanıb', cls: 'bg-info/10 text-info' },
-    finished: { label: 'Bitib', cls: 'bg-muted-bg text-muted' },
-    archived: { label: 'Arxiv', cls: 'bg-muted-bg text-muted' },
-    graduated: { label: 'Məzun', cls: 'bg-info/10 text-info' },
-    frozen: { label: 'Dondurulub', cls: 'bg-warning/10 text-warning' },
-    dropped: { label: 'Ayrılıb', cls: 'bg-danger/10 text-danger' },
-    scheduled: { label: 'Planlanıb', cls: 'bg-info/10 text-info' },
-    done: { label: 'Keçirilib', cls: 'bg-success/10 text-success' },
-    cancelled: { label: 'Ləğv edilib', cls: 'bg-danger/10 text-danger' },
-    trial: { label: 'Sınaq', cls: 'bg-warning/10 text-warning' },
-    invited: { label: 'Dəvət edilib', cls: 'bg-info/10 text-info' },
-    disabled: { label: 'Deaktiv', cls: 'bg-danger/10 text-danger' },
-    maintenance: { label: 'Təmir', cls: 'bg-warning/10 text-warning' },
-  };
-  const item = map[status] ?? { label: status, cls: 'bg-muted-bg text-muted' };
+  const t = useTranslations('statuses');
+  const cls = STATUS_CLS[status] ?? 'bg-muted-bg text-muted';
+  let label = status;
+  try {
+    label = t(status);
+  } catch {
+    label = status;
+  }
   return (
-    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', item.cls)}>
-      {item.label}
+    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', cls)}>
+      {label}
     </span>
   );
 }

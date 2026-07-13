@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Calculator } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -41,6 +42,8 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
 };
 
 export default function PayrollPage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [selected, setSelected] = useState<string | null>(null);
@@ -86,13 +89,13 @@ export default function PayrollPage() {
   return (
     <div className="space-y-4">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Maliyyə
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Əməkhaqqı</h1>
+        <h1 className="text-xl font-bold">{t('payroll.title')}</h1>
         {can('finance.payroll.manage') && (
           <Button loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
-            <Calculator className="h-4 w-4" /> Bu ay üçün hesabla
+            <Calculator className="h-4 w-4" /> {t('payroll.calculate')}
           </Button>
         )}
       </div>
@@ -107,7 +110,7 @@ export default function PayrollPage() {
           {isLoading && <div className="h-20 animate-pulse rounded-xl bg-muted-bg" />}
           {runs?.length === 0 && (
             <div className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-muted">
-              Hesablama yoxdur
+              {t('payroll.noRuns')}
             </div>
           )}
           {runs?.map((run) => {
@@ -128,7 +131,7 @@ export default function PayrollPage() {
                   </span>
                 </div>
                 <div className="mt-1 text-sm text-muted">
-                  {run._count.items} nəfər · {formatMoney(run.total)}
+                  {t('payroll.persons', { count: run._count.items })} · {formatMoney(run.total)}
                 </div>
               </button>
             );
@@ -138,25 +141,25 @@ export default function PayrollPage() {
         <div>
           {!detail ? (
             <div className="rounded-xl border border-border bg-surface p-10 text-center text-muted">
-              Detala baxmaq üçün dövr seçin
+              {t('payroll.selectPeriod')}
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-surface shadow-sm">
               <div className="flex items-center justify-between border-b border-border p-4">
                 <div>
                   <span className="font-semibold">{detail.period}</span>{' '}
-                  <span className="text-muted">— cəmi {formatMoney(detail.total)}</span>
+                  <span className="text-muted">— {tc('total')} {formatMoney(detail.total)}</span>
                 </div>
                 {can('finance.payroll.manage') && (
                   <div className="flex gap-2">
                     {detail.status === 'draft' && (
                       <Button size="sm" loading={approveMutation.isPending} onClick={() => approveMutation.mutate()}>
-                        Təsdiqlə
+                        {t('payroll.approve')}
                       </Button>
                     )}
                     {detail.status === 'approved' && (
                       <Button size="sm" loading={payMutation.isPending} onClick={() => payMutation.mutate()}>
-                        Ödə
+                        {t('payroll.pay')}
                       </Button>
                     )}
                   </div>
@@ -165,11 +168,11 @@ export default function PayrollPage() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border bg-muted-bg/50 text-left text-muted">
-                    <th className="px-4 py-2 font-semibold">Müəllim</th>
-                    <th className="px-4 py-2 font-semibold">Dərslər</th>
-                    <th className="px-4 py-2 font-semibold">Sabit</th>
-                    <th className="px-4 py-2 font-semibold">Dərs haqqı</th>
-                    <th className="px-4 py-2 text-right font-semibold">Cəmi</th>
+                    <th className="px-4 py-2 font-semibold">{t('payroll.colTeacher')}</th>
+                    <th className="px-4 py-2 font-semibold">{t('payroll.colLessons')}</th>
+                    <th className="px-4 py-2 font-semibold">{t('payroll.colBase')}</th>
+                    <th className="px-4 py-2 font-semibold">{t('payroll.colLessonPay')}</th>
+                    <th className="px-4 py-2 text-right font-semibold">{tc('total')}</th>
                   </tr>
                 </thead>
                 <tbody>

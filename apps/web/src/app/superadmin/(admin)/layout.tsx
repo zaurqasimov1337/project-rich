@@ -3,18 +3,27 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { BarChart3, Building2, CreditCard, LogOut, ScrollText } from 'lucide-react';
 import { usePlatformAuth } from '@/lib/platform';
 import { cn, initials } from '@/lib/utils';
 
-const NAV = [
-  { href: '/superadmin', label: 'Analitika', icon: BarChart3, exact: true },
-  { href: '/superadmin/tenants', label: 'Mərkəzlər', icon: Building2 },
-  { href: '/superadmin/plans', label: 'Planlar', icon: CreditCard },
-  { href: '/superadmin/audit', label: 'Audit', icon: ScrollText },
+interface AdminNavItem {
+  href: string;
+  labelKey: string;
+  icon: React.ComponentType<{ className?: string }>;
+  exact?: boolean;
+}
+
+const NAV: AdminNavItem[] = [
+  { href: '/superadmin', labelKey: 'analytics', icon: BarChart3, exact: true },
+  { href: '/superadmin/tenants', labelKey: 'centers', icon: Building2 },
+  { href: '/superadmin/plans', labelKey: 'plans', icon: CreditCard },
+  { href: '/superadmin/audit', labelKey: 'audit', icon: ScrollText },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('platform');
   const router = useRouter();
   const pathname = usePathname();
   const { user, status, bootstrap, logout } = usePlatformAuth();
@@ -62,7 +71,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                     : 'text-muted hover:bg-muted-bg hover:text-foreground',
                 )}
               >
-                <Icon className="h-4.5 w-4.5" /> {item.label}
+                <Icon className="h-4.5 w-4.5" /> {t(item.labelKey)}
               </Link>
             );
           })}
@@ -84,7 +93,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 router.replace('/superadmin/login');
               }}
               className="text-muted hover:text-danger"
-              aria-label="Çıxış"
+              aria-label={t('logout')}
             >
               <LogOut className="h-4 w-4" />
             </button>

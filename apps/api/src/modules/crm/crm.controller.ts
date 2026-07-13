@@ -105,6 +105,22 @@ export class CrmController {
     return this.crm.funnel(q);
   }
 
+  @Get('leads/activities')
+  @RequirePermissions('leads.read')
+  followUps(@Query('filter') filter?: 'overdue' | 'today' | 'tomorrow' | 'open' | 'done') {
+    return this.crm.followUps(filter ?? 'open');
+  }
+
+  @Patch('leads/activities/:id/done')
+  @RequirePermissions('leads.update')
+  async markActivityDone(@Param('id', ParseUUIDPipe) id: string) {
+    await this.prisma.scoped.leadActivity.updateMany({
+      where: { id },
+      data: { doneAt: new Date() },
+    });
+    return { ok: true };
+  }
+
   @Get('leads/:id')
   @RequirePermissions('leads.read')
   async detail(@Param('id', ParseUUIDPipe) id: string) {

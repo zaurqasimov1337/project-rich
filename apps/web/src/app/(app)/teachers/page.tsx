@@ -1,6 +1,7 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useDebounced } from '@/lib/hooks';
@@ -16,6 +17,7 @@ interface TeacherRow {
 }
 
 export default function TeachersPage() {
+  const t = useTranslations('teachers');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search);
@@ -32,7 +34,7 @@ export default function TeachersPage() {
   const columns: Column<TeacherRow>[] = [
     {
       key: 'name',
-      header: 'Müəllim',
+      header: t('teacher'),
       render: (r) => (
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
@@ -49,7 +51,7 @@ export default function TeachersPage() {
     },
     {
       key: 'subjects',
-      header: 'Fənlər',
+      header: t('subjects'),
       render: (r) => (
         <div className="flex flex-wrap gap-1">
           {r.subjects.map((s) => (
@@ -62,7 +64,7 @@ export default function TeachersPage() {
     },
     {
       key: 'groups',
-      header: 'Aktiv qruplar',
+      header: t('activeGroups'),
       render: (r) => (
         <div className="flex flex-wrap gap-1">
           {r.activeGroups.length ? (
@@ -77,18 +79,15 @@ export default function TeachersPage() {
         </div>
       ),
     },
-    { key: 'hours', header: 'Həftəlik limit', render: (r) => `${r.maxWeeklyHours} saat` },
+    { key: 'hours', header: t('weeklyLimit'), render: (r) => t('hours', { count: r.maxWeeklyHours }) },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Müəllimlər</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
       </div>
-      <p className="text-sm text-muted">
-        Müəllim əlavə etmək üçün əvvəlcə Parametrlər → İstifadəçilər bölməsindən «teacher» rolu ilə
-        istifadəçi dəvət edin, sonra onu müəllim profili ilə əlaqələndirin.
-      </p>
+      <p className="text-sm text-muted">{t('inviteHint')}</p>
       <DataTable
         columns={columns}
         data={data?.data}
@@ -102,7 +101,7 @@ export default function TeachersPage() {
           setSearch(v);
           setPage(1);
         }}
-        emptyTitle="Hələ müəllim yoxdur"
+        emptyTitle={t('emptyTitle')}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Ban, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { platformApi } from '@/lib/platform';
 import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ interface Plan {
 }
 
 export default function TenantDetailPage() {
+  const t = useTranslations('platform');
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
 
@@ -60,7 +62,7 @@ export default function TenantDetailPage() {
         href="/superadmin/tenants"
         className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Mərkəzlər
+        <ArrowLeft className="h-4 w-4" /> {t('centers')}
       </Link>
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
@@ -71,10 +73,10 @@ export default function TenantDetailPage() {
               <StatusBadge status={tenant.status} />
             </div>
             <div className="mt-0.5 text-sm text-muted">
-              <span className="font-mono">{tenant.slug}</span> · Qeydiyyat:{' '}
+              <span className="font-mono">{tenant.slug}</span> · {t('registered')}:{' '}
               {new Date(tenant.createdAt).toLocaleDateString('az-Latn-AZ')}
               {tenant.trialEndsAt && (
-                <> · Sınaq bitir: {new Date(tenant.trialEndsAt).toLocaleDateString('az-Latn-AZ')}</>
+                <> · {t('trialEnds')}: {new Date(tenant.trialEndsAt).toLocaleDateString('az-Latn-AZ')}</>
               )}
             </div>
           </div>
@@ -86,7 +88,7 @@ export default function TenantDetailPage() {
                 loading={updateMutation.isPending}
                 onClick={() => updateMutation.mutate({ status: 'suspended' })}
               >
-                <Ban className="h-4 w-4" /> Dayandır
+                <Ban className="h-4 w-4" /> {t('suspend')}
               </Button>
             ) : (
               <Button
@@ -95,7 +97,7 @@ export default function TenantDetailPage() {
                 onClick={() => updateMutation.mutate({ status: 'active' })}
                 className="!bg-admin-primary"
               >
-                <PlayCircle className="h-4 w-4" /> Bərpa et
+                <PlayCircle className="h-4 w-4" /> {t('restore')}
               </Button>
             )}
           </div>
@@ -103,9 +105,9 @@ export default function TenantDetailPage() {
 
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-3">
           {[
-            ['İstifadəçilər', tenant.usage.users],
-            ['Tələbələr', tenant.usage.students],
-            ['Qruplar', tenant.usage.groups],
+            [t('users'), tenant.usage.users],
+            [t('students'), tenant.usage.students],
+            [t('groups'), tenant.usage.groups],
           ].map(([label, value]) => (
             <div key={label} className="rounded-lg bg-muted-bg p-3">
               <div className="text-xs text-muted">{label}</div>
@@ -116,12 +118,12 @@ export default function TenantDetailPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-        <h2 className="font-semibold">Plan</h2>
+        <h2 className="font-semibold">{t('plan')}</h2>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <span className="text-sm">
-            Cari: <span className="font-semibold">{tenant.plan?.name ?? 'Yoxdur'}</span>
+            {t('current')}: <span className="font-semibold">{tenant.plan?.name ?? t('none')}</span>
             {tenant.plan && (
-              <span className="ml-1 text-muted">({formatMoney(tenant.plan.priceMonthly)}/ay)</span>
+              <span className="ml-1 text-muted">({formatMoney(tenant.plan.priceMonthly)}{t('perMonthShort')})</span>
             )}
           </span>
           <div className="flex gap-2">
@@ -134,7 +136,7 @@ export default function TenantDetailPage() {
                   size="sm"
                   onClick={() => updateMutation.mutate({ planId: p.id })}
                 >
-                  {p.name}-ə keçir
+                  {t('switchTo', { name: p.name })}
                 </Button>
               ))}
           </div>
@@ -142,22 +144,22 @@ export default function TenantDetailPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-border px-5 py-3 font-semibold">Abunəliklər</div>
+        <div className="border-b border-border px-5 py-3 font-semibold">{t('subscriptions')}</div>
         {tenant.subscriptions.length === 0 ? (
-          <div className="p-6 text-center text-sm text-muted">Abunəlik yoxdur</div>
+          <div className="p-6 text-center text-sm text-muted">{t('noSubscriptions')}</div>
         ) : (
           <div className="divide-y divide-border">
             {tenant.subscriptions.map((s) => (
               <div key={s.id} className="px-5 py-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">
-                    {s.period === 'yearly' ? 'İllik' : 'Aylıq'} abunəlik
+                    {s.period === 'yearly' ? t('yearly') : t('monthly')} {t('subscription')}
                   </span>
                   <StatusBadge status={s.status === 'trialing' ? 'trial' : s.status} />
                 </div>
                 <div className="mt-0.5 text-muted">
-                  Dövr sonu: {new Date(s.currentPeriodEnd).toLocaleDateString('az-Latn-AZ')} ·{' '}
-                  {s.invoices.length} faktura
+                  {t('periodEnd')}: {new Date(s.currentPeriodEnd).toLocaleDateString('az-Latn-AZ')} ·{' '}
+                  {t('invoicesCount', { count: s.invoices.length })}
                 </div>
               </div>
             ))}

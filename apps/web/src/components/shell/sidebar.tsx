@@ -5,18 +5,20 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   BarChart3,
+  Bell,
   Bot,
   Briefcase,
   Building2,
   CalendarDays,
   CheckSquare,
   ClipboardCheck,
-  Contact,
   DoorOpen,
   GraduationCap,
+  KanbanSquare,
   LayoutDashboard,
   Megaphone,
   MessageSquare,
+  PieChart,
   Puzzle,
   Settings,
   UserRound,
@@ -33,21 +35,25 @@ interface NavItem {
   labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   permission?: string;
+  exact?: boolean;
 }
 
-const SECTIONS: { title?: string; items: NavItem[] }[] = [
+const SECTIONS: { titleKey?: string; items: NavItem[] }[] = [
   {
     items: [{ href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard, permission: 'dashboard.view' }],
   },
   {
-    title: 'CRM',
+    titleKey: 'sectionSales',
     items: [
-      { href: '/crm/leads', labelKey: 'crm', icon: Contact, permission: 'leads.read' },
+      { href: '/crm', labelKey: 'crmDashboard', icon: PieChart, permission: 'leads.read', exact: true },
+      { href: '/crm/leads', labelKey: 'crmLeads', icon: Users, permission: 'leads.read' },
+      { href: '/crm/pipeline', labelKey: 'crmPipeline', icon: KanbanSquare, permission: 'leads.read' },
+      { href: '/crm/follow-ups', labelKey: 'crmFollowUps', icon: Bell, permission: 'leads.read' },
       { href: '/tasks', labelKey: 'tasks', icon: CheckSquare, permission: 'tasks.read' },
     ],
   },
   {
-    title: 'Təhsil',
+    titleKey: 'sectionEducation',
     items: [
       { href: '/students', labelKey: 'students', icon: GraduationCap, permission: 'students.read' },
       { href: '/teachers', labelKey: 'teachers', icon: UserRound, permission: 'teachers.read' },
@@ -59,7 +65,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: 'Təşkilat',
+    titleKey: 'sectionOrg',
     items: [
       { href: '/rooms', labelKey: 'rooms', icon: DoorOpen, permission: 'rooms.read' },
       { href: '/branches', labelKey: 'branches', icon: Building2, permission: 'branches.read' },
@@ -70,7 +76,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: 'Analitika',
+    titleKey: 'sectionAnalytics',
     items: [
       { href: '/reports', labelKey: 'reports', icon: BarChart3, permission: 'reports.view' },
       { href: '/ai', labelKey: 'ai', icon: Bot, permission: 'ai.use' },
@@ -108,13 +114,15 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
           if (visible.length === 0) return null;
           return (
             <div key={i}>
-              {section.title && !collapsed && (
+              {section.titleKey && !collapsed && (
                 <div className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
-                  {section.title}
+                  {t(section.titleKey)}
                 </div>
               )}
               {visible.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const active = item.exact
+                  ? pathname === item.href
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
                 const Icon = item.icon;
                 return (
                   <Link

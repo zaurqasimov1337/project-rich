@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -21,13 +22,15 @@ interface RosterRow {
 }
 
 const ATT_OPTIONS = [
-  { value: 'present', label: 'Gəldi', cls: 'bg-success text-white' },
-  { value: 'late', label: 'Gecikdi', cls: 'bg-warning text-white' },
-  { value: 'absent', label: 'Gəlmədi', cls: 'bg-danger text-white' },
-  { value: 'excused', label: 'Üzrlü', cls: 'bg-info text-white' },
+  { value: 'present', cls: 'bg-success text-white' },
+  { value: 'late', cls: 'bg-warning text-white' },
+  { value: 'absent', cls: 'bg-danger text-white' },
+  { value: 'excused', cls: 'bg-info text-white' },
 ];
 
 export default function AttendancePage() {
+  const t = useTranslations('attendance');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
   const [marks, setMarks] = useState<Record<string, string>>({});
@@ -66,14 +69,14 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Davamiyyət — bugünkü dərslər</h1>
+      <h1 className="text-xl font-bold">{t('title')}</h1>
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <div className="space-y-2">
-          {isLoading && <div className="text-sm text-muted">Yüklənir...</div>}
+          {isLoading && <div className="text-sm text-muted">{t('loading')}</div>}
           {lessons?.length === 0 && (
             <div className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-muted">
-              Bu gün dərs yoxdur
+              {t('noLessonsToday')}
             </div>
           )}
           {lessons?.map((l) => (
@@ -106,19 +109,19 @@ export default function AttendancePage() {
         <div>
           {!selectedLesson ? (
             <div className="rounded-xl border border-border bg-surface p-10 text-center text-muted">
-              Yoxlama aparmaq üçün soldan dərs seçin
+              {t('selectLesson')}
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-surface shadow-sm">
               <div className="flex items-center justify-between border-b border-border p-4">
-                <h2 className="font-semibold">{roster?.lesson.group.name} — davamiyyət</h2>
+                <h2 className="font-semibold">{roster?.lesson.group.name} — {t('attendance')}</h2>
                 <Button
                   size="sm"
                   loading={saveMutation.isPending}
                   disabled={Object.keys(marks).length === 0}
                   onClick={() => saveMutation.mutate()}
                 >
-                  Yadda saxla ({Object.keys(marks).length})
+                  {tc('save')} ({Object.keys(marks).length})
                 </Button>
               </div>
               <div className="divide-y divide-border">
@@ -146,7 +149,7 @@ export default function AttendancePage() {
                                 : 'bg-muted-bg text-muted hover:bg-border',
                             )}
                           >
-                            {opt.label}
+                            {t(opt.value)}
                           </button>
                         ))}
                       </div>

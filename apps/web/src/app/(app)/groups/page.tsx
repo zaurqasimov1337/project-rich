@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -38,6 +39,8 @@ interface GroupForm {
 }
 
 export default function GroupsPage() {
+  const t = useTranslations('groups');
+  const tc = useTranslations('common');
   const router = useRouter();
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
@@ -102,11 +105,11 @@ export default function GroupsPage() {
   });
 
   const columns: Column<GroupRow>[] = [
-    { key: 'name', header: 'Qrup', render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: 'course', header: 'Kurs', render: (r) => r.course.name },
+    { key: 'name', header: t('group'), render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: 'course', header: t('course'), render: (r) => r.course.name },
     {
       key: 'fill',
-      header: 'Doluluq',
+      header: t('fill'),
       render: (r) => (
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted-bg">
@@ -123,24 +126,24 @@ export default function GroupsPage() {
     },
     {
       key: 'price',
-      header: 'Qiymət',
+      header: tc('price'),
       render: (r) => formatMoney(r.priceOverride ?? r.course.price),
     },
     {
       key: 'start',
-      header: 'Başlama',
+      header: t('start'),
       render: (r) => (r.startDate ? new Date(r.startDate).toLocaleDateString('az-AZ') : '—'),
     },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Qruplar</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('groups.manage') && (
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni qrup
+            <Plus className="h-4 w-4" /> {t('new')}
           </Button>
         )}
       </div>
@@ -159,23 +162,23 @@ export default function GroupsPage() {
           setPage(1);
         }}
         onRowClick={(r) => router.push(`/groups/${r.id}`)}
-        emptyTitle="Hələ qrup yoxdur"
+        emptyTitle={t('empty')}
       />
 
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni qrup"
+        title={t('new')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
@@ -187,46 +190,48 @@ export default function GroupsPage() {
             </div>
           )}
           <div>
-            <Label>Qrup adı *</Label>
+            <Label>{t('groupName')} *</Label>
             <Input
-              placeholder="Məs: ENG-B1-02"
+              placeholder={t('groupNamePlaceholder')}
               error={errors.name?.message}
-              {...register('name', { required: 'Tələb olunur' })}
+              {...register('name', { required: tc('required') })}
             />
           </div>
           <div>
-            <Label>Kurs *</Label>
+            <Label>{t('course')} *</Label>
             <Select
-              placeholder="Kurs seçin"
+              placeholder={t('selectCourse')}
               error={errors.courseId?.message}
               options={(courses?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
-              {...register('courseId', { required: 'Tələb olunur' })}
+              {...register('courseId', { required: tc('required') })}
             />
           </div>
           <div>
-            <Label>Filial *</Label>
+            <Label>{t('branch')} *</Label>
             <Select
-              placeholder="Filial seçin"
+              placeholder={t('selectBranch')}
               error={errors.branchId?.message}
               options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
-              {...register('branchId', { required: 'Tələb olunur' })}
+              {...register('branchId', { required: tc('required') })}
             />
           </div>
           <div>
-            <Label>Müəllim</Label>
+            <Label>{t('teacher')}</Label>
             <Select
-              placeholder="Müəllim seçin"
-              options={(teachers?.data ?? []).map((t) => ({
-                value: t.id,
-                label: t.user ? `${t.user.firstName} ${t.user.lastName}` : t.id,
+              placeholder={t('selectTeacher')}
+              options={(teachers?.data ?? []).map((teacher) => ({
+                value: teacher.id,
+                label: teacher.user
+                  ? `${teacher.user.firstName} ${teacher.user.lastName}`
+                  : teacher.id,
               }))}
               {...register('teacherId')}
             />
           </div>
           <div>
-            <Label>Otaq</Label>
+            <Label>{t('room')}</Label>
             <Select
-              placeholder="Otaq seçin"
+              placeholder={t('selectRoom')}
               options={(rooms ?? []).map((r) => ({
                 value: r.id,
                 label: `${r.name} (${r.branch.name})`,
@@ -236,11 +241,11 @@ export default function GroupsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Tutum</Label>
+              <Label>{t('capacity')}</Label>
               <Input type="number" min={1} {...register('capacity')} />
             </div>
             <div>
-              <Label>Başlama tarixi</Label>
+              <Label>{t('startDate')}</Label>
               <Input type="date" {...register('startDate')} />
             </div>
           </div>

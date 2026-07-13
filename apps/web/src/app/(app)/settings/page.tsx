@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -39,13 +40,15 @@ interface Holiday {
 }
 
 const TABS = [
-  { key: 'users', label: 'İstifadəçilər' },
-  { key: 'roles', label: 'Rollar' },
-  { key: 'holidays', label: 'Qeyri-iş günləri' },
-  { key: 'billing', label: 'Abunəlik' },
+  { key: 'users', tkey: 'tabUsers' },
+  { key: 'roles', tkey: 'tabRoles' },
+  { key: 'holidays', tkey: 'tabHolidays' },
+  { key: 'billing', tkey: 'tabBilling' },
 ] as const;
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const { user, can } = useAuth();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('users');
@@ -94,30 +97,30 @@ export default function SettingsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Parametrlər</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {(can('apikeys.manage') || can('webhooks.manage')) && (
           <a
             href="/settings/developer"
             className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-muted-bg"
           >
-            Developer (API açarları · Webhooks)
+            {t('developerLink')}
           </a>
         )}
       </div>
 
       <div className="flex gap-1 border-b border-border">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={cn(
               'border-b-2 px-4 py-2 text-sm font-medium transition-colors',
-              tab === t.key
+              tab === tabItem.key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted hover:text-foreground',
             )}
           >
-            {t.label}
+            {t(tabItem.tkey)}
           </button>
         ))}
       </div>
@@ -127,7 +130,7 @@ export default function SettingsPage() {
           {can('users.manage') && (
             <div className="flex justify-end">
               <Button onClick={() => setInviteOpen(true)}>
-                <Plus className="h-4 w-4" /> İstifadəçi dəvət et
+                <Plus className="h-4 w-4" /> {t('inviteUser')}
               </Button>
             </div>
           )}
@@ -135,10 +138,10 @@ export default function SettingsPage() {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-border bg-muted-bg/50 text-left text-muted">
-                  <th className="px-4 py-2.5 font-semibold">İstifadəçi</th>
-                  <th className="px-4 py-2.5 font-semibold">Rollar</th>
-                  <th className="px-4 py-2.5 font-semibold">Son giriş</th>
-                  <th className="px-4 py-2.5 font-semibold">Status</th>
+                  <th className="px-4 py-2.5 font-semibold">{t('colUser')}</th>
+                  <th className="px-4 py-2.5 font-semibold">{t('tabRoles')}</th>
+                  <th className="px-4 py-2.5 font-semibold">{t('colLastLogin')}</th>
+                  <th className="px-4 py-2.5 font-semibold">{tc('status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -180,11 +183,11 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{r.name}</span>
                 {r.isSystem && (
-                  <span className="rounded bg-muted-bg px-1.5 py-0.5 text-xs text-muted">Sistem</span>
+                  <span className="rounded bg-muted-bg px-1.5 py-0.5 text-xs text-muted">{t('system')}</span>
                 )}
               </div>
               <div className="mt-1 text-sm text-muted">
-                {r.userCount} istifadəçi · {r.permissions.length} icazə
+                {t('roleStats', { users: r.userCount, permissions: r.permissions.length })}
               </div>
             </div>
           ))}
@@ -199,21 +202,21 @@ export default function SettingsPage() {
               className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-surface p-4 shadow-sm"
             >
               <div>
-                <Label>Tarix</Label>
+                <Label>{tc('date')}</Label>
                 <Input type="date" {...holidayForm.register('date', { required: true })} />
               </div>
               <div className="min-w-48 flex-1">
-                <Label>Ad</Label>
-                <Input placeholder="Məs: Novruz bayramı" {...holidayForm.register('name', { required: true })} />
+                <Label>{tc('name')}</Label>
+                <Input placeholder={t('holidayPlaceholder')} {...holidayForm.register('name', { required: true })} />
               </div>
               <Button type="submit" loading={addHoliday.isPending}>
-                Əlavə et
+                {tc('add')}
               </Button>
             </form>
           )}
           <div className="rounded-xl border border-border bg-surface shadow-sm">
             {holidays?.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted">Bu il üçün qeyri-iş günü yoxdur</div>
+              <div className="p-8 text-center text-sm text-muted">{t('noHolidays')}</div>
             ) : (
               <div className="divide-y divide-border">
                 {holidays?.map((h) => (
@@ -241,12 +244,12 @@ export default function SettingsPage() {
         <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-semibold">{user?.tenant.plan?.name ?? 'Plan yoxdur'}</div>
+              <div className="font-semibold">{user?.tenant.plan?.name ?? t('noPlan')}</div>
               <div className="mt-0.5 text-sm text-muted">
-                Status: <StatusBadge status={user?.tenant.status ?? ''} />
+                {tc('status')}: <StatusBadge status={user?.tenant.status ?? ''} />
                 {user?.tenant.trialEndsAt && (
                   <span className="ml-2">
-                    Sınaq bitir: {new Date(user.tenant.trialEndsAt).toLocaleDateString('az-Latn-AZ')}
+                    {t('trialEnds')}: {new Date(user.tenant.trialEndsAt).toLocaleDateString('az-Latn-AZ')}
                   </span>
                 )}
               </div>
@@ -268,17 +271,17 @@ export default function SettingsPage() {
       <Drawer
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
-        title="İstifadəçi dəvət et"
+        title={t('inviteUser')}
         footer={
           <>
             <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={inviteMutation.isPending}
               onClick={inviteForm.handleSubmit((v) => inviteMutation.mutate(v))}
             >
-              Dəvət göndər
+              {t('sendInvite')}
             </Button>
           </>
         }
@@ -290,22 +293,22 @@ export default function SettingsPage() {
         )}
         <form className="space-y-4">
           <div>
-            <Label>E-poçt *</Label>
+            <Label>{tc('email')} *</Label>
             <Input
               type="email"
               error={inviteForm.formState.errors.email?.message}
-              {...inviteForm.register('email', { required: 'Tələb olunur' })}
+              {...inviteForm.register('email', { required: t('fieldRequired') })}
             />
           </div>
           <div>
-            <Label>Rol *</Label>
+            <Label>{t('role')} *</Label>
             <Select
-              placeholder="Rol seçin"
+              placeholder={t('selectRole')}
               error={inviteForm.formState.errors.roleId?.message}
               options={(roles ?? [])
                 .filter((r) => r.key !== 'owner')
                 .map((r) => ({ value: r.id, label: r.name }))}
-              {...inviteForm.register('roleId', { required: 'Tələb olunur' })}
+              {...inviteForm.register('roleId', { required: t('fieldRequired') })}
             />
           </div>
         </form>

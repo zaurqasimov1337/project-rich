@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,6 @@ interface LessonEvent {
 }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 08:00–21:00
-const DAY_LABELS = ['B.e', 'Ç.a', 'Çər', 'C.a', 'Cümə', 'Şən', 'Baz'];
 
 function startOfWeek(d: Date): Date {
   const r = new Date(d);
@@ -28,6 +28,16 @@ function startOfWeek(d: Date): Date {
 }
 
 export default function SchedulePage() {
+  const t = useTranslations('schedule');
+  const DAY_LABELS = [
+    t('mon'),
+    t('tue'),
+    t('wed'),
+    t('thu'),
+    t('fri'),
+    t('sat'),
+    t('sun'),
+  ];
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const weekEnd = useMemo(
     () => new Date(weekStart.getTime() + 7 * 24 * 3600 * 1000),
@@ -66,7 +76,7 @@ export default function SchedulePage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">Cədvəl</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -76,7 +86,7 @@ export default function SchedulePage() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setWeekStart(startOfWeek(new Date()))}>
-            Bu həftə
+            {t('thisWeek')}
           </Button>
           <Button
             variant="outline"
@@ -163,7 +173,7 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {isLoading && <div className="text-sm text-muted">Yüklənir...</div>}
+      {isLoading && <div className="text-sm text-muted">{t('loading')}</div>}
     </div>
   );
 }

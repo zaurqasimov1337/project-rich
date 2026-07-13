@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FileText } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -23,6 +24,8 @@ interface InvoiceRow {
 }
 
 export default function InvoicesPage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [page, setPage] = useState(1);
@@ -47,10 +50,10 @@ export default function InvoicesPage() {
   });
 
   const columns: Column<InvoiceRow>[] = [
-    { key: 'number', header: 'Nömrə', render: (r) => <span className="font-mono text-xs">{r.number}</span> },
+    { key: 'number', header: t('number'), render: (r) => <span className="font-mono text-xs">{r.number}</span> },
     {
       key: 'student',
-      header: 'Tələbə',
+      header: t('student'),
       render: (r) =>
         r.student ? (
           <span className="font-medium">
@@ -60,21 +63,21 @@ export default function InvoicesPage() {
           '—'
         ),
     },
-    { key: 'total', header: 'Məbləğ', render: (r) => <span className="tabular-nums">{formatMoney(r.total)}</span> },
+    { key: 'total', header: tc('amount'), render: (r) => <span className="tabular-nums">{formatMoney(r.total)}</span> },
     {
       key: 'paid',
-      header: 'Ödənilib',
+      header: t('paid'),
       render: (r) => (
         <span className={`tabular-nums ${r.paid >= r.total ? 'text-success' : ''}`}>
           {formatMoney(r.paid)}
         </span>
       ),
     },
-    { key: 'due', header: 'Son tarix', render: (r) => new Date(r.dueAt).toLocaleDateString('az-Latn-AZ') },
-    { key: 'note', header: 'Qeyd', render: (r) => <span className="text-muted">{r.note ?? '—'}</span> },
+    { key: 'due', header: t('dueDate'), render: (r) => new Date(r.dueAt).toLocaleDateString('az-Latn-AZ') },
+    { key: 'note', header: tc('notes'), render: (r) => <span className="text-muted">{r.note ?? '—'}</span> },
     {
       key: 'status',
-      header: 'Status',
+      header: tc('status'),
       render: (r) => (
         <StatusBadge
           status={
@@ -88,19 +91,22 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-4">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Maliyyə
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Fakturalar</h1>
+        <h1 className="text-xl font-bold">{t('invoices.title')}</h1>
         {can('finance.invoices.manage') && (
           <Button loading={generateMutation.isPending} onClick={() => generateMutation.mutate()}>
-            <FileText className="h-4 w-4" /> Bu ayın fakturalarını yarat
+            <FileText className="h-4 w-4" /> {t('invoices.generate')}
           </Button>
         )}
       </div>
       {generateMutation.isSuccess && (
         <div className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-          {generateMutation.data.created} faktura yaradıldı, {generateMutation.data.skipped} artıq mövcud idi.
+          {t('invoices.generated', {
+            created: generateMutation.data.created,
+            skipped: generateMutation.data.skipped,
+          })}
         </div>
       )}
 
@@ -117,8 +123,8 @@ export default function InvoicesPage() {
           setSearch(v);
           setPage(1);
         }}
-        emptyTitle="Faktura yoxdur"
-        emptyDescription="«Bu ayın fakturalarını yarat» düyməsi aktiv qeydiyyatlar üzrə aylıq fakturaları yaradır."
+        emptyTitle={t('invoices.emptyTitle')}
+        emptyDescription={t('invoices.emptyDescription')}
       />
     </div>
   );

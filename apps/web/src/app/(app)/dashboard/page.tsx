@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ClipboardCheck, GraduationCap, UserPlus, Users, Wallet } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
@@ -17,6 +18,8 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
+  const tc = useTranslations('common');
   const user = useAuth((s) => s.user);
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -25,24 +28,24 @@ export default function DashboardPage() {
   });
 
   const kpis = [
-    { label: 'Aktiv tələbə', icon: GraduationCap, value: data?.activeStudents },
-    { label: 'Aktiv qrup', icon: Users, value: data?.activeGroups },
-    { label: 'Bugünkü dərslər', icon: CalendarDays, value: data?.todayLessons },
-    { label: 'Bu ay yeni tələbə', icon: UserPlus, value: data?.newStudentsMonth },
+    { label: t('activeStudents'), icon: GraduationCap, value: data?.activeStudents },
+    { label: t('activeGroups'), icon: Users, value: data?.activeGroups },
+    { label: t('todayLessons'), icon: CalendarDays, value: data?.todayLessons },
+    { label: t('newStudentsMonth'), icon: UserPlus, value: data?.newStudentsMonth },
     {
-      label: 'Davamiyyət (30 gün)',
+      label: t('attendanceRate30'),
       icon: ClipboardCheck,
       value: data?.attendanceRate != null ? `${data.attendanceRate}%` : '—',
     },
-    { label: 'Bu ay gəlir', icon: Wallet, value: data ? formatMoney(data.monthRevenue) : undefined },
+    { label: t('monthRevenue'), icon: Wallet, value: data ? formatMoney(data.monthRevenue) : undefined },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">İdarə paneli</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted">
-          Xoş gəldin, {user?.firstName}! {user?.tenant.name}
+          {t('welcome', { name: user?.firstName ?? '' })} {user?.tenant.name}
         </p>
       </div>
 
@@ -68,7 +71,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-border px-5 py-3 font-semibold">Növbəti dərslər</div>
+        <div className="border-b border-border px-5 py-3 font-semibold">{t('upcomingLessons')}</div>
         {isLoading ? (
           <div className="space-y-2 p-5">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -76,7 +79,7 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : data?.upcomingLessons.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted">Planlaşdırılmış dərs yoxdur</div>
+          <div className="p-8 text-center text-sm text-muted">{t('noUpcomingLessons')}</div>
         ) : (
           <div className="divide-y divide-border">
             {data?.upcomingLessons.map((l) => (

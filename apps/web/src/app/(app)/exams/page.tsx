@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -42,6 +43,8 @@ interface ExamForm {
 }
 
 export default function ExamsPage() {
+  const t = useTranslations('exams');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [createOpen, setCreateOpen] = useState(false);
@@ -94,10 +97,10 @@ export default function ExamsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">İmtahanlar</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('exams.manage') && (
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni imtahan
+            <Plus className="h-4 w-4" /> {t('new')}
           </Button>
         )}
       </div>
@@ -107,7 +110,7 @@ export default function ExamsPage() {
           {isLoading && <div className="h-24 animate-pulse rounded-xl bg-muted-bg" />}
           {exams?.length === 0 && (
             <div className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-muted">
-              Hələ imtahan yoxdur
+              {t('empty')}
             </div>
           )}
           {exams?.map((e) => (
@@ -125,7 +128,7 @@ export default function ExamsPage() {
               <div className="font-semibold">{e.name}</div>
               <div className="mt-0.5 text-sm text-muted">
                 {e.group.name} · {new Date(e.date).toLocaleDateString('az-Latn-AZ')} ·{' '}
-                {e._count.results} nəticə
+                {e._count.results} {t('result')}
               </div>
             </button>
           ))}
@@ -134,13 +137,14 @@ export default function ExamsPage() {
         <div>
           {!selectedExam ? (
             <div className="rounded-xl border border-border bg-surface p-10 text-center text-muted">
-              Nəticə daxil etmək üçün imtahan seçin
+              {t('selectExamPrompt')}
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-surface shadow-sm">
               <div className="flex items-center justify-between border-b border-border p-4">
                 <h2 className="font-semibold">
-                  {examDetail?.name} <span className="text-muted">(max {examDetail?.maxScore})</span>
+                  {examDetail?.name}{' '}
+                  <span className="text-muted">({t('max')} {examDetail?.maxScore})</span>
                 </h2>
                 {can('exams.manage') && (
                   <Button
@@ -149,7 +153,7 @@ export default function ExamsPage() {
                     disabled={Object.values(scores).every((v) => v === '')}
                     onClick={() => saveResultsMutation.mutate()}
                   >
-                    Yadda saxla
+                    {tc('save')}
                   </Button>
                 )}
               </div>
@@ -186,63 +190,63 @@ export default function ExamsPage() {
       <Drawer
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        title="Yeni imtahan"
+        title={t('new')}
         footer={
           <>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Qrup *</Label>
+            <Label>{t('group')} *</Label>
             <Select
-              placeholder="Qrup seçin"
+              placeholder={t('selectGroup')}
               error={errors.groupId?.message}
               options={(groups?.data ?? []).map((g) => ({ value: g.id, label: g.name }))}
-              {...register('groupId', { required: 'Tələb olunur' })}
+              {...register('groupId', { required: tc('required') })}
             />
           </div>
           <div>
-            <Label>Ad *</Label>
+            <Label>{tc('name')} *</Label>
             <Input
-              placeholder="Məs: Unit 5 Quiz"
+              placeholder={t('namePlaceholder')}
               error={errors.name?.message}
-              {...register('name', { required: 'Tələb olunur' })}
+              {...register('name', { required: tc('required') })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Tip</Label>
+              <Label>{tc('type')}</Label>
               <Select
                 options={[
-                  { value: 'exam', label: 'İmtahan' },
+                  { value: 'exam', label: t('typeExam') },
                   { value: 'quiz', label: 'Quiz' },
-                  { value: 'midterm', label: 'Aralıq' },
+                  { value: 'midterm', label: t('typeMidterm') },
                   { value: 'final', label: 'Final' },
                 ]}
                 {...register('type')}
               />
             </div>
             <div>
-              <Label>Tarix *</Label>
+              <Label>{tc('date')} *</Label>
               <Input
                 type="date"
                 error={errors.date?.message}
-                {...register('date', { required: 'Tələb olunur' })}
+                {...register('date', { required: tc('required') })}
               />
             </div>
           </div>
           <div>
-            <Label>Maksimum bal</Label>
+            <Label>{t('maxScore')}</Label>
             <Input type="number" min={1} placeholder="100" {...register('maxScore')} />
           </div>
         </form>

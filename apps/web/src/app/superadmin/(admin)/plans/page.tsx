@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { platformApi } from '@/lib/platform';
 import { formatMoney } from '@/lib/utils';
 
@@ -17,32 +18,34 @@ interface Plan {
   _count: { tenants: number };
 }
 
-const LIMIT_LABELS: Record<string, string> = {
-  users: 'İstifadəçi',
-  students: 'Tələbə',
-  teachers: 'Müəllim',
-  branches: 'Filial',
-  aiRequests: 'AI sorğusu/ay',
-  storageMb: 'Yaddaş (MB)',
-  apiCalls: 'API çağırışı/ay',
-};
-
-const FEATURE_LABELS: Record<string, string> = {
-  crm: 'CRM',
-  finance: 'Maliyyə',
-  marketing: 'Marketinq',
-  ai: 'AI Copilot',
-  lms: 'LMS',
-  hr: 'HR',
-  payroll: 'Əməkhaqqı',
-  api: 'Public API',
-  whiteLabel: 'White Label',
-  multiBranch: 'Çoxfilial',
-  whatsapp: 'WhatsApp',
-  webhooks: 'Webhooks',
-};
-
 export default function PlansPage() {
+  const t = useTranslations('platform');
+
+  const LIMIT_LABELS: Record<string, string> = {
+    users: t('limitUsers'),
+    students: t('limitStudents'),
+    teachers: t('limitTeachers'),
+    branches: t('limitBranches'),
+    aiRequests: t('limitAiRequests'),
+    storageMb: t('limitStorage'),
+    apiCalls: t('limitApiCalls'),
+  };
+
+  const FEATURE_LABELS: Record<string, string> = {
+    crm: 'CRM',
+    finance: t('featureFinance'),
+    marketing: t('featureMarketing'),
+    ai: 'AI Copilot',
+    lms: 'LMS',
+    hr: 'HR',
+    payroll: t('featurePayroll'),
+    api: 'Public API',
+    whiteLabel: 'White Label',
+    multiBranch: t('featureMultiBranch'),
+    whatsapp: 'WhatsApp',
+    webhooks: 'Webhooks',
+  };
+
   const { data: plans, isLoading } = useQuery({
     queryKey: ['platform-plans-full'],
     queryFn: () => platformApi.get<Plan[]>('/platform/plans'),
@@ -50,7 +53,7 @@ export default function PlansPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Planlar və xüsusiyyət matrisi</h1>
+      <h1 className="text-xl font-bold">{t('plansTitle')}</h1>
 
       {isLoading ? (
         <div className="h-64 animate-pulse rounded-xl bg-muted-bg" />
@@ -59,12 +62,12 @@ export default function PlansPage() {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-border bg-muted-bg/50">
-                <th className="px-4 py-3 text-left font-semibold text-muted">Xüsusiyyət</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted">{t('feature')}</th>
                 {plans?.map((p) => (
                   <th key={p.id} className="px-4 py-3 text-center">
                     <div className="font-bold">{p.name}</div>
                     <div className="text-xs font-normal text-muted">
-                      {formatMoney(p.priceMonthly)}/ay · {p._count.tenants} mərkəz
+                      {formatMoney(p.priceMonthly)}{t('perMonthShort')} · {t('centersCount', { count: p._count.tenants })}
                     </div>
                   </th>
                 ))}

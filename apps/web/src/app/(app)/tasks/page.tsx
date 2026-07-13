@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Circle, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -33,14 +34,10 @@ const PRIORITY_CLS: Record<string, string> = {
   high: 'bg-warning/10 text-warning',
   urgent: 'bg-danger/10 text-danger',
 };
-const PRIORITY_LABEL: Record<string, string> = {
-  low: 'Aşağı',
-  medium: 'Orta',
-  high: 'Yüksək',
-  urgent: 'Təcili',
-};
 
 export default function TasksPage() {
+  const t = useTranslations('tasks');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showDone, setShowDone] = useState(false);
@@ -74,13 +71,13 @@ export default function TasksPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Tapşırıqlar</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowDone((s) => !s)}>
-            {showDone ? 'Aktivləri göstər' : 'Hamısını göstər'}
+            {showDone ? t('showActive') : t('showAll')}
           </Button>
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni tapşırıq
+            <Plus className="h-4 w-4" /> {t('newTask')}
           </Button>
         </div>
       </div>
@@ -93,7 +90,7 @@ export default function TasksPage() {
             ))}
           </div>
         ) : data?.data.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted">Tapşırıq yoxdur 🎉</div>
+          <div className="p-10 text-center text-sm text-muted">{t('empty')} 🎉</div>
         ) : (
           <div className="divide-y divide-border">
             {data?.data.map((task) => (
@@ -138,7 +135,7 @@ export default function TasksPage() {
                     PRIORITY_CLS[task.priority],
                   )}
                 >
-                  {PRIORITY_LABEL[task.priority]}
+                  {t(`priority.${task.priority}`)}
                 </span>
               </div>
             ))}
@@ -149,43 +146,43 @@ export default function TasksPage() {
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni tapşırıq"
+        title={t('newTask')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Başlıq *</Label>
-            <Input error={errors.title?.message} {...register('title', { required: 'Tələb olunur' })} />
+            <Label>{t('titleField')} *</Label>
+            <Input error={errors.title?.message} {...register('title', { required: tc('required') })} />
           </div>
           <div>
-            <Label>Ətraflı</Label>
+            <Label>{t('body')}</Label>
             <Input {...register('body')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Son tarix</Label>
+              <Label>{t('dueDate')}</Label>
               <Input type="date" {...register('dueAt')} />
             </div>
             <div>
-              <Label>Prioritet</Label>
+              <Label>{t('priorityLabel')}</Label>
               <Select
                 options={[
-                  { value: 'low', label: 'Aşağı' },
-                  { value: 'medium', label: 'Orta' },
-                  { value: 'high', label: 'Yüksək' },
-                  { value: 'urgent', label: 'Təcili' },
+                  { value: 'low', label: t('priority.low') },
+                  { value: 'medium', label: t('priority.medium') },
+                  { value: 'high', label: t('priority.high') },
+                  { value: 'urgent', label: t('priority.urgent') },
                 ]}
                 {...register('priority')}
               />

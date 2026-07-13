@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -26,6 +27,8 @@ interface BranchForm {
 }
 
 export default function BranchesPage() {
+  const t = useTranslations('branches');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -49,10 +52,10 @@ export default function BranchesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Filiallar</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('branches.manage') && (
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni filial
+            <Plus className="h-4 w-4" /> {t('newBranch')}
           </Button>
         )}
       </div>
@@ -77,7 +80,7 @@ export default function BranchesPage() {
                       {b.name}{' '}
                       {b.isMain && (
                         <span className="rounded bg-accent/15 px-1.5 py-0.5 text-xs font-medium text-accent">
-                          Əsas
+                          {t('main')}
                         </span>
                       )}
                     </div>
@@ -86,7 +89,7 @@ export default function BranchesPage() {
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-4 text-sm text-muted">
-                <span>{b.roomCount} otaq</span>
+                <span>{t('roomCount', { count: b.roomCount })}</span>
                 {b.phone && <span>{b.phone}</span>}
               </div>
             </div>
@@ -97,32 +100,32 @@ export default function BranchesPage() {
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni filial"
+        title={t('newBranch')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Ad *</Label>
-            <Input error={errors.name?.message} {...register('name', { required: 'Tələb olunur' })} />
+            <Label>{tc('name')} *</Label>
+            <Input error={errors.name?.message} {...register('name', { required: tc('required') })} />
           </div>
           <div>
-            <Label>Ünvan</Label>
+            <Label>{tc('address')}</Label>
             <Input {...register('address')} />
           </div>
           <div>
-            <Label>Telefon</Label>
+            <Label>{tc('phone')}</Label>
             <Input {...register('phone')} />
           </div>
         </form>

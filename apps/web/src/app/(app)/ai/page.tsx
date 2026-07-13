@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bot, Send, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -19,15 +20,16 @@ interface Conversation {
   updatedAt: string;
 }
 
-const SUGGESTIONS = [
-  'Bu ay ən gəlirli kurs hansıdır?',
-  'Ödənişi gecikən tələbələri göstər',
-  'Davamiyyəti aşağı olan tələbələr kimlərdir?',
-  'Bu ayın CRM konversiyası necədir?',
-  'Müəllimlərin yükü necə bölünüb?',
+const SUGGESTION_KEYS = [
+  'suggestion1',
+  'suggestion2',
+  'suggestion3',
+  'suggestion4',
+  'suggestion5',
 ];
 
 export default function AiPage() {
+  const t = useTranslations('ai');
   const qc = useQueryClient();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -94,7 +96,7 @@ export default function AiPage() {
             setLocalMessages([]);
           }}
         >
-          <Sparkles className="h-4 w-4" /> Yeni söhbət
+          <Sparkles className="h-4 w-4" /> {t('newChat')}
         </Button>
         {conversations?.map((c) => (
           <button
@@ -117,7 +119,7 @@ export default function AiPage() {
           </div>
           <div>
             <div className="font-semibold">AI Copilot</div>
-            <div className="text-xs text-muted">Mərkəzinizin məlumatları üzrə analitik köməkçi</div>
+            <div className="text-xs text-muted">{t('headerSubtitle')}</div>
           </div>
         </div>
 
@@ -125,17 +127,15 @@ export default function AiPage() {
           {messages.length === 0 && !chatMutation.isPending && (
             <div className="mx-auto max-w-md pt-10 text-center">
               <Bot className="mx-auto h-10 w-10 text-muted" />
-              <p className="mt-3 text-sm text-muted">
-                Mərkəziniz haqqında istənilən analitik sual verin:
-              </p>
+              <p className="mt-3 text-sm text-muted">{t('emptyPrompt')}</p>
               <div className="mt-4 flex flex-col gap-2">
-                {SUGGESTIONS.map((s) => (
+                {SUGGESTION_KEYS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => send(s)}
+                    onClick={() => send(t(s))}
                     className="rounded-lg border border-border bg-background px-3 py-2 text-sm hover:border-primary hover:text-primary"
                   >
-                    {s}
+                    {t(s)}
                   </button>
                 ))}
               </div>
@@ -185,7 +185,7 @@ export default function AiPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Sualınızı yazın..."
+            placeholder={t('inputPlaceholder')}
             className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <Button type="submit" disabled={!input.trim()} loading={chatMutation.isPending}>

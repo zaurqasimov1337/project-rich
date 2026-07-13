@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, UserMinus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -37,6 +38,8 @@ interface GroupDetail {
 const DAY_SHORT = ['B.e', 'Ç.a', 'Çər', 'C.a', 'Cümə', 'Şən', 'Baz'];
 
 export default function GroupDetailPage() {
+  const t = useTranslations('groups');
+  const tc = useTranslations('common');
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
@@ -82,7 +85,7 @@ export default function GroupDetailPage() {
   return (
     <div className="space-y-5">
       <Link href="/groups" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Qruplar
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
@@ -93,12 +96,12 @@ export default function GroupDetailPage() {
               <StatusBadge status={group.status} />
             </div>
             <div className="mt-0.5 text-sm text-muted">
-              {group.course.name} · {activeCount}/{group.capacity} tələbə
+              {group.course.name} · {activeCount}/{group.capacity} {t('studentUnit')}
             </div>
           </div>
           {can('groups.enroll') && (
             <Button onClick={() => setEnrollOpen(true)}>
-              <Plus className="h-4 w-4" /> Tələbə əlavə et
+              <Plus className="h-4 w-4" /> {t('addStudent')}
             </Button>
           )}
         </div>
@@ -114,9 +117,9 @@ export default function GroupDetailPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-border px-5 py-3 font-semibold">Tələbələr</div>
+        <div className="border-b border-border px-5 py-3 font-semibold">{t('students')}</div>
         {group.students.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted">Qrupda tələbə yoxdur</div>
+          <div className="p-8 text-center text-sm text-muted">{t('noStudents')}</div>
         ) : (
           <div className="divide-y divide-border">
             {group.students.map((e) => (
@@ -133,7 +136,7 @@ export default function GroupDetailPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Qrupdan çıxar"
+                      title={t('removeStudent')}
                       onClick={() => dropMutation.mutate(e.id)}
                     >
                       <UserMinus className="h-4 w-4 text-danger" />
@@ -149,18 +152,18 @@ export default function GroupDetailPage() {
       <Drawer
         open={enrollOpen}
         onClose={() => setEnrollOpen(false)}
-        title="Tələbə əlavə et"
+        title={t('addStudent')}
         footer={
           <>
             <Button variant="outline" onClick={() => setEnrollOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               disabled={!selectedStudent}
               loading={enrollMutation.isPending}
               onClick={() => enrollMutation.mutate()}
             >
-              Əlavə et
+              {tc('add')}
             </Button>
           </>
         }
@@ -171,7 +174,7 @@ export default function GroupDetailPage() {
           </div>
         )}
         <Select
-          placeholder="Tələbə seçin"
+          placeholder={t('selectStudent')}
           value={selectedStudent}
           onChange={(e) => setSelectedStudent(e.target.value)}
           options={(allStudents?.data ?? [])

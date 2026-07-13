@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -33,6 +34,8 @@ interface ExpenseForm {
 }
 
 export default function ExpensesPage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [page, setPage] = useState(1);
@@ -65,28 +68,28 @@ export default function ExpensesPage() {
   });
 
   const columns: Column<ExpenseRow>[] = [
-    { key: 'date', header: 'Tarix', render: (r) => new Date(r.date).toLocaleDateString('az-Latn-AZ') },
-    { key: 'category', header: 'Kateqoriya', render: (r) => r.category.name },
+    { key: 'date', header: tc('date'), render: (r) => new Date(r.date).toLocaleDateString('az-Latn-AZ') },
+    { key: 'category', header: tc('category'), render: (r) => r.category.name },
     {
       key: 'amount',
-      header: 'Məbləğ',
+      header: tc('amount'),
       render: (r) => <span className="font-semibold text-danger tabular-nums">−{formatMoney(r.amount)}</span>,
     },
-    { key: 'vendor', header: 'Təchizatçı', render: (r) => r.vendor ?? '—' },
-    { key: 'note', header: 'Qeyd', render: (r) => <span className="text-muted">{r.note ?? '—'}</span> },
-    { key: 'account', header: 'Kassa', render: (r) => r.cashAccount.name },
+    { key: 'vendor', header: t('vendor'), render: (r) => r.vendor ?? '—' },
+    { key: 'note', header: tc('notes'), render: (r) => <span className="text-muted">{r.note ?? '—'}</span> },
+    { key: 'account', header: t('cashAccount'), render: (r) => r.cashAccount.name },
   ];
 
   return (
     <div className="space-y-4">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Maliyyə
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Xərclər</h1>
+        <h1 className="text-xl font-bold">{t('expenses.title')}</h1>
         {can('finance.expenses.manage') && (
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni xərc
+            <Plus className="h-4 w-4" /> {t('expenses.newExpense')}
           </Button>
         )}
       </div>
@@ -99,59 +102,59 @@ export default function ExpensesPage() {
         page={page}
         limit={20}
         onPageChange={setPage}
-        emptyTitle="Xərc yoxdur"
+        emptyTitle={t('expenses.emptyTitle')}
       />
 
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni xərc"
+        title={t('expenses.newExpense')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Kateqoriya *</Label>
+            <Label>{tc('category')} *</Label>
             <Select
-              placeholder="Kateqoriya seçin"
+              placeholder={t('expenses.selectCategory')}
               error={errors.categoryId?.message}
               options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
-              {...register('categoryId', { required: 'Tələb olunur' })}
+              {...register('categoryId', { required: tc('required') })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Məbləğ (₼) *</Label>
+              <Label>{t('amountManat')} *</Label>
               <Input
                 type="number"
                 step="0.01"
                 min="0.01"
                 error={errors.amount?.message}
-                {...register('amount', { required: 'Tələb olunur' })}
+                {...register('amount', { required: tc('required') })}
               />
             </div>
             <div>
-              <Label>Tarix *</Label>
+              <Label>{tc('date')} *</Label>
               <Input type="date" {...register('date', { required: true })} />
             </div>
           </div>
           <div>
-            <Label>Təchizatçı</Label>
+            <Label>{t('vendor')}</Label>
             <Input {...register('vendor')} />
           </div>
           <div>
-            <Label>Qeyd</Label>
+            <Label>{tc('notes')}</Label>
             <Input {...register('note')} />
           </div>
         </form>

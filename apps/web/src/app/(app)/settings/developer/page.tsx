@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, KeyRound, Plus, Trash2, Webhook } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -28,6 +29,8 @@ interface WebhookEndpoint {
 }
 
 export default function DeveloperPage() {
+  const t = useTranslations('settings');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [tab, setTab] = useState<'keys' | 'webhooks'>('keys');
@@ -87,12 +90,12 @@ export default function DeveloperPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Developer</h1>
+      <h1 className="text-xl font-bold">{t('developer')}</h1>
 
       <div className="flex gap-1 border-b border-border">
         {[
-          ['keys', 'API açarları'],
-          ['webhooks', 'Webhooks'],
+          ['keys', t('apiKeys')],
+          ['webhooks', t('webhooks')],
         ].map(([k, label]) => (
           <button
             key={k}
@@ -110,7 +113,7 @@ export default function DeveloperPage() {
       {newSecret && (
         <div className="rounded-lg border border-warning/40 bg-warning/10 p-3">
           <div className="text-sm font-medium text-warning">
-            Bu dəyəri indi kopyalayın — bir daha göstərilməyəcək:
+            {t('secretWarning')}
           </div>
           <div className="mt-1 flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-surface px-2 py-1 font-mono text-sm">
@@ -120,7 +123,7 @@ export default function DeveloperPage() {
               <Copy className="h-4 w-4" />
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setNewSecret(null)}>
-              Bağla
+              {tc('close')}
             </Button>
           </div>
         </div>
@@ -130,12 +133,12 @@ export default function DeveloperPage() {
         <div className="space-y-3">
           <div className="flex justify-end">
             <Button onClick={() => setKeyDrawer(true)}>
-              <Plus className="h-4 w-4" /> Yeni açar
+              <Plus className="h-4 w-4" /> {t('newKey')}
             </Button>
           </div>
           <div className="rounded-xl border border-border bg-surface shadow-sm">
             {keys?.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted">API açarı yoxdur</div>
+              <div className="p-8 text-center text-sm text-muted">{t('noKeys')}</div>
             ) : (
               <div className="divide-y divide-border">
                 {keys?.map((k) => (
@@ -164,12 +167,12 @@ export default function DeveloperPage() {
         <div className="space-y-3">
           <div className="flex justify-end">
             <Button onClick={() => setHookDrawer(true)}>
-              <Plus className="h-4 w-4" /> Yeni webhook
+              <Plus className="h-4 w-4" /> {t('newWebhook')}
             </Button>
           </div>
           <div className="rounded-xl border border-border bg-surface shadow-sm">
             {hooks?.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted">Webhook yoxdur</div>
+              <div className="p-8 text-center text-sm text-muted">{t('noWebhooks')}</div>
             ) : (
               <div className="divide-y divide-border">
                 {hooks?.map((h) => (
@@ -179,8 +182,11 @@ export default function DeveloperPage() {
                       <div>
                         <div className="truncate font-mono text-sm">{h.url}</div>
                         <div className="text-xs text-muted">
-                          {h.events.length} hadisə · {h.deliveries} çatdırılma ·{' '}
-                          {h.active ? 'aktiv' : 'deaktiv'}
+                          {t('webhookMeta', {
+                            events: h.events.length,
+                            deliveries: h.deliveries,
+                            status: h.active ? t('statusActive') : t('statusInactive'),
+                          })}
                         </div>
                       </div>
                     </div>
@@ -199,31 +205,31 @@ export default function DeveloperPage() {
       <Drawer
         open={keyDrawer}
         onClose={() => setKeyDrawer(false)}
-        title="Yeni API açarı"
+        title={t('newApiKey')}
         footer={
           <>
             <Button variant="outline" onClick={() => setKeyDrawer(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button loading={createKey.isPending} onClick={keyForm.handleSubmit((v) => createKey.mutate(v))}>
-              Yarat
+              {tc('create')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Ad *</Label>
-            <Input {...keyForm.register('name', { required: true })} placeholder="Məs: Mobil tətbiq" />
+            <Label>{tc('name')} *</Label>
+            <Input {...keyForm.register('name', { required: true })} placeholder={t('keyNamePlaceholder')} />
           </div>
           <div>
-            <Label>İcazələr</Label>
+            <Label>{t('scopes')}</Label>
             <select
               className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm"
               {...keyForm.register('scopes')}
             >
-              <option value="read">Yalnız oxu</option>
-              <option value="read,write">Oxu və yazı</option>
+              <option value="read">{t('scopeRead')}</option>
+              <option value="read,write">{t('scopeReadWrite')}</option>
             </select>
           </div>
         </form>
@@ -233,18 +239,18 @@ export default function DeveloperPage() {
       <Drawer
         open={hookDrawer}
         onClose={() => setHookDrawer(false)}
-        title="Yeni webhook"
+        title={t('newWebhook')}
         footer={
           <>
             <Button variant="outline" onClick={() => setHookDrawer(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               disabled={hookEvents.length === 0}
               loading={createHook.isPending}
               onClick={hookForm.handleSubmit((v) => createHook.mutate(v))}
             >
-              Yarat
+              {tc('create')}
             </Button>
           </>
         }
@@ -258,7 +264,7 @@ export default function DeveloperPage() {
             />
           </div>
           <div>
-            <Label>Hadisələr</Label>
+            <Label>{t('events')}</Label>
             <div className="mt-1 space-y-1.5">
               {events?.map((e) => (
                 <label key={e} className="flex items-center gap-2 text-sm">

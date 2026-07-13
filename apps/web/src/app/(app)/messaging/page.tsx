@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Mail, MessageSquare, Plus, Send, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
+import { StatusBadge } from '@/components/data-table';
 
 interface Template {
   id: string;
@@ -30,6 +32,8 @@ interface LogRow {
 }
 
 export default function MessagingPage() {
+  const t = useTranslations('messaging');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [tab, setTab] = useState<'send' | 'templates' | 'logs'>('send');
@@ -90,13 +94,13 @@ export default function MessagingPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Mesajlaşma</h1>
+      <h1 className="text-xl font-bold">{t('title')}</h1>
 
       <div className="flex gap-1 border-b border-border">
         {[
-          ['send', 'Toplu göndər'],
-          ['templates', 'Şablonlar'],
-          ['logs', 'Jurnal'],
+          ['send', t('tabSend')],
+          ['templates', t('tabTemplates')],
+          ['logs', t('tabLogs')],
         ].map(([k, label]) => (
           <button
             key={k}
@@ -119,15 +123,18 @@ export default function MessagingPage() {
           >
             {sendMutation.isSuccess && (
               <div className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-                {sendMutation.data.sent} göndərildi, {sendMutation.data.failed} uğursuz,{' '}
-                {sendMutation.data.skipped} ötürüldü (kontakt yoxdur).
+                {t('sendResult', {
+                  sent: sendMutation.data.sent,
+                  failed: sendMutation.data.failed,
+                  skipped: sendMutation.data.skipped,
+                })}
               </div>
             )}
             <div>
-              <Label>Kanal</Label>
+              <Label>{t('channel')}</Label>
               <Select
                 options={[
-                  { value: 'email', label: 'E-poçt' },
+                  { value: 'email', label: t('email') },
                   { value: 'sms', label: 'SMS' },
                 ]}
                 {...sendForm.register('channel')}
@@ -135,26 +142,26 @@ export default function MessagingPage() {
             </div>
             {channel === 'email' && (
               <div>
-                <Label>Mövzu</Label>
+                <Label>{t('subject')}</Label>
                 <Input {...sendForm.register('subject', { required: channel === 'email' })} />
               </div>
             )}
             <div>
-              <Label>Mətn (dəyişənlər: {'{{firstName}} {{lastName}} {{code}}'})</Label>
+              <Label>{t('bodyLabel')} ({t('variablesHint')}: {'{{firstName}} {{lastName}} {{code}}'})</Label>
               <textarea
                 className="min-h-32 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Salam {{firstName}}, ..."
+                placeholder={t('bodyPlaceholder')}
                 {...sendForm.register('body', { required: true })}
               />
             </div>
             <Button type="submit" disabled={selected.length === 0} loading={sendMutation.isPending}>
-              <Send className="h-4 w-4" /> {selected.length} tələbəyə göndər
+              <Send className="h-4 w-4" /> {t('sendToStudents', { count: selected.length })}
             </Button>
           </form>
 
           <div className="rounded-xl border border-border bg-surface shadow-sm">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-              <span className="text-sm font-semibold">Alıcılar ({selected.length})</span>
+              <span className="text-sm font-semibold">{t('recipients')} ({selected.length})</span>
               <button
                 type="button"
                 className="text-xs text-primary hover:underline"
@@ -166,7 +173,7 @@ export default function MessagingPage() {
                   )
                 }
               >
-                {selected.length === (students?.data.length ?? 0) ? 'Heç birini' : 'Hamısını'}
+                {selected.length === (students?.data.length ?? 0) ? t('deselectAll') : t('selectAll')}
               </button>
             </div>
             <div className="max-h-96 divide-y divide-border overflow-y-auto">
@@ -194,13 +201,13 @@ export default function MessagingPage() {
           {can('messages.templates') && (
             <div className="flex justify-end">
               <Button onClick={() => setTplDrawer(true)}>
-                <Plus className="h-4 w-4" /> Yeni şablon
+                <Plus className="h-4 w-4" /> {t('newTemplate')}
               </Button>
             </div>
           )}
           <div className="rounded-xl border border-border bg-surface shadow-sm">
             {templates?.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted">Şablon yoxdur</div>
+              <div className="p-8 text-center text-sm text-muted">{t('noTemplates')}</div>
             ) : (
               <div className="divide-y divide-border">
                 {templates?.map((t) => (
@@ -230,7 +237,7 @@ export default function MessagingPage() {
       {tab === 'logs' && (
         <div className="rounded-xl border border-border bg-surface shadow-sm">
           {logs?.data.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted">Göndərilmiş mesaj yoxdur</div>
+            <div className="p-8 text-center text-sm text-muted">{t('noLogs')}</div>
           ) : (
             <div className="divide-y divide-border">
               {logs?.data.map((l) => (
@@ -239,14 +246,8 @@ export default function MessagingPage() {
                     <span className="font-mono text-xs">{l.recipient}</span>
                     {l.subject && <span className="ml-2 text-muted">{l.subject}</span>}
                   </div>
-                  <span
-                    className={cn(
-                      'rounded-full px-2 py-0.5 text-xs',
-                      l.status === 'sent' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger',
-                    )}
-                    title={l.error ?? ''}
-                  >
-                    {l.status === 'sent' ? 'Göndərildi' : 'Uğursuz'}
+                  <span title={l.error ?? ''}>
+                    <StatusBadge status={l.status} />
                   </span>
                 </div>
               ))}
@@ -258,14 +259,14 @@ export default function MessagingPage() {
       <Drawer
         open={tplDrawer}
         onClose={() => setTplDrawer(false)}
-        title="Yeni şablon"
+        title={t('newTemplate')}
         footer={
           <>
             <Button variant="outline" onClick={() => setTplDrawer(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button loading={saveTpl.isPending} onClick={tplForm.handleSubmit((v) => saveTpl.mutate(v))}>
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
@@ -273,14 +274,14 @@ export default function MessagingPage() {
         <form className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Açar *</Label>
+              <Label>{t('templateKey')} *</Label>
               <Input placeholder="payment_reminder" {...tplForm.register('key', { required: true })} />
             </div>
             <div>
-              <Label>Kanal</Label>
+              <Label>{t('channel')}</Label>
               <Select
                 options={[
-                  { value: 'email', label: 'E-poçt' },
+                  { value: 'email', label: t('email') },
                   { value: 'sms', label: 'SMS' },
                 ]}
                 {...tplForm.register('channel')}
@@ -288,11 +289,11 @@ export default function MessagingPage() {
             </div>
           </div>
           <div>
-            <Label>Mövzu (email)</Label>
+            <Label>{t('subjectEmail')}</Label>
             <Input {...tplForm.register('subject')} />
           </div>
           <div>
-            <Label>Mətn *</Label>
+            <Label>{t('bodyLabel')} *</Label>
             <textarea
               className="min-h-28 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
               {...tplForm.register('body', { required: true })}

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DoorOpen, Plus, Users } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -32,6 +33,8 @@ interface RoomForm {
 }
 
 export default function RoomsPage() {
+  const t = useTranslations('rooms');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -64,10 +67,10 @@ export default function RoomsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Otaqlar</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('rooms.manage') && (
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni otaq
+            <Plus className="h-4 w-4" /> {t('newRoom')}
           </Button>
         )}
       </div>
@@ -80,7 +83,7 @@ export default function RoomsPage() {
         </div>
       ) : rooms?.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-10 text-center text-muted">
-          Hələ otaq yoxdur
+          {t('noRooms')}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,14 +98,14 @@ export default function RoomsPage() {
                     <div className="font-semibold">{room.name}</div>
                     <div className="text-xs text-muted">
                       {room.branch.name}
-                      {room.floor != null && ` · ${room.floor}-ci mərtəbə`}
+                      {room.floor != null && ` · ${t('floorLabel', { floor: room.floor })}`}
                     </div>
                   </div>
                 </div>
                 <StatusBadge status={room.status} />
               </div>
               <div className="mt-3 flex items-center gap-2 text-sm text-muted">
-                <Users className="h-4 w-4" /> Tutum: {room.capacity} nəfər
+                <Users className="h-4 w-4" /> {t('capacityValue', { count: room.capacity })}
               </div>
               {room.equipment.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -121,53 +124,53 @@ export default function RoomsPage() {
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni otaq"
+        title={t('newRoom')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Filial *</Label>
+            <Label>{t('branch')} *</Label>
             <Select
-              placeholder="Filial seçin"
+              placeholder={t('selectBranch')}
               error={errors.branchId?.message}
               options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
-              {...register('branchId', { required: 'Tələb olunur' })}
+              {...register('branchId', { required: tc('required') })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Ad *</Label>
-              <Input error={errors.name?.message} {...register('name', { required: 'Tələb olunur' })} />
+              <Label>{tc('name')} *</Label>
+              <Input error={errors.name?.message} {...register('name', { required: tc('required') })} />
             </div>
             <div>
-              <Label>Nömrə</Label>
+              <Label>{t('number')}</Label>
               <Input {...register('number')} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Tutum *</Label>
+              <Label>{t('capacity')} *</Label>
               <Input
                 type="number"
                 min={1}
                 error={errors.capacity?.message}
-                {...register('capacity', { required: 'Tələb olunur' })}
+                {...register('capacity', { required: tc('required') })}
               />
             </div>
             <div>
-              <Label>Mərtəbə</Label>
+              <Label>{t('floor')}</Label>
               <Input type="number" {...register('floor')} />
             </div>
           </div>

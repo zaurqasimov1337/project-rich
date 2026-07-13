@@ -70,6 +70,43 @@ export class CrmService {
     return paginated(data, total, q);
   }
 
+  /** Follow-up feed built on LeadActivity.dueAt/doneAt. Filters by Asia/Baku day boundaries. */
+  async followUps(filter: 'overdue' | 'today' | 'tomorrow' | 'open' | 'done' = 'open') {
+    const OFFSET = 4 * 60 * 60 * 1000; // Asia/Baku UTC+4
+    const baku = new Date(Date.now() + OFFSET);
+    const y = baku.getUTCFullYear();
+    const mo = baku.getUTCMonth();
+    const d = baku.getUTCDate();
+    const startToday = new Date(Date.UTC(y, mo, d) - OFFSET);
+    const startTomorrow = new Date(Date.UTC(y, mo, d + 1) - OFFSET);
+    const startDayAfter = new Date(Date.UTC(y, mo, d + 2) - OFFSET);
+
+    const base: Record<string, unknown> = { dueAt: { not: null } };
+    if (filter === 'done') {
+      base.doneAt = { not: null };
+    } else {
+      base.doneAt = null;
+      if (filter === 'overdue') base.dueAt = { lt: startToday };
+      else if (filter === 'today') base.dueAt = { gte: startToday, lt: startTomorrow };
+      else if (filter === 'tomorrow') base.dueAt = { gte: startTomorrow, lt: startDayAfter };
+    }
+
+    const activities = await this.prisma.scoped.leadActivity.findMany({
+      where: base,
+      include: { lead: { select: { id: true, name: true, phone: true, stage: { select: { name: true, color: true } } } } },
+      orderBy: { dueAt: filter === 'done' ? 'desc' : 'asc' },
+      take: 200,
+    });
+
+    const [overdue, today, tomorrow] = await Promise.all([
+      this.prisma.scoped.leadActivity.count({ where: { dueAt: { not: null, lt: startToday }, doneAt: null } }),
+      this.prisma.scoped.leadActivity.count({ where: { dueAt: { gte: startToday, lt: startTomorrow }, doneAt: null } }),
+      this.prisma.scoped.leadActivity.count({ where: { dueAt: { gte: startTomorrow, lt: startDayAfter }, doneAt: null } }),
+    ]);
+
+    return { activities, counts: { overdue, today, tomorrow } };
+  }
+
   /** Kanban feed: all open leads grouped client-side; capped per stage. */
   async board() {
     const stages = await this.prisma.scoped.leadStage.findMany({ orderBy: { order: 'asc' } });

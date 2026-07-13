@@ -12,6 +12,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
@@ -33,6 +34,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export default function ReportsPage() {
+  const t = useTranslations('reports');
   const can = useAuth((s) => s.can);
   const { data: catalog } = useQuery({
     queryKey: ['reports-catalog'],
@@ -51,18 +53,16 @@ export default function ReportsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold">Hesabatlar</h1>
-        <p className="mt-1 text-sm text-muted">
-          Filtrlə, cədvəl və qrafik gör, Excel/CSV-yə ixrac et və ya çap et.
-        </p>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
+        <p className="mt-1 text-sm text-muted">{t('subtitle')}</p>
       </div>
 
       {revenue?.totals && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
-            ['Bu ay gəlir', revenue.totals.income, 'text-success'],
-            ['Bu ay xərc', revenue.totals.expense, 'text-danger'],
-            ['Bu ay mənfəət', revenue.totals.profit, 'text-primary'],
+            [t('monthIncome'), revenue.totals.income, 'text-success'],
+            [t('monthExpense'), revenue.totals.expense, 'text-danger'],
+            [t('monthProfit'), revenue.totals.profit, 'text-primary'],
           ].map(([label, val, cls]) => (
             <div key={label as string} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
               <div className="text-[13px] font-medium text-muted">{label as string}</div>
@@ -89,7 +89,7 @@ export default function ReportsPage() {
               <div>
                 <div className="font-semibold">{r.name}</div>
                 {can('reports.export') && (
-                  <div className="text-xs text-muted">Bax · İxrac · Çap</div>
+                  <div className="text-xs text-muted">{t('cardActions')}</div>
                 )}
               </div>
             </Link>

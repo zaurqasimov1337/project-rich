@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -36,6 +37,8 @@ interface StudentForm {
 }
 
 export default function StudentsPage() {
+  const t = useTranslations('students');
+  const tc = useTranslations('common');
   const router = useRouter();
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
@@ -75,20 +78,20 @@ export default function StudentsPage() {
   });
 
   const columns: Column<StudentRow>[] = [
-    { key: 'code', header: 'Kod', render: (r) => <span className="font-mono text-muted">{r.code}</span> },
+    { key: 'code', header: t('code'), render: (r) => <span className="font-mono text-muted">{r.code}</span> },
     {
       key: 'name',
-      header: 'Ad Soyad',
+      header: tc('fullName'),
       render: (r) => (
         <span className="font-medium">
           {r.firstName} {r.lastName}
         </span>
       ),
     },
-    { key: 'phone', header: 'Telefon', render: (r) => r.phone ?? '—' },
+    { key: 'phone', header: tc('phone'), render: (r) => r.phone ?? '—' },
     {
       key: 'groups',
-      header: 'Qruplar',
+      header: t('groups'),
       render: (r) =>
         r.groups.length ? (
           <div className="flex flex-wrap gap-1">
@@ -102,16 +105,16 @@ export default function StudentsPage() {
           <span className="text-muted">—</span>
         ),
     },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Tələbələr</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('students.create') && (
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni tələbə
+            <Plus className="h-4 w-4" /> {t('newStudent')}
           </Button>
         )}
       </div>
@@ -130,24 +133,24 @@ export default function StudentsPage() {
           setPage(1);
         }}
         onRowClick={(r) => router.push(`/students/${r.id}`)}
-        emptyTitle="Hələ tələbə yoxdur"
-        emptyDescription="İlk tələbəni əlavə etmək üçün «Yeni tələbə» düyməsini basın."
+        emptyTitle={t('emptyTitle')}
+        emptyDescription={t('emptyDescription')}
       />
 
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni tələbə"
+        title={t('newStudent')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
@@ -160,36 +163,36 @@ export default function StudentsPage() {
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Ad *</Label>
-              <Input error={errors.firstName?.message} {...register('firstName', { required: 'Tələb olunur' })} />
+              <Label>{tc('firstName')} *</Label>
+              <Input error={errors.firstName?.message} {...register('firstName', { required: tc('required') })} />
             </div>
             <div>
-              <Label>Soyad *</Label>
-              <Input error={errors.lastName?.message} {...register('lastName', { required: 'Tələb olunur' })} />
+              <Label>{tc('lastName')} *</Label>
+              <Input error={errors.lastName?.message} {...register('lastName', { required: tc('required') })} />
             </div>
           </div>
           <div>
-            <Label>Telefon</Label>
+            <Label>{tc('phone')}</Label>
             <Input placeholder="+994 50 123 45 67" {...register('phone')} />
           </div>
           <div>
-            <Label>E-poçt</Label>
+            <Label>{tc('email')}</Label>
             <Input type="email" {...register('email')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Valideyn adı</Label>
+              <Label>{t('parentName')}</Label>
               <Input {...register('parentName')} />
             </div>
             <div>
-              <Label>Valideyn telefonu</Label>
+              <Label>{t('parentPhone')}</Label>
               <Input {...register('parentPhone')} />
             </div>
           </div>
           <div>
-            <Label>Filial</Label>
+            <Label>{t('branch')}</Label>
             <Select
-              placeholder="Filial seçin"
+              placeholder={t('selectBranch')}
               options={(branches ?? []).map((b) => ({ value: b.id, label: b.name }))}
               {...register('branchId')}
             />

@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -35,13 +36,9 @@ interface CourseForm {
   defaultCapacity?: number;
 }
 
-const PRICING_LABELS: Record<string, string> = {
-  monthly: 'Aylıq',
-  course: 'Kurs üzrə',
-  lesson: 'Dərs üzrə',
-};
-
 export default function CoursesPage() {
+  const t = useTranslations('courses');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [page, setPage] = useState(1);
@@ -87,31 +84,37 @@ export default function CoursesPage() {
     },
   });
 
+  const pricingLabels: Record<string, string> = {
+    monthly: t('pricingMonthly'),
+    course: t('pricingCourse'),
+    lesson: t('pricingLesson'),
+  };
+
   const columns: Column<CourseRow>[] = [
-    { key: 'name', header: 'Kurs', render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: 'category', header: 'Kateqoriya', render: (r) => r.category?.name ?? '—' },
-    { key: 'level', header: 'Səviyyə', render: (r) => r.level ?? '—' },
+    { key: 'name', header: t('course'), render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: 'category', header: tc('category'), render: (r) => r.category?.name ?? '—' },
+    { key: 'level', header: t('level'), render: (r) => r.level ?? '—' },
     {
       key: 'price',
-      header: 'Qiymət',
+      header: tc('price'),
       render: (r) => (
         <span className="tabular-nums">
           {formatMoney(r.price)}{' '}
-          <span className="text-xs text-muted">({PRICING_LABELS[r.pricingModel]})</span>
+          <span className="text-xs text-muted">({pricingLabels[r.pricingModel]})</span>
         </span>
       ),
     },
-    { key: 'groups', header: 'Aktiv qruplar', render: (r) => r.activeGroups },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    { key: 'groups', header: t('activeGroups'), render: (r) => r.activeGroups },
+    { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Kurslar</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('courses.manage') && (
           <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni kurs
+            <Plus className="h-4 w-4" /> {t('new')}
           </Button>
         )}
       </div>
@@ -129,23 +132,23 @@ export default function CoursesPage() {
           setSearch(v);
           setPage(1);
         }}
-        emptyTitle="Hələ kurs yoxdur"
+        emptyTitle={t('empty')}
       />
 
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Yeni kurs"
+        title={t('new')}
         footer={
           <>
             <Button variant="outline" onClick={() => setDrawerOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createMutation.isPending}
               onClick={handleSubmit((v) => createMutation.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
@@ -157,39 +160,39 @@ export default function CoursesPage() {
             </div>
           )}
           <div>
-            <Label>Kursun adı *</Label>
-            <Input error={errors.name?.message} {...register('name', { required: 'Tələb olunur' })} />
+            <Label>{t('courseName')} *</Label>
+            <Input error={errors.name?.message} {...register('name', { required: tc('required') })} />
           </div>
           <div>
-            <Label>Kateqoriya</Label>
+            <Label>{tc('category')}</Label>
             <Select
-              placeholder="Kateqoriya seçin"
+              placeholder={t('selectCategory')}
               options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
               {...register('categoryId')}
             />
           </div>
           <div>
-            <Label>Səviyyə</Label>
-            <Input placeholder="Məs: B1, Başlanğıc" {...register('level')} />
+            <Label>{t('level')}</Label>
+            <Input placeholder={t('levelPlaceholder')} {...register('level')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Qiymət (₼) *</Label>
+              <Label>{tc('price')} (₼) *</Label>
               <Input
                 type="number"
                 step="0.01"
                 min={0}
                 error={errors.price?.message}
-                {...register('price', { required: 'Tələb olunur' })}
+                {...register('price', { required: tc('required') })}
               />
             </div>
             <div>
-              <Label>Qiymət modeli *</Label>
+              <Label>{t('pricingModel')} *</Label>
               <Select
                 options={[
-                  { value: 'monthly', label: 'Aylıq' },
-                  { value: 'course', label: 'Kurs üzrə' },
-                  { value: 'lesson', label: 'Dərs üzrə' },
+                  { value: 'monthly', label: t('pricingMonthly') },
+                  { value: 'course', label: t('pricingCourse') },
+                  { value: 'lesson', label: t('pricingLesson') },
                 ]}
                 {...register('pricingModel', { required: true })}
               />
@@ -197,11 +200,11 @@ export default function CoursesPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Müddət (həftə)</Label>
+              <Label>{t('durationWeeks')}</Label>
               <Input type="number" min={1} {...register('durationWeeks')} />
             </div>
             <div>
-              <Label>Default tutum</Label>
+              <Label>{t('defaultCapacity')}</Label>
               <Input type="number" min={1} {...register('defaultCapacity')} />
             </div>
           </div>

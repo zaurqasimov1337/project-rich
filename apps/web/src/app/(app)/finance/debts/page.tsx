@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -26,6 +27,8 @@ interface DebtRow {
 }
 
 export default function DebtsPage() {
+  const t = useTranslations('finance');
+  const tc = useTranslations('common');
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [page, setPage] = useState(1);
@@ -60,10 +63,10 @@ export default function DebtsPage() {
   });
 
   const columns: Column<DebtRow>[] = [
-    { key: 'number', header: 'Faktura', render: (r) => <span className="font-mono text-xs">{r.number}</span> },
+    { key: 'number', header: t('invoice'), render: (r) => <span className="font-mono text-xs">{r.number}</span> },
     {
       key: 'student',
-      header: 'Tələbə',
+      header: t('student'),
       render: (r) =>
         r.student ? (
           <div>
@@ -76,23 +79,23 @@ export default function DebtsPage() {
           '—'
         ),
     },
-    { key: 'remaining', header: 'Qalıq borc', render: (r) => (
+    { key: 'remaining', header: t('debts.remaining'), render: (r) => (
       <span className="font-semibold text-danger tabular-nums">{formatMoney(r.remaining)}</span>
     ) },
-    { key: 'paid', header: 'Ödənilib', render: (r) => <span className="tabular-nums">{formatMoney(r.paid)}</span> },
+    { key: 'paid', header: t('paid'), render: (r) => <span className="tabular-nums">{formatMoney(r.paid)}</span> },
     {
       key: 'due',
-      header: 'Son tarix',
+      header: t('dueDate'),
       render: (r) => (
         <div>
           <div className="tabular-nums">{new Date(r.dueAt).toLocaleDateString('az-Latn-AZ')}</div>
           {r.overdueDays > 0 && (
-            <div className="text-xs text-danger">{r.overdueDays} gün gecikir</div>
+            <div className="text-xs text-danger">{t('debts.overdueDays', { days: r.overdueDays })}</div>
           )}
         </div>
       ),
     },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status === 'overdue' ? 'cancelled' : r.status} /> },
+    { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status === 'overdue' ? 'cancelled' : r.status} /> },
     {
       key: 'actions',
       header: '',
@@ -107,7 +110,7 @@ export default function DebtsPage() {
               setAmount(String(r.remaining / 100));
             }}
           >
-            <Banknote className="h-3.5 w-3.5" /> Ödəniş al
+            <Banknote className="h-3.5 w-3.5" /> {t('debts.receivePayment')}
           </Button>
         ),
     },
@@ -116,9 +119,9 @@ export default function DebtsPage() {
   return (
     <div className="space-y-4">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Maliyyə
+        <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <h1 className="text-xl font-bold">Borclar</h1>
+      <h1 className="text-xl font-bold">{t('debts.title')}</h1>
 
       <DataTable
         columns={columns}
@@ -128,25 +131,27 @@ export default function DebtsPage() {
         page={page}
         limit={20}
         onPageChange={setPage}
-        emptyTitle="Borc yoxdur"
-        emptyDescription="Bütün fakturalar ödənilib 🎉"
+        emptyTitle={t('debts.emptyTitle')}
+        emptyDescription={t('debts.emptyDescription')}
       />
 
       <Drawer
         open={!!payTarget}
         onClose={() => setPayTarget(null)}
-        title={`Ödəniş — ${payTarget?.student?.firstName ?? ''} ${payTarget?.student?.lastName ?? ''}`}
+        title={t('debts.payDrawerTitle', {
+          name: `${payTarget?.student?.firstName ?? ''} ${payTarget?.student?.lastName ?? ''}`.trim(),
+        })}
         footer={
           <>
             <Button variant="outline" onClick={() => setPayTarget(null)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={payMutation.isPending}
               disabled={!amount || Number(amount) <= 0}
               onClick={() => payMutation.mutate()}
             >
-              Ödənişi qəbul et
+              {t('debts.acceptPayment')}
             </Button>
           </>
         }
@@ -158,13 +163,13 @@ export default function DebtsPage() {
         )}
         <div className="space-y-4">
           <div className="rounded-lg bg-muted-bg p-3 text-sm">
-            Faktura: <span className="font-mono">{payTarget?.number}</span>
+            {t('invoice')}: <span className="font-mono">{payTarget?.number}</span>
             <br />
-            Qalıq borc:{' '}
+            {t('debts.remaining')}:{' '}
             <span className="font-semibold text-danger">{formatMoney(payTarget?.remaining ?? 0)}</span>
           </div>
           <div>
-            <Label>Məbləğ (₼)</Label>
+            <Label>{t('amountManat')}</Label>
             <Input
               type="number"
               step="0.01"
@@ -174,15 +179,15 @@ export default function DebtsPage() {
             />
           </div>
           <div>
-            <Label>Ödəniş üsulu</Label>
+            <Label>{t('debts.methodLabel')}</Label>
             <Select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
               options={[
-                { value: 'cash', label: 'Nağd' },
-                { value: 'card', label: 'Kart' },
-                { value: 'transfer', label: 'Köçürmə' },
-                { value: 'online', label: 'Onlayn' },
+                { value: 'cash', label: t('methods.cash') },
+                { value: 'card', label: t('methods.card') },
+                { value: 'transfer', label: t('methods.transfer') },
+                { value: 'online', label: t('methods.online') },
               ]}
             />
           </div>

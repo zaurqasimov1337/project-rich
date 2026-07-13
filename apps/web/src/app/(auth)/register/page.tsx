@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -19,6 +20,8 @@ interface FormValues {
 }
 
 export default function RegisterPage() {
+  const t = useTranslations('auth');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
@@ -47,7 +50,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-primary">EduSphere</h1>
-          <p className="mt-1 text-sm text-muted">Tədris mərkəzinizi qeydiyyatdan keçirin — 14 gün pulsuz</p>
+          <p className="mt-1 text-sm text-muted">{t('registerSubtitle')}</p>
         </div>
         <form
           onSubmit={onSubmit}
@@ -57,69 +60,69 @@ export default function RegisterPage() {
             <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{serverError}</div>
           )}
           <div>
-            <Label htmlFor="centerName">Mərkəzin adı</Label>
+            <Label htmlFor="centerName">{t('centerName')}</Label>
             <Input
               id="centerName"
-              placeholder="Məs: Zirvə Tədris Mərkəzi"
+              placeholder={t('centerNamePlaceholder')}
               error={errors.centerName?.message}
-              {...register('centerName', { required: 'Mərkəz adı tələb olunur' })}
+              {...register('centerName', { required: t('centerNameRequired') })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="firstName">Ad</Label>
+              <Label htmlFor="firstName">{tc('firstName')}</Label>
               <Input
                 id="firstName"
                 error={errors.firstName?.message}
-                {...register('firstName', { required: 'Ad tələb olunur' })}
+                {...register('firstName', { required: t('firstNameRequired') })}
               />
             </div>
             <div>
-              <Label htmlFor="lastName">Soyad</Label>
+              <Label htmlFor="lastName">{tc('lastName')}</Label>
               <Input
                 id="lastName"
                 error={errors.lastName?.message}
-                {...register('lastName', { required: 'Soyad tələb olunur' })}
+                {...register('lastName', { required: t('lastNameRequired') })}
               />
             </div>
           </div>
           <div>
-            <Label htmlFor="email">E-poçt</Label>
+            <Label htmlFor="email">{t('email')}</Label>
             <Input
               id="email"
               type="email"
               autoComplete="email"
               error={errors.email?.message}
-              {...register('email', { required: 'E-poçt tələb olunur' })}
+              {...register('email', { required: t('emailRequired') })}
             />
           </div>
           <div>
-            <Label htmlFor="phone">Telefon (opsional)</Label>
+            <Label htmlFor="phone">{t('phoneOptional')}</Label>
             <Input id="phone" placeholder="+994 50 123 45 67" {...register('phone')} />
           </div>
           <div>
-            <Label htmlFor="password">Şifrə</Label>
+            <Label htmlFor="password">{t('password')}</Label>
             <Input
               id="password"
               type="password"
               autoComplete="new-password"
               error={errors.password?.message}
               {...register('password', {
-                required: 'Şifrə tələb olunur',
+                required: t('passwordRequired'),
                 pattern: {
                   value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-                  message: 'Ən azı 8 simvol: böyük, kiçik hərf və rəqəm',
+                  message: t('passwordPattern'),
                 },
               })}
             />
           </div>
           <Button type="submit" className="w-full" loading={isSubmitting}>
-            Qeydiyyat
+            {t('register')}
           </Button>
           <p className="text-center text-sm text-muted">
-            Hesabınız var?{' '}
+            {t('haveAccount')}{' '}
             <Link href="/login" className="text-primary hover:underline">
-              Daxil ol
+              {t('login')}
             </Link>
           </p>
         </form>

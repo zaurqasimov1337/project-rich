@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
@@ -47,16 +48,17 @@ interface SpendForm {
   date: string;
 }
 
-const CHANNEL_LABELS: Record<string, string> = {
-  meta: 'Meta',
-  google: 'Google',
-  tiktok: 'TikTok',
-  instagram: 'Instagram',
-  offline: 'Oflayn',
-  other: 'Digər',
-};
-
 export default function CampaignsPage() {
+  const t = useTranslations('marketing');
+  const tc = useTranslations('common');
+  const CHANNEL_LABELS: Record<string, string> = {
+    meta: 'Meta',
+    google: 'Google',
+    tiktok: 'TikTok',
+    instagram: 'Instagram',
+    offline: t('channel.offline'),
+    other: t('channel.other'),
+  };
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
   const [page, setPage] = useState(1);
@@ -109,41 +111,41 @@ export default function CampaignsPage() {
   });
 
   const kpis = [
-    { label: 'Reklam xərci (bu ay)', value: metrics ? formatMoney(metrics.totalSpend) : '—' },
-    { label: 'Müraciətlər', value: metrics?.totalLeads ?? '—' },
+    { label: t('adSpendMonth'), value: metrics ? formatMoney(metrics.totalSpend) : '—' },
+    { label: t('leads'), value: metrics?.totalLeads ?? '—' },
     { label: 'CPL', value: metrics ? formatMoney(metrics.cpl) : '—' },
     { label: 'CAC', value: metrics ? formatMoney(metrics.cac) : '—' },
     { label: 'ROAS', value: metrics?.roas != null ? `${metrics.roas}x` : '—' },
   ];
 
   const columns: Column<CampaignRow>[] = [
-    { key: 'name', header: 'Kampaniya', render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: 'channel', header: 'Kanal', render: (r) => CHANNEL_LABELS[r.channel] ?? r.channel },
-    { key: 'budget', header: 'Büdcə', render: (r) => <span className="tabular-nums">{formatMoney(r.budget)}</span> },
+    { key: 'name', header: t('campaign'), render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: 'channel', header: t('channelHeader'), render: (r) => CHANNEL_LABELS[r.channel] ?? r.channel },
+    { key: 'budget', header: t('budget'), render: (r) => <span className="tabular-nums">{formatMoney(r.budget)}</span> },
     {
       key: 'spent',
-      header: 'Xərclənib',
+      header: t('spent'),
       render: (r) => (
         <span className={`tabular-nums ${r.budget > 0 && r.spent > r.budget ? 'text-danger' : ''}`}>
           {formatMoney(r.spent)}
         </span>
       ),
     },
-    { key: 'start', header: 'Başlama', render: (r) => new Date(r.startAt).toLocaleDateString('az-Latn-AZ') },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status === 'paused' ? 'frozen' : r.status} /> },
+    { key: 'start', header: t('startHeader'), render: (r) => new Date(r.startAt).toLocaleDateString('az-Latn-AZ') },
+    { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status === 'paused' ? 'frozen' : r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Marketinq</h1>
+        <h1 className="text-xl font-bold">{t('title')}</h1>
         {can('marketing.manage') && (
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setSpendOpen(true)}>
-              Xərc əlavə et
+              {t('addSpend')}
             </Button>
             <Button onClick={() => setCampaignOpen(true)}>
-              <Plus className="h-4 w-4" /> Yeni kampaniya
+              <Plus className="h-4 w-4" /> {t('newCampaign')}
             </Button>
           </div>
         )}
@@ -166,50 +168,50 @@ export default function CampaignsPage() {
         page={page}
         limit={20}
         onPageChange={setPage}
-        emptyTitle="Kampaniya yoxdur"
+        emptyTitle={t('emptyCampaigns')}
       />
 
       <Drawer
         open={campaignOpen}
         onClose={() => setCampaignOpen(false)}
-        title="Yeni kampaniya"
+        title={t('newCampaign')}
         footer={
           <>
             <Button variant="outline" onClick={() => setCampaignOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={createCampaign.isPending}
               onClick={campaignForm.handleSubmit((v) => createCampaign.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Ad *</Label>
+            <Label>{tc('name')} *</Label>
             <Input
               error={campaignForm.formState.errors.name?.message}
-              {...campaignForm.register('name', { required: 'Tələb olunur' })}
+              {...campaignForm.register('name', { required: tc('required') })}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Kanal *</Label>
+              <Label>{t('channelHeader')} *</Label>
               <Select
                 options={Object.entries(CHANNEL_LABELS).map(([value, label]) => ({ value, label }))}
                 {...campaignForm.register('channel')}
               />
             </div>
             <div>
-              <Label>Büdcə (₼)</Label>
+              <Label>{t('budgetAzn')}</Label>
               <Input type="number" step="0.01" min={0} {...campaignForm.register('budget')} />
             </div>
           </div>
           <div>
-            <Label>Başlama tarixi *</Label>
+            <Label>{t('startDate')} *</Label>
             <Input type="date" {...campaignForm.register('startAt', { required: true })} />
           </div>
         </form>
@@ -218,51 +220,51 @@ export default function CampaignsPage() {
       <Drawer
         open={spendOpen}
         onClose={() => setSpendOpen(false)}
-        title="Reklam xərci"
+        title={t('adSpend')}
         footer={
           <>
             <Button variant="outline" onClick={() => setSpendOpen(false)}>
-              Ləğv et
+              {tc('cancel')}
             </Button>
             <Button
               loading={addSpend.isPending}
               onClick={spendForm.handleSubmit((v) => addSpend.mutate(v))}
             >
-              Yadda saxla
+              {tc('save')}
             </Button>
           </>
         }
       >
         <form className="space-y-4">
           <div>
-            <Label>Kampaniya</Label>
+            <Label>{t('campaign')}</Label>
             <Select
-              placeholder="Kampaniya seçin (opsional)"
+              placeholder={t('selectCampaignOptional')}
               options={(data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
               {...spendForm.register('campaignId')}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Kanal *</Label>
+              <Label>{t('channelHeader')} *</Label>
               <Select
                 options={Object.entries(CHANNEL_LABELS).map(([value, label]) => ({ value, label }))}
                 {...spendForm.register('channel')}
               />
             </div>
             <div>
-              <Label>Məbləğ (₼) *</Label>
+              <Label>{t('amountAzn')} *</Label>
               <Input
                 type="number"
                 step="0.01"
                 min="0.01"
                 error={spendForm.formState.errors.amount?.message}
-                {...spendForm.register('amount', { required: 'Tələb olunur' })}
+                {...spendForm.register('amount', { required: tc('required') })}
               />
             </div>
           </div>
           <div>
-            <Label>Tarix *</Label>
+            <Label>{tc('date')} *</Label>
             <Input type="date" {...spendForm.register('date', { required: true })} />
           </div>
         </form>
