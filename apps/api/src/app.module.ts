@@ -33,6 +33,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { HrModule } from './modules/hr/hr.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 import { requestContext } from './core/context/request-context';
 import type { NextFunction, Request, Response } from 'express';
 
@@ -82,6 +83,7 @@ import type { NextFunction, Request, Response } from 'express';
     ReportsModule,
     HrModule,
     IntegrationsModule,
+    MessagingModule,
   ],
 })
 export class AppModule implements NestModule {

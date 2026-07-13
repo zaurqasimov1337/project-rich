@@ -60,7 +60,14 @@ Update after every completed step. `[x]` = done & committed.
 - [x] AI Copilot: Anthropic SDK (claude-opus-4-8, env-configurable), 7 read-only tenant-scoped analytics tools (KPIs, revenue, debtors, course performance, teacher load, attendance+churn-risk, lead funnel), manual tool loop with refusal handling, conversation persistence, token usage log, graceful no-key fallback with live KPIs — verified
 - [x] Plan enforcement: PlanService (limits 402 / features 403 / monthly AI quota), wired into student/user/branch creation and AI chat
 - [x] AI chat UI: conversation sidebar, suggestions, typing indicator
-- [ ] DEFERRED to next release: integrations marketplace UI + connectors (SMTP works via MailService), public API keys runtime, webhook delivery engine, HR employees/leave, reports-center exports (finance/marketing/funnel report endpoints exist), messaging bulk send. Schema for most already in place.
+- [x] Reports center: 7 reports (revenue/debts/attendance/group-fill/teacher-load/course-roi/lead-funnel) + XLSX/CSV export + browser print — verified
+- [x] HR: employees + leave requests (approve/reject) — E2E verified
+- [x] Integrations marketplace: 24 providers/10 categories, AES-256-GCM encrypted creds
+- [x] Webhooks: HMAC-signed delivery + retry + SSRF guard; wired payment.received
+- [x] Public API keys: create/list/revoke, sha256-hashed, shown once
+- [x] Messaging: templates + bulk email/SMS with {{placeholders}} — email delivery verified via Mailpit
+
+Remaining for future: Phase-2 portals (student/parent/teacher), mobile apps, live SMS connector impl (framework + logging done), calendar/ads OAuth connectors (catalog + encrypted-cred framework done).
 
 ## Phase 7 — QA ✅
 - [x] Unit+integration suite green (21 tests: isolation, schedule engine, finance flow)

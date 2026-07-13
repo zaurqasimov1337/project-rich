@@ -14,3 +14,8 @@ Human-readable progress log. Format: `YYYY-MM-DD — module — what shipped`.
 - ai — AI Copilot with 7 read-only tenant-scoped analytics tools, conversation persistence, plan enforcement (limits/features/AI quota)
 - qa — 21 tests passing (isolation, schedule, finance); RBAC/auth sweep; 2-tenant isolation + IDOR probes; fixed platform-login FK bug, ALS lazy-promise bug
 - security — global rate limiting (429 verified), production Dockerfiles (non-root), compose.prod, DEPLOYMENT.md
+- security-fixes — audit findings fixed (file authz, idempotency race, JWT alg pin, impersonation audit)
+- reports — 7 report generators + XLSX/CSV export engine + browser print; reports center UI
+- hr — employees + leave requests (approve/reject) API + UI
+- integrations — marketplace (24 providers), AES-256-GCM encrypted creds, webhooks (HMAC + retry + SSRF guard), public API keys
+- messaging — templates + bulk email/SMS with placeholder rendering; email delivery verified

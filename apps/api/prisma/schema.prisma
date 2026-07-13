@@ -1114,6 +1114,24 @@ model MessageTemplate {
   @@map("message_templates")
 }
 
+model MessageLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  channel    String // email|sms
+  recipient  String
+  subject    String?
+  body       String
+  status     String   @default("sent") // sent|failed
+  error      String?
+  entityType String? // student|lead
+  entityId   String?
+  sentById   String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, channel, createdAt])
+  @@map("message_logs")
+}
+
 model SavedFilter {
   id        String   @id @default(uuid())
   tenantId  String

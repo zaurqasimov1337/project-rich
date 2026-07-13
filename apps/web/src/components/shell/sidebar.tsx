@@ -16,6 +16,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Megaphone,
+  MessageSquare,
   Puzzle,
   Settings,
   UserRound,
@@ -65,6 +66,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
       { href: '/finance', labelKey: 'finance', icon: Wallet, permission: 'finance.read' },
       { href: '/hr/employees', labelKey: 'hr', icon: Briefcase, permission: 'hr.employees.read' },
       { href: '/marketing/campaigns', labelKey: 'marketing', icon: Megaphone, permission: 'marketing.read' },
+      { href: '/messaging', labelKey: 'messaging', icon: MessageSquare, permission: 'messages.send' },
     ],
   },
   {
