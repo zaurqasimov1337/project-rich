@@ -538,6 +538,11 @@
     "adSpend": "Расходы на рекламу",
     "selectCampaignOptional": "Выберите кампанию (необязательно)",
     "amountAzn": "Сумма (₼)",
+    "instagramPerformance": "Показатели Instagram",
+    "igFollowers": "Подписчики",
+    "igReach7d": "Охват (7 дн.)",
+    "igProfileViews7d": "Просмотры профиля (7 дн.)",
+    "igLeads": "Лиды из Instagram",
     "channel": {
       "offline": "Оффлайн",
       "other": "Другое"
@@ -622,7 +627,19 @@
     "connectTitle": "Подключение {name}",
     "aiConnectHint": "Введите ваш API-ключ. Он будет сохранён в зашифрованном виде.",
     "defaultConnectHint": "Включите эту интеграцию.",
-    "apiKeyLabel": "API-ключ / Токен"
+    "instagramConnectHint": "Введите Instagram Business Account ID и токен доступа Graph API. Мы проверим его и получим данные профиля.",
+    "igUserIdLabel": "Instagram Business Account ID",
+    "apiKeyLabel": "API-ключ / Токен",
+    "connectError": "Не удалось подключиться. Проверьте данные.",
+    "instagramFeedTitle": "Instagram — последние публикации",
+    "instagramFeedError": "Не удалось загрузить публикации.",
+    "instagramFeedEmpty": "Публикации пока не найдены.",
+    "dmSyncTitle": "Создать лиды из Instagram DM",
+    "dmSyncHint": "Все, кто поделился номером телефона в переписке, автоматически добавляются в CRM как лид.",
+    "dmSyncButton": "Сканировать",
+    "dmTokenLabel": "Instagram Login Access Token (для сообщений)",
+    "dmSyncResult": "{created} новых лидов создано, {skipped} уже существовало.",
+    "dmSyncError": "Не удалось просканировать DM."
   },
   "reports": {
     "title": "Отчёты",

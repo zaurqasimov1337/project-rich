@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -13,7 +14,19 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
-import { encryptSecret } from '../../core/crypto/crypto.util';
+import { decryptSecret, encryptSecret } from '../../core/crypto/crypto.util';
+import { SalesService } from '../crm/sales.service';
+import type { CreateSalesLeadDto } from '../crm/dto/sales.dto';
+import {
+  extractPhoneNumber,
+  fetchInstagramConversations,
+  fetchInstagramInsights,
+  fetchInstagramMedia,
+  fetchInstagramProfile,
+  getInstagramCredentials,
+  getInstagramDmCredentials,
+  saveInstagramDmToken,
+} from './instagram.util';
 
 class ConnectDto {
   @IsOptional()
@@ -27,6 +40,12 @@ class ConnectDto {
   secret?: string;
 }
 
+class DmTokenDto {
+  @IsString()
+  @MaxLength(2000)
+  token!: string;
+}
+
 /** Built-in provider catalog surfaced to every tenant. */
 const CATALOG = [
   { key: 'openai', category: 'ai', name: 'OpenAI', comingSoon: false },
@@ -34,7 +53,7 @@ const CATALOG = [
   { key: 'gemini', category: 'ai', name: 'Google Gemini', comingSoon: true },
   { key: 'deepseek', category: 'ai', name: 'DeepSeek', comingSoon: true },
   { key: 'facebook', category: 'social', name: 'Facebook', comingSoon: true },
-  { key: 'instagram', category: 'social', name: 'Instagram', comingSoon: true },
+  { key: 'instagram', category: 'social', name: 'Instagram', comingSoon: false },
   { key: 'tiktok', category: 'social', name: 'TikTok', comingSoon: true },
   { key: 'meta_ads', category: 'ads', name: 'Meta Ads', comingSoon: true },
   { key: 'google_ads', category: 'ads', name: 'Google Ads', comingSoon: true },
@@ -59,23 +78,47 @@ const CATALOG = [
 @ApiBearerAuth()
 @Controller('integrations')
 export class IntegrationsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sales: SalesService,
+  ) {}
 
   @Get()
   @RequirePermissions('integrations.read')
   async list() {
     const connected = await this.prisma.scoped.tenantIntegration.findMany();
     const cMap = new Map(connected.map((c) => [c.catalogKey, c]));
+
+    // Instagram's follower/media counts are shown on this card, so refresh them
+    // live instead of relying on the snapshot saved at connect time.
+    const igConn = cMap.get('instagram');
+    let igLiveProfile: Awaited<ReturnType<typeof fetchInstagramProfile>> | null = null;
+    if (igConn?.credentialsEnc) {
+      const config = (igConn.config ?? {}) as { igUserId?: string };
+      if (config.igUserId) {
+        igLiveProfile = await fetchInstagramProfile(
+          config.igUserId,
+          decryptSecret(igConn.credentialsEnc),
+        ).catch(() => null);
+      }
+    }
+
     return {
       categories: INTEGRATION_CATEGORIES,
       providers: CATALOG.map((p) => {
         const conn = cMap.get(p.key);
+        const config = (conn?.config ?? {}) as { dmTokenEnc?: string; profile?: unknown };
+        const liveConfig =
+          p.key === 'instagram' && igLiveProfile
+            ? { ...(conn?.config as object), profile: igLiveProfile }
+            : (conn?.config ?? {});
         return {
           ...p,
           status: conn?.status ?? 'available',
           connected: !!conn,
-          config: conn?.config ?? {},
+          config: liveConfig,
           hasSecret: !!conn?.credentialsEnc,
+          hasDmToken: !!config.dmTokenEnc,
         };
       }),
     };
@@ -89,19 +132,38 @@ export class IntegrationsController {
       return { ok: false, message: 'Bu inteqrasiya hələ mövcud deyil' };
     }
     const tenantId = requireTenantId();
+    let config = (dto.config ?? {}) as Record<string, unknown>;
+
+    if (key === 'instagram') {
+      const igUserId = typeof config.igUserId === 'string' ? config.igUserId.trim() : '';
+      if (!igUserId || !dto.secret) {
+        throw new BadRequestException(
+          'Instagram Business Account ID və Access Token tələb olunur',
+        );
+      }
+      try {
+        const profile = await fetchInstagramProfile(igUserId, dto.secret);
+        config = { igUserId, profile };
+      } catch (e) {
+        throw new BadRequestException(
+          `Instagram bağlantısı uğursuz oldu: ${e instanceof Error ? e.message : 'naməlum xəta'}`,
+        );
+      }
+    }
+
     const credentialsEnc = dto.secret ? encryptSecret(dto.secret) : undefined;
     await this.prisma.tenantIntegration.upsert({
       where: { tenantId_catalogKey: { tenantId, catalogKey: key } },
       update: {
         status: 'connected',
-        config: (dto.config ?? {}) as object,
+        config: config as object,
         ...(credentialsEnc ? { credentialsEnc } : {}),
         connectedById: user.userId,
       },
       create: {
         tenantId,
         catalogKey: key,
-        config: (dto.config ?? {}) as object,
+        config: config as object,
         credentialsEnc,
         connectedById: user.userId,
       },
@@ -114,5 +176,114 @@ export class IntegrationsController {
   async disconnect(@Param('key') key: string) {
     await this.prisma.scoped.tenantIntegration.deleteMany({ where: { catalogKey: key } });
     return { ok: true };
+  }
+
+  @Get('instagram/media')
+  @RequirePermissions('integrations.read')
+  async instagramMedia() {
+    const creds = await getInstagramCredentials(this.prisma);
+    if (!creds) throw new BadRequestException('Instagram inteqrasiyası qoşulmayıb');
+    try {
+      const media = await fetchInstagramMedia(creds.igUserId, creds.token);
+      return { media };
+    } catch (e) {
+      throw new BadRequestException(
+        `Instagram media çəkilə bilmədi: ${e instanceof Error ? e.message : 'naməlum xəta'}`,
+      );
+    }
+  }
+
+  @Get('instagram/insights')
+  @RequirePermissions('integrations.read')
+  async instagramInsights() {
+    const creds = await getInstagramCredentials(this.prisma);
+    if (!creds) throw new BadRequestException('Instagram inteqrasiyası qoşulmayıb');
+    const [profile, insights] = await Promise.all([
+      fetchInstagramProfile(creds.igUserId, creds.token).catch(() => null),
+      fetchInstagramInsights(creds.igUserId, creds.token),
+    ]);
+    return { profile, insights };
+  }
+
+  /**
+   * Stores the separate "Instagram Login" access token needed for the DM/messaging
+   * endpoints — the main Facebook Graph API token (used for profile/media/insights)
+   * doesn't have access to conversations.
+   */
+  @Post('instagram/dm-token')
+  @RequirePermissions('integrations.manage')
+  async saveDmToken(@Body() dto: DmTokenDto) {
+    try {
+      await saveInstagramDmToken(this.prisma, dto.token);
+    } catch (e) {
+      throw new BadRequestException(e instanceof Error ? e.message : 'naməlum xəta');
+    }
+    return { ok: true };
+  }
+
+  /**
+   * Scans recent Instagram DMs for phone numbers and turns each unique sender
+   * into a CRM lead (source: instagram_dm). Safe to call repeatedly — senders
+   * already matched by phone or Instagram handle are skipped.
+   */
+  @Post('instagram/sync-dm-leads')
+  @RequirePermissions('integrations.manage')
+  async syncInstagramDmLeads(@CurrentUser() user: AuthUser) {
+    const creds = await getInstagramDmCredentials(this.prisma);
+    if (!creds) {
+      throw new BadRequestException(
+        'Instagram DM token-i əlavə edilməyib. Əvvəlcə Instagram Login token-i saxlayın.',
+      );
+    }
+
+    let conversations;
+    try {
+      conversations = await fetchInstagramConversations(creds.igUserId, creds.dmToken);
+    } catch (e) {
+      throw new BadRequestException(
+        `Instagram DM-ləri çəkilə bilmədi: ${e instanceof Error ? e.message : 'naməlum xəta'}`,
+      );
+    }
+
+    let created = 0;
+    let skipped = 0;
+    const results: { username?: string; phone: string; status: 'created' | 'skipped' }[] = [];
+
+    for (const conv of conversations) {
+      const messageWithPhone = conv.messages
+        .filter((m) => m.from.id !== creds.igUserId && m.message)
+        .map((m) => ({ m, phone: extractPhoneNumber(m.message!) }))
+        .find((x) => x.phone);
+      if (!messageWithPhone?.phone) continue;
+
+      const phone = messageWithPhone.phone;
+      const existing = await this.prisma.scoped.lead.findFirst({
+        where: {
+          deletedAt: null,
+          OR: [
+            { phone },
+            ...(conv.participantUsername ? [{ instagram: conv.participantUsername }] : []),
+          ],
+        },
+      });
+      if (existing) {
+        skipped++;
+        results.push({ username: conv.participantUsername, phone, status: 'skipped' });
+        continue;
+      }
+
+      const leadDto: CreateSalesLeadDto = {
+        fullName: conv.participantUsername ?? `Instagram istifadəçisi ${conv.participantId ?? ''}`.trim(),
+        phone,
+        instagram: conv.participantUsername,
+        source: 'instagram_dm',
+        notes: `Instagram DM-dən avtomatik yaradıldı: "${messageWithPhone.m.message}"`,
+      };
+      await this.sales.createLead(leadDto, user.userId);
+      created++;
+      results.push({ username: conv.participantUsername, phone, status: 'created' });
+    }
+
+    return { created, skipped, results };
   }
 }

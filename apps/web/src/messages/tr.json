@@ -538,6 +538,11 @@
     "adSpend": "Reklam harcaması",
     "selectCampaignOptional": "Kampanya seçin (isteğe bağlı)",
     "amountAzn": "Tutar (₼)",
+    "instagramPerformance": "Instagram performansı",
+    "igFollowers": "Takipçiler",
+    "igReach7d": "Erişim (7 gün)",
+    "igProfileViews7d": "Profil görüntüleme (7 gün)",
+    "igLeads": "Instagram'dan gelen adaylar",
     "channel": {
       "offline": "Çevrimdışı",
       "other": "Diğer"
@@ -622,7 +627,19 @@
     "connectTitle": "{name} bağlantısı",
     "aiConnectHint": "API anahtarınızı girin. Şifrelenerek saklanacaktır.",
     "defaultConnectHint": "Bu entegrasyonu etkinleştirin.",
-    "apiKeyLabel": "API anahtarı / Token"
+    "instagramConnectHint": "Instagram Business Account ID ve Graph API erişim token'ı girin. Doğrulanıp profil bilgisi çekilecek.",
+    "igUserIdLabel": "Instagram Business Account ID",
+    "apiKeyLabel": "API anahtarı / Token",
+    "connectError": "Bağlantı başarısız oldu. Bilgileri kontrol edin.",
+    "instagramFeedTitle": "Instagram — son gönderiler",
+    "instagramFeedError": "Gönderiler alınamadı.",
+    "instagramFeedEmpty": "Henüz gönderi bulunamadı.",
+    "dmSyncTitle": "Instagram DM'lerinden lead oluştur",
+    "dmSyncHint": "Son yazışmalarda telefon numarası paylaşan kişiler otomatik olarak CRM'e lead olarak eklenir.",
+    "dmSyncButton": "Şimdi tara",
+    "dmTokenLabel": "Instagram Login Access Token (mesajlaşma için)",
+    "dmSyncResult": "{created} yeni lead oluşturuldu, {skipped} zaten mevcuttu.",
+    "dmSyncError": "DM'ler taranamadı."
   },
   "reports": {
     "title": "Raporlar",

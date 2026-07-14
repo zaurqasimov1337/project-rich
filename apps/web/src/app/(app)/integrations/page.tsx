@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Plug, Plus } from 'lucide-react';
+import { Check, Heart, MessageCircle, Phone, Plug, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -11,6 +11,18 @@ import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { Drawer } from '@/components/ui/drawer';
 
+interface InstagramMedia {
+  id: string;
+  caption?: string;
+  media_type: string;
+  media_url?: string;
+  thumbnail_url?: string;
+  permalink: string;
+  timestamp: string;
+  like_count?: number;
+  comments_count?: number;
+}
+
 interface Provider {
   key: string;
   category: string;
@@ -19,6 +31,8 @@ interface Provider {
   status: string;
   connected: boolean;
   hasSecret: boolean;
+  hasDmToken: boolean;
+  config?: { igUserId?: string; profile?: { username?: string; followers_count?: number; media_count?: number } };
 }
 
 const CATEGORY_KEYS: Record<string, string> = {
@@ -41,23 +55,53 @@ export default function IntegrationsPage() {
   const can = useAuth((s) => s.can);
   const [connectKey, setConnectKey] = useState<Provider | null>(null);
   const [secret, setSecret] = useState('');
+  const [igUserId, setIgUserId] = useState('');
+  const [dmToken, setDmToken] = useState('');
 
   const { data } = useQuery({
     queryKey: ['integrations'],
     queryFn: () => api.get<{ categories: string[]; providers: Provider[] }>('/integrations'),
   });
 
+  const instagramProvider = data?.providers.find((p) => p.key === 'instagram');
+  const instagramConnected = !!instagramProvider?.connected;
+  const instagramHasDmToken = !!instagramProvider?.hasDmToken;
+  const { data: igMedia, isLoading: igMediaLoading, isError: igMediaError } = useQuery({
+    queryKey: ['instagram-media'],
+    queryFn: () => api.get<{ media: InstagramMedia[] }>('/integrations/instagram/media'),
+    enabled: instagramConnected,
+  });
+
   const connectMutation = useMutation({
-    mutationFn: () => api.post(`/integrations/${connectKey!.key}/connect`, { secret: secret || undefined }),
+    mutationFn: () =>
+      api.post(`/integrations/${connectKey!.key}/connect`, {
+        secret: secret || undefined,
+        config: connectKey?.key === 'instagram' ? { igUserId } : undefined,
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['integrations'] });
       setConnectKey(null);
       setSecret('');
+      setIgUserId('');
     },
   });
   const disconnectMutation = useMutation({
     mutationFn: (key: string) => api.delete(`/integrations/${key}/disconnect`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['integrations'] }),
+  });
+
+  const syncDmLeadsMutation = useMutation({
+    mutationFn: () =>
+      api.post<{ created: number; skipped: number }>('/integrations/instagram/sync-dm-leads'),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['leads'] }),
+  });
+
+  const saveDmTokenMutation = useMutation({
+    mutationFn: () => api.post('/integrations/instagram/dm-token', { token: dmToken }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['integrations'] });
+      setDmToken('');
+    },
   });
 
   const byCategory = (data?.providers ?? []).reduce<Record<string, Provider[]>>((acc, p) => {
@@ -94,7 +138,10 @@ export default function IntegrationsPage() {
                     <div className="font-medium">{p.name}</div>
                     {p.connected ? (
                       <span className="inline-flex items-center gap-1 text-xs text-success">
-                        <Check className="h-3 w-3" /> {t('connected')}
+                        <Check className="h-3 w-3" />
+                        {p.key === 'instagram' && p.config?.profile?.username
+                          ? `@${p.config.profile.username} · ${p.config.profile.followers_count ?? 0} izləyici`
+                          : t('connected')}
                       </span>
                     ) : p.comingSoon ? (
                       <span className="text-xs text-muted">{t('comingSoon')}</span>
@@ -124,6 +171,115 @@ export default function IntegrationsPage() {
         </div>
       ))}
 
+      {instagramConnected && (
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold">{t('dmSyncTitle')}</h2>
+              <p className="mt-1 text-xs text-muted">{t('dmSyncHint')}</p>
+            </div>
+            {can('integrations.manage') && instagramHasDmToken && (
+              <Button
+                size="sm"
+                loading={syncDmLeadsMutation.isPending}
+                onClick={() => syncDmLeadsMutation.mutate()}
+              >
+                <Phone className="h-4 w-4" /> {t('dmSyncButton')}
+              </Button>
+            )}
+          </div>
+
+          {can('integrations.manage') && !instagramHasDmToken && (
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <Label>{t('dmTokenLabel')}</Label>
+                <Input
+                  type="password"
+                  placeholder="IGAA..."
+                  value={dmToken}
+                  onChange={(e) => setDmToken(e.target.value)}
+                />
+              </div>
+              <Button
+                size="sm"
+                loading={saveDmTokenMutation.isPending}
+                disabled={!dmToken}
+                onClick={() => saveDmTokenMutation.mutate()}
+              >
+                {tc('save')}
+              </Button>
+            </div>
+          )}
+          {saveDmTokenMutation.isError && (
+            <p className="mt-2 text-sm text-danger">
+              {(saveDmTokenMutation.error as { message?: string })?.message ?? t('dmSyncError')}
+            </p>
+          )}
+
+          {syncDmLeadsMutation.isSuccess && (
+            <p className="mt-3 text-sm text-success">
+              {t('dmSyncResult', {
+                created: syncDmLeadsMutation.data?.created ?? 0,
+                skipped: syncDmLeadsMutation.data?.skipped ?? 0,
+              })}
+            </p>
+          )}
+          {syncDmLeadsMutation.isError && (
+            <p className="mt-3 text-sm text-danger">
+              {(syncDmLeadsMutation.error as { message?: string })?.message ?? t('dmSyncError')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {instagramConnected && (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
+            {t('instagramFeedTitle')}
+          </h2>
+          {igMediaLoading && <p className="text-sm text-muted">{tc('loading')}</p>}
+          {igMediaError && <p className="text-sm text-danger">{t('instagramFeedError')}</p>}
+          {igMedia && igMedia.media.length === 0 && (
+            <p className="text-sm text-muted">{t('instagramFeedEmpty')}</p>
+          )}
+          {igMedia && igMedia.media.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {igMedia.media.map((m) => (
+                <a
+                  key={m.id}
+                  href={m.permalink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
+                >
+                  <div className="aspect-square w-full overflow-hidden bg-muted-bg">
+                    {(m.media_url || m.thumbnail_url) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.thumbnail_url ?? m.media_url}
+                        alt={m.caption ?? 'Instagram post'}
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-1 p-3">
+                    {m.caption && <p className="line-clamp-2 text-xs text-muted">{m.caption}</p>}
+                    <div className="flex items-center gap-3 text-xs text-muted">
+                      <span className="inline-flex items-center gap-1">
+                        <Heart className="h-3 w-3" /> {m.like_count ?? 0}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <MessageCircle className="h-3 w-3" /> {m.comments_count ?? 0}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <Drawer
         open={!!connectKey}
         onClose={() => setConnectKey(null)}
@@ -141,8 +297,22 @@ export default function IntegrationsPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            {connectKey?.category === 'ai' ? t('aiConnectHint') : t('defaultConnectHint')}
+            {connectKey?.key === 'instagram'
+              ? t('instagramConnectHint')
+              : connectKey?.category === 'ai'
+                ? t('aiConnectHint')
+                : t('defaultConnectHint')}
           </p>
+          {connectKey?.key === 'instagram' && (
+            <div>
+              <Label>{t('igUserIdLabel')}</Label>
+              <Input
+                placeholder="17841400000000000"
+                value={igUserId}
+                onChange={(e) => setIgUserId(e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <Label>{t('apiKeyLabel')}</Label>
             <Input
@@ -152,6 +322,11 @@ export default function IntegrationsPage() {
               onChange={(e) => setSecret(e.target.value)}
             />
           </div>
+          {connectMutation.isError && (
+            <p className="text-sm text-danger">
+              {(connectMutation.error as { message?: string })?.message ?? t('connectError')}
+            </p>
+          )}
         </div>
       </Drawer>
     </div>

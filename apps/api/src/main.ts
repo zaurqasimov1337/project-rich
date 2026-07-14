@@ -9,7 +9,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
 
-async function bootstrap() {
+async function createAndStart(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
 
@@ -45,6 +45,28 @@ async function bootstrap() {
 
   const port = Number(process.env.API_PORT ?? 4000);
   await app.listen(port);
+}
+
+/**
+ * Neon's serverless Postgres suspends when idle and can take a few seconds to
+ * wake on the first connection — Prisma connects as part of Nest's module init
+ * (triggered inside app.listen()), so a cold-start P1001 would otherwise crash
+ * the whole process. Retry the entire create+listen sequence instead.
+ */
+async function bootstrap() {
+  const retries = 6;
+  const delayMs = 3000;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await createAndStart();
+      return;
+    } catch (e) {
+      if (attempt === retries) throw e;
+      // eslint-disable-next-line no-console
+      console.warn(`[bootstrap] DB not ready yet (attempt ${attempt}/${retries}), retrying in ${delayMs}ms...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
 }
 
 void bootstrap();

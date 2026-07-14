@@ -23,6 +23,11 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import { ListQueryDto, paginated, resolveDateRange } from '../../common/dto/list-query.dto';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
+import {
+  fetchInstagramInsights,
+  fetchInstagramProfile,
+  getInstagramCredentials,
+} from '../integrations/instagram.util';
 
 const CHANNELS = ['meta', 'google', 'tiktok', 'instagram', 'offline', 'other'];
 
@@ -222,6 +227,34 @@ export class MarketingController {
     const totalSpend = spendByChannel.reduce((s, c) => s + (c._sum.amount ?? 0), 0);
     const totalLeads = leadsBySource.reduce((s, l) => s + l._count, 0);
     const income = tuitionIncome._sum.amount ?? 0;
+
+    // Best-effort: surface live Instagram reach/followers next to lead-gen ROI so the
+    // marketing team can correlate social performance with actual pipeline results.
+    let instagram: {
+      username?: string;
+      followers?: number;
+      reach?: number;
+      profileViews?: number;
+      leadsFromInstagram: number;
+    } | null = null;
+    const creds = await getInstagramCredentials(this.prisma);
+    if (creds) {
+      const [profile, insights] = await Promise.all([
+        fetchInstagramProfile(creds.igUserId, creds.token).catch(() => null),
+        fetchInstagramInsights(creds.igUserId, creds.token),
+      ]);
+      const igSourceIds = sources.filter((s) => /instagram/i.test(s.name)).map((s) => s.id);
+      instagram = {
+        username: profile?.username,
+        followers: profile?.followers_count,
+        reach: insights?.reach,
+        profileViews: insights?.profileViews,
+        leadsFromInstagram: leadsBySource
+          .filter((l) => l.sourceId && igSourceIds.includes(l.sourceId))
+          .reduce((s, l) => s + l._count, 0),
+      };
+    }
+
     return {
       totalSpend,
       totalLeads,
@@ -235,6 +268,7 @@ export class MarketingController {
         source: l.sourceId ? (sourceMap.get(l.sourceId) ?? '—') : 'Mənbəsiz',
         leads: l._count,
       })),
+      instagram,
     };
   }
 }

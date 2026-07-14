@@ -32,6 +32,13 @@ interface Metrics {
   cac: number;
   roas: number | null;
   bySource: { source: string; leads: number }[];
+  instagram: {
+    username?: string;
+    followers?: number;
+    reach?: number;
+    profileViews?: number;
+    leadsFromInstagram: number;
+  } | null;
 }
 
 interface CampaignForm {
@@ -159,6 +166,45 @@ export default function CampaignsPage() {
           </div>
         ))}
       </div>
+
+      {metrics?.instagram && (
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">
+              {t('instagramPerformance')}
+              {metrics.instagram.username && (
+                <span className="ml-2 font-normal text-muted">@{metrics.instagram.username}</span>
+              )}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <div className="text-[13px] font-medium text-muted">{t('igFollowers')}</div>
+              <div className="mt-1 text-lg font-bold tabular-nums">
+                {metrics.instagram.followers ?? '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-[13px] font-medium text-muted">{t('igReach7d')}</div>
+              <div className="mt-1 text-lg font-bold tabular-nums">
+                {metrics.instagram.reach ?? '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-[13px] font-medium text-muted">{t('igProfileViews7d')}</div>
+              <div className="mt-1 text-lg font-bold tabular-nums">
+                {metrics.instagram.profileViews ?? '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-[13px] font-medium text-muted">{t('igLeads')}</div>
+              <div className="mt-1 text-lg font-bold tabular-nums">
+                {metrics.instagram.leadsFromInstagram}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <DataTable
         columns={columns}

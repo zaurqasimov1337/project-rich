@@ -538,6 +538,11 @@
     "adSpend": "Ad spend",
     "selectCampaignOptional": "Select campaign (optional)",
     "amountAzn": "Amount (₼)",
+    "instagramPerformance": "Instagram performance",
+    "igFollowers": "Followers",
+    "igReach7d": "Reach (7d)",
+    "igProfileViews7d": "Profile views (7d)",
+    "igLeads": "Leads from Instagram",
     "channel": {
       "offline": "Offline",
       "other": "Other"
@@ -622,7 +627,19 @@
     "connectTitle": "Connect {name}",
     "aiConnectHint": "Enter your API key. It will be stored encrypted.",
     "defaultConnectHint": "Enable this integration.",
-    "apiKeyLabel": "API key / Token"
+    "instagramConnectHint": "Enter your Instagram Business Account ID and a Graph API access token. We'll verify it and fetch your profile.",
+    "igUserIdLabel": "Instagram Business Account ID",
+    "apiKeyLabel": "API key / Token",
+    "connectError": "Connection failed. Please check your credentials.",
+    "instagramFeedTitle": "Instagram — recent posts",
+    "instagramFeedError": "Couldn't fetch posts.",
+    "instagramFeedEmpty": "No posts found yet.",
+    "dmSyncTitle": "Create leads from Instagram DMs",
+    "dmSyncHint": "Anyone who shared a phone number in a recent conversation is automatically added to the CRM as a lead.",
+    "dmSyncButton": "Scan now",
+    "dmTokenLabel": "Instagram Login Access Token (for messaging)",
+    "dmSyncResult": "{created} new leads created, {skipped} already existed.",
+    "dmSyncError": "Couldn't scan DMs."
   },
   "reports": {
     "title": "Reports",
