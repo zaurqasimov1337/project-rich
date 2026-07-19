@@ -83,6 +83,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   /** Tenant-scoped client — use this for ALL tenant data access. */
   readonly scoped: TenantPrismaClient;
 
+  /** Keeps Neon's serverless Postgres from auto-suspending during idle gaps. */
+  private keepAlive?: NodeJS.Timeout;
+
   constructor() {
     super({
       log:
@@ -95,9 +98,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit(): Promise<void> {
     await this.$connect();
+    // Neon suspends after ~5 min idle and then takes seconds to wake, which
+    // shows up as slow first page loads. A tiny periodic ping keeps it warm.
+    this.keepAlive = setInterval(() => {
+      this.$queryRaw`SELECT 1`.catch(() => undefined);
+    }, 4 * 60 * 1000);
+    this.keepAlive.unref?.();
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (this.keepAlive) clearInterval(this.keepAlive);
     await this.$disconnect();
   }
 

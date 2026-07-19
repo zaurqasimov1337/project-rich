@@ -10,7 +10,9 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { EnvelopeInterceptor } from './common/interceptors/envelope.interceptor';
 
 async function createAndStart(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: true lets the Instagram webhook verify Meta's HMAC signature over
+  // the exact bytes Meta signed (re-serializing parsed JSON would not match).
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
 
   app.use(helmet());

@@ -14,7 +14,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
-import { decryptSecret, encryptSecret } from '../../core/crypto/crypto.util';
+import { encryptSecret } from '../../core/crypto/crypto.util';
 import { SalesService } from '../crm/sales.service';
 import type { CreateSalesLeadDto } from '../crm/dto/sales.dto';
 import {
@@ -86,39 +86,26 @@ export class IntegrationsController {
   @Get()
   @RequirePermissions('integrations.read')
   async list() {
+    // Serves the stored snapshot only — no blocking external API calls, so this
+    // page stays fast. Live follower/reach numbers come from the dedicated
+    // /instagram/insights endpoint, which the UI can call separately.
     const connected = await this.prisma.scoped.tenantIntegration.findMany();
     const cMap = new Map(connected.map((c) => [c.catalogKey, c]));
-
-    // Instagram's follower/media counts are shown on this card, so refresh them
-    // live instead of relying on the snapshot saved at connect time.
-    const igConn = cMap.get('instagram');
-    let igLiveProfile: Awaited<ReturnType<typeof fetchInstagramProfile>> | null = null;
-    if (igConn?.credentialsEnc) {
-      const config = (igConn.config ?? {}) as { igUserId?: string };
-      if (config.igUserId) {
-        igLiveProfile = await fetchInstagramProfile(
-          config.igUserId,
-          decryptSecret(igConn.credentialsEnc),
-        ).catch(() => null);
-      }
-    }
 
     return {
       categories: INTEGRATION_CATEGORIES,
       providers: CATALOG.map((p) => {
         const conn = cMap.get(p.key);
-        const config = (conn?.config ?? {}) as { dmTokenEnc?: string; profile?: unknown };
-        const liveConfig =
-          p.key === 'instagram' && igLiveProfile
-            ? { ...(conn?.config as object), profile: igLiveProfile }
-            : (conn?.config ?? {});
+        const rawConfig = (conn?.config ?? {}) as Record<string, unknown> & { dmTokenEnc?: string };
+        // Never leak credential material to the client. `hasDmToken` is enough for the UI.
+        const { dmTokenEnc, ...safeConfig } = rawConfig;
         return {
           ...p,
           status: conn?.status ?? 'available',
           connected: !!conn,
-          config: liveConfig,
+          config: safeConfig,
           hasSecret: !!conn?.credentialsEnc,
-          hasDmToken: !!config.dmTokenEnc,
+          hasDmToken: !!dmTokenEnc,
         };
       }),
     };

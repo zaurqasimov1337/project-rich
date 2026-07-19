@@ -15,6 +15,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
   IsArray,
   IsDateString,
+  IsEmail,
   IsIn,
   IsInt,
   IsObject,
@@ -24,17 +25,47 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { randomBytes } from 'node:crypto';
+import * as argon2 from 'argon2';
 import { TEACHER_RATE_TYPES } from '@edusphere/shared';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { ListQueryDto, paginated } from '../../common/dto/list-query.dto';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
 
+class NewTeacherUserDto {
+  @IsString()
+  @MaxLength(80)
+  firstName!: string;
+
+  @IsString()
+  @MaxLength(80)
+  lastName!: string;
+
+  @IsEmail()
+  @MaxLength(160)
+  email!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
+}
+
 class CreateTeacherDto {
-  /** Existing tenant user to promote to teacher. */
+  /** Existing tenant user to promote to teacher. Provide this OR `newUser`. */
+  @IsOptional()
   @IsUUID()
-  userId!: string;
+  userId?: string;
+
+  /** Create a brand-new user and make them a teacher in one step. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NewTeacherUserDto)
+  newUser?: NewTeacherUserDto;
 
   @IsOptional()
   @IsArray()
@@ -59,10 +90,37 @@ class CreateTeacherDto {
   @Min(1)
   @Max(80)
   maxWeeklyHours?: number;
+
+  /** Optional convenience: sets a revenue-share rate (percent) for the teacher. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  revenuePct?: number;
 }
 
 class UpdateTeacherDto {
   @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  lastName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(160)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  phone?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   subjects?: string[];
@@ -85,6 +143,13 @@ class UpdateTeacherDto {
   @Min(1)
   @Max(80)
   maxWeeklyHours?: number;
+
+  /** Revenue-share percent. Creates or updates the teacher's revenue_pct rate. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  revenuePct?: number;
 }
 
 class RateDto {
@@ -217,18 +282,56 @@ export class TeachersController {
   @Post()
   @RequirePermissions('teachers.create')
   async create(@Body() dto: CreateTeacherDto) {
-    const user = await this.prisma.scoped.user.findFirst({
-      where: { id: dto.userId, deletedAt: null },
-    });
-    if (!user) throw new NotFoundException({ code: 'NOT_FOUND', message: 'User not found' });
-    const existing = await this.prisma.scoped.teacher.findFirst({ where: { userId: dto.userId } });
-    if (existing) {
-      throw new BadRequestException({ code: 'CONFLICT', message: 'User is already a teacher' });
+    const tenantId = requireTenantId();
+
+    if (!dto.userId && !dto.newUser) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'İstifadəçi seçin və ya yeni müəllim məlumatlarını daxil edin',
+      });
     }
-    return this.prisma.scoped.teacher.create({
+
+    // Resolve the target user id — either an existing user or a freshly created one.
+    let userId: string;
+    if (dto.newUser) {
+      const email = dto.newUser.email.toLowerCase().trim();
+      const emailTaken = await this.prisma.user.findFirst({ where: { tenantId, email } });
+      if (emailTaken) {
+        throw new BadRequestException({ code: 'CONFLICT', message: 'Bu e-poçt artıq qeydiyyatdadır' });
+      }
+      // Teachers created here can log in after a password reset; we set a random
+      // hash so the account exists without a usable password until then.
+      const tempPassword = randomBytes(24).toString('hex');
+      const teacherRole = await this.prisma.scoped.role.findFirst({ where: { key: 'teacher' } });
+      const created = await this.prisma.user.create({
+        data: {
+          tenantId,
+          email,
+          passwordHash: await argon2.hash(tempPassword),
+          firstName: dto.newUser.firstName.trim(),
+          lastName: dto.newUser.lastName.trim(),
+          phone: dto.newUser.phone?.trim() || null,
+          status: 'active',
+          ...(teacherRole ? { roles: { create: { roleId: teacherRole.id } } } : {}),
+        },
+      });
+      userId = created.id;
+    } else {
+      const user = await this.prisma.scoped.user.findFirst({
+        where: { id: dto.userId, deletedAt: null },
+      });
+      if (!user) throw new NotFoundException({ code: 'NOT_FOUND', message: 'User not found' });
+      const existing = await this.prisma.scoped.teacher.findFirst({ where: { userId: dto.userId } });
+      if (existing) {
+        throw new BadRequestException({ code: 'CONFLICT', message: 'User is already a teacher' });
+      }
+      userId = dto.userId!;
+    }
+
+    const teacher = await this.prisma.scoped.teacher.create({
       data: {
-        tenantId: requireTenantId(),
-        userId: dto.userId,
+        tenantId,
+        userId,
         subjects: dto.subjects ?? [],
         bio: dto.bio,
         hiredAt: dto.hiredAt ? new Date(dto.hiredAt) : undefined,
@@ -236,13 +339,74 @@ export class TeachersController {
         maxWeeklyHours: dto.maxWeeklyHours ?? 40,
       },
     });
+
+    if (dto.revenuePct != null) {
+      await this.prisma.scoped.teacherRate.create({
+        data: {
+          tenantId,
+          teacherId: teacher.id,
+          type: 'revenue_pct',
+          amount: Math.round(dto.revenuePct * 100), // percent*100, per schema
+        },
+      });
+    }
+
+    return teacher;
   }
 
   @Patch(':id')
   @RequirePermissions('teachers.update')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTeacherDto) {
+    const tenantId = requireTenantId();
     const teacher = await this.prisma.scoped.teacher.findFirst({ where: { id, deletedAt: null } });
     if (!teacher) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Teacher not found' });
+
+    // Contact fields live on the linked user account.
+    if (
+      dto.firstName !== undefined ||
+      dto.lastName !== undefined ||
+      dto.email !== undefined ||
+      dto.phone !== undefined
+    ) {
+      let emailUpdate: string | undefined;
+      if (dto.email !== undefined) {
+        emailUpdate = dto.email.toLowerCase().trim();
+        const clash = await this.prisma.user.findFirst({
+          where: { tenantId, email: emailUpdate, id: { not: teacher.userId } },
+        });
+        if (clash) {
+          throw new BadRequestException({ code: 'CONFLICT', message: 'Bu e-poçt artıq qeydiyyatdadır' });
+        }
+      }
+      await this.prisma.scoped.user.update({
+        where: { id: teacher.userId },
+        data: {
+          firstName: dto.firstName?.trim() ?? undefined,
+          lastName: dto.lastName?.trim() ?? undefined,
+          email: emailUpdate,
+          phone: dto.phone !== undefined ? dto.phone.trim() || null : undefined,
+        },
+      });
+    }
+
+    // Revenue-share rate: update the existing revenue_pct rate or create one.
+    if (dto.revenuePct !== undefined) {
+      const amount = Math.round(dto.revenuePct * 100); // percent*100, per schema
+      const existingRate = await this.prisma.scoped.teacherRate.findFirst({
+        where: { teacherId: id, type: 'revenue_pct' },
+      });
+      if (existingRate) {
+        await this.prisma.scoped.teacherRate.update({
+          where: { id: existingRate.id },
+          data: { amount },
+        });
+      } else {
+        await this.prisma.scoped.teacherRate.create({
+          data: { tenantId, teacherId: id, type: 'revenue_pct', amount },
+        });
+      }
+    }
+
     return this.prisma.scoped.teacher.update({
       where: { id },
       data: {

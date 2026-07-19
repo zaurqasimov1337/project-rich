@@ -35,22 +35,32 @@ export class RateLimitGuard implements CanActivate {
     ]);
     const isAuthRoute = req.path.includes('/auth/');
 
+    // Health checks and other unauthenticated infra routes shouldn't pay a
+    // network round-trip to Redis on every hit — only meter auth routes (the
+    // brute-force surface) among public endpoints.
+    if (isPublic && !isAuthRoute) return true;
+
     const limit = override?.limit ?? (isAuthRoute ? 20 : 300);
     const windowSec = override?.windowSec ?? 60;
 
     const id = req.user?.userId ?? req.ip ?? 'anon';
     const key = `rl:${req.method}:${req.path.split('/').slice(0, 6).join('/')}:${id}`;
 
-    const count = await this.redis.incr(key);
-    if (count === 1) await this.redis.expire(key, windowSec);
-    if (count > limit) {
-      const ttl = await this.redis.ttl(key);
-      throw new HttpException(
-        { code: 'RATE_LIMITED', message: 'Too many requests', details: { retryAfter: ttl } },
-        429,
-      );
+    try {
+      const count = await this.redis.incr(key);
+      if (count === 1) await this.redis.expire(key, windowSec);
+      if (count > limit) {
+        const ttl = await this.redis.ttl(key);
+        throw new HttpException(
+          { code: 'RATE_LIMITED', message: 'Too many requests', details: { retryAfter: ttl } },
+          429,
+        );
+      }
+    } catch (e) {
+      // Fail open: a slow or unreachable Redis must not stall or block requests.
+      // Re-throw only our own 429 so genuine rate limits still apply.
+      if (e instanceof HttpException) throw e;
     }
-    void isPublic;
     return true;
   }
 }

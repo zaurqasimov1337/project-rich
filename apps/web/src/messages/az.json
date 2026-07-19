@@ -308,11 +308,20 @@
     "weeklyLimit": "Həftəlik limit",
     "hours": "{count} saat",
     "title": "Müəllimlər",
-    "inviteHint": "Müəllim əlavə etmək üçün əvvəlcə Parametrlər → İstifadəçilər bölməsindən «teacher» rolu ilə istifadəçi dəvət edin, sonra onu müəllim profili ilə əlaqələndirin.",
+    "inviteHint": "Yeni müəllim əlavə edin və ya mövcud istifadəçini müəllim profili ilə əlaqələndirin.",
     "emptyTitle": "Hələ müəllim yoxdur",
     "specialty": "İxtisas",
     "salaryModel": "Maaş Modeli",
-    "monthlyEarnings": "Aylıq Qazanc"
+    "monthlyEarnings": "Aylıq Qazanc",
+    "addTeacher": "Müəllim əlavə et",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "email": "E-poçt",
+    "phone": "Telefon",
+    "subjectsLabel": "Fənlər (vergüllə ayırın)",
+    "revenuePct": "Gəlir payı (%)",
+    "created": "Müəllim əlavə olundu",
+    "editTeacher": "Müəllimi redaktə et"
   },
   "groups": {
     "title": "Qruplar",

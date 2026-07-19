@@ -308,11 +308,20 @@
     "weeklyLimit": "Weekly limit",
     "hours": "{count} h",
     "title": "Teachers",
-    "inviteHint": "To add a teacher, first invite a user with the «teacher» role from Settings → Users, then link them to a teacher profile.",
+    "inviteHint": "Add a new teacher, or link an existing user to a teacher profile.",
     "emptyTitle": "No teachers yet",
     "specialty": "Specialty",
     "salaryModel": "Salary model",
-    "monthlyEarnings": "Monthly earnings"
+    "monthlyEarnings": "Monthly earnings",
+    "addTeacher": "Add teacher",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "subjectsLabel": "Subjects (comma-separated)",
+    "revenuePct": "Revenue share (%)",
+    "created": "Teacher added",
+    "editTeacher": "Edit teacher"
   },
   "groups": {
     "title": "Groups",

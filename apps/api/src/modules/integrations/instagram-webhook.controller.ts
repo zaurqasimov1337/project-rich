@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import type { Response } from 'express';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { RawBodyRequest } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SalesService } from '../crm/sales.service';
@@ -9,8 +11,10 @@ import { extractPhoneNumber } from './instagram.util';
 
 /**
  * Public receiver for Meta's Instagram Messaging webhooks. Unauthenticated by
- * design (Meta calls it directly, not through our JWT) — the verify token is
- * the only guard, matching Meta's documented handshake.
+ * design (Meta calls it directly, not through our JWT). Two guards replace JWT:
+ *  - GET handshake is gated by the verify token.
+ *  - POST payloads are authenticated by the X-Hub-Signature-256 HMAC, so nobody
+ *    who merely discovers the URL can inject fake leads.
  */
 @ApiExcludeController()
 @Controller('webhooks/instagram')
@@ -33,7 +37,9 @@ export class InstagramWebhookController {
 
   @Public()
   @Post()
-  async receive(@Body() body: { entry?: any[] }) {
+  async receive(@Req() req: RawBodyRequest<Request>) {
+    this.assertValidSignature(req);
+    const body = req.body as { entry?: any[] };
     for (const entry of body?.entry ?? []) {
       const igUserId: string | undefined = entry.id;
       if (!igUserId) continue;
@@ -47,6 +53,32 @@ export class InstagramWebhookController {
       }
     }
     return { received: true };
+  }
+
+  /**
+   * Verifies Meta's HMAC-SHA256 signature over the raw request body. Rejects the
+   * request if the app secret isn't configured, so an unsigned deployment can
+   * never silently accept forged payloads.
+   */
+  private assertValidSignature(req: RawBodyRequest<Request>): void {
+    const secret = process.env.INSTAGRAM_APP_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException({
+        code: 'UNAUTHORIZED',
+        message: 'Webhook signature verification is not configured',
+      });
+    }
+    const header = req.headers['x-hub-signature-256'];
+    const provided = Array.isArray(header) ? header[0] : header;
+    if (!provided?.startsWith('sha256=') || !req.rawBody) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Missing signature' });
+    }
+    const expected = 'sha256=' + createHmac('sha256', secret).update(req.rawBody).digest('hex');
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: 'Invalid signature' });
+    }
   }
 
   /** Looks up which tenant owns this Instagram business account and creates the lead there. */

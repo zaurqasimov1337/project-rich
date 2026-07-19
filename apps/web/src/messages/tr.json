@@ -308,11 +308,20 @@
     "weeklyLimit": "Haftalık limit",
     "hours": "{count} saat",
     "title": "Öğretmenler",
-    "inviteHint": "Öğretmen eklemek için önce Ayarlar → Kullanıcılar bölümünden «teacher» rolüyle bir kullanıcı davet edin, ardından onu bir öğretmen profiliyle ilişkilendirin.",
+    "inviteHint": "Yeni öğretmen ekleyin veya mevcut bir kullanıcıyı öğretmen profiliyle ilişkilendirin.",
     "emptyTitle": "Henüz öğretmen yok",
     "specialty": "Uzmanlık",
     "salaryModel": "Maaş modeli",
-    "monthlyEarnings": "Aylık kazanç"
+    "monthlyEarnings": "Aylık kazanç",
+    "addTeacher": "Öğretmen ekle",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "subjectsLabel": "Dersler (virgülle ayırın)",
+    "revenuePct": "Gelir payı (%)",
+    "created": "Öğretmen eklendi",
+    "editTeacher": "Öğretmeni düzenle"
   },
   "groups": {
     "title": "Gruplar",
