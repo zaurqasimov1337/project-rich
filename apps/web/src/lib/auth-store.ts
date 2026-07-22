@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { api, setAccessToken, ApiError } from './api';
+import { api, setAccessToken, setOnSessionExpired, ApiError } from './api';
 
 export interface Me {
   id: string;
@@ -69,3 +69,9 @@ export const useAuth = create<AuthState>((set, get) => ({
     return get().user?.permissions.includes(permission) ?? false;
   },
 }));
+
+// When even the refresh cookie is dead, drop the session so the app routes
+// back to login instead of leaving the user clicking into 401s.
+setOnSessionExpired(() => {
+  useAuth.setState({ user: null, status: 'unauthenticated' });
+});

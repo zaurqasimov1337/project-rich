@@ -19,7 +19,42 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
-async function requestEnvelope(path: string, init: RequestInit = {}) {
+/** Called when the refresh cookie is gone too — lets the auth store sign out. */
+let onSessionExpired: (() => void) | null = null;
+export function setOnSessionExpired(handler: (() => void) | null) {
+  onSessionExpired = handler;
+}
+
+/** Routes that must never trigger a refresh attempt — they are the refresh path. */
+const NO_REFRESH = ['/auth/refresh', '/auth/login', '/auth/logout'];
+
+// Concurrent 401s share one refresh instead of firing a stampede of rotations,
+// which would invalidate each other (refresh tokens rotate on every use).
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  refreshInFlight ??= (async () => {
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) return null;
+      const body = await res.json().catch(() => null);
+      const token = body?.data?.accessToken ?? body?.accessToken ?? null;
+      accessToken = token;
+      return token;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+async function requestEnvelope(path: string, init: RequestInit = {}, isRetry = false) {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     credentials: 'include',
@@ -29,6 +64,15 @@ async function requestEnvelope(path: string, init: RequestInit = {}) {
       ...init.headers,
     },
   });
+
+  // The access token lives ~15 minutes. Rather than surfacing a bare 401 to a
+  // user who is mid-task, rotate it via the refresh cookie and replay once.
+  if (res.status === 401 && !isRetry && !NO_REFRESH.includes(path)) {
+    const token = await refreshAccessToken();
+    if (token) return requestEnvelope(path, init, true);
+    accessToken = null;
+    onSessionExpired?.();
+  }
 
   const body = await res.json().catch(() => null);
   if (!res.ok || body?.success === false) {
