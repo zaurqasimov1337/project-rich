@@ -1064,6 +1064,50 @@ model WebhookDelivery {
   @@map("webhook_deliveries")
 }
 
+// ============ Instagram comment automation (tenant-scoped) ============
+
+/// A rule: when a comment matching `keywords` lands on `mediaId` (or any post
+/// when null), post `publicReply` under it and/or DM `dmMessage` to the author.
+model InstagramAutomation {
+  id            String    @id @default(uuid())
+  tenantId      String
+  name          String
+  mediaId       String? // null = applies to every post
+  mediaCaption  String? // cached caption/label for the UI
+  keywords      String[]  @default([]) // empty = any comment
+  publicReply   String? // posted as a reply under the comment
+  dmMessage     String? // private reply (DM) to the commenter
+  enabled       Boolean   @default(true)
+  matchCount    Int       @default(0)
+  lastMatchedAt DateTime?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId, mediaId])
+  @@map("instagram_automations")
+}
+
+/// One row per comment we have acted on — the unique (tenant, commentId) key is
+/// what stops us replying twice when polling overlaps or a webhook retries.
+model InstagramCommentEvent {
+  id            String   @id @default(uuid())
+  tenantId      String
+  commentId     String
+  mediaId       String?
+  automationId  String?
+  fromUsername  String?
+  text          String?
+  repliedPublic Boolean  @default(false)
+  sentDm        Boolean  @default(false)
+  error         String?
+  createdAt     DateTime @default(now())
+
+  @@unique([tenantId, commentId])
+  @@index([tenantId, automationId])
+  @@map("instagram_comment_events")
+}
+
 // ============ AI (tenant-scoped) ============
 
 model AiConversation {

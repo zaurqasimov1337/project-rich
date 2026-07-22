@@ -217,6 +217,80 @@ export function analyzeMessage(text: string): MessageSignals {
   };
 }
 
+export interface InstagramComment {
+  id: string;
+  text: string;
+  username?: string;
+  userId?: string;
+  timestamp?: string;
+}
+
+/** Recent comments on one media item. Requires `instagram_manage_comments`. */
+export async function fetchMediaComments(
+  mediaId: string,
+  accessToken: string,
+): Promise<InstagramComment[]> {
+  const url = `${GRAPH_BASE}/${encodeURIComponent(mediaId)}/comments?fields=id,text,username,timestamp,from&limit=50&access_token=${encodeURIComponent(accessToken)}`;
+  const res = await fetch(url);
+  const json: any = await res.json().catch(() => ({}));
+  if (!res.ok || json?.error) {
+    throw new Error(json?.error?.message ?? 'Instagram şərh sorğusu uğursuz oldu');
+  }
+  return ((json.data ?? []) as any[]).map((c) => ({
+    id: c.id,
+    text: c.text ?? '',
+    username: c.username ?? c.from?.username,
+    userId: c.from?.id,
+    timestamp: c.timestamp,
+  }));
+}
+
+/**
+ * Posts a public reply under a comment. Uses the Facebook Graph token (the same
+ * one that reads media/insights) with `instagram_manage_comments`.
+ */
+export async function replyToComment(
+  commentId: string,
+  accessToken: string,
+  message: string,
+): Promise<void> {
+  const res = await fetch(`${GRAPH_BASE}/${encodeURIComponent(commentId)}/replies`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ message, access_token: accessToken }),
+  });
+  const json: any = await res.json().catch(() => ({}));
+  if (!res.ok || json?.error) {
+    throw new Error(json?.error?.message ?? 'Şərhə cavab göndərilə bilmədi');
+  }
+}
+
+/**
+ * Sends a private reply (DM) to the author of a comment. This is the sanctioned
+ * comment→DM path and works within 7 days of the comment; it needs the Instagram
+ * Login token (`instagram_manage_messages`) and goes through graph.instagram.com.
+ */
+export async function sendCommentPrivateReply(
+  igUserId: string,
+  dmAccessToken: string,
+  commentId: string,
+  message: string,
+): Promise<void> {
+  const res = await fetch(`${IG_LOGIN_BASE}/${encodeURIComponent(igUserId)}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipient: { comment_id: commentId },
+      message: { text: message },
+      access_token: dmAccessToken,
+    }),
+  });
+  const json: any = await res.json().catch(() => ({}));
+  if (!res.ok || json?.error) {
+    throw new Error(json?.error?.message ?? 'DM göndərilə bilmədi');
+  }
+}
+
 /** Looks up the tenant's connected Instagram credentials, or null if not connected. */
 export async function getInstagramCredentials(
   prisma: PrismaService,

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { Drawer } from '@/components/ui/drawer';
+import { InstagramAutomations } from '@/components/instagram-automations';
 
 interface InstagramMedia {
   id: string;
@@ -260,6 +261,8 @@ export default function IntegrationsPage() {
           )}
         </div>
       )}
+
+      {instagramConnected && <InstagramAutomations media={igMedia?.media ?? []} />}
 
       {instagramConnected && (
         <div>

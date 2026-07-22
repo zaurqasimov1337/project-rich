@@ -5,10 +5,20 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { INTEGRATION_CATEGORIES } from '@edusphere/shared';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
@@ -28,6 +38,7 @@ import {
   saveInstagramDmToken,
 } from './instagram.util';
 import { fetchMetaAdAccount } from './meta-ads.util';
+import { InstagramAutomationService } from './instagram-automation.service';
 
 class ConnectDto {
   @IsOptional()
@@ -45,6 +56,54 @@ class DmTokenDto {
   @IsString()
   @MaxLength(2000)
   token!: string;
+}
+
+class AutomationDto {
+  @IsString()
+  @MaxLength(120)
+  name!: string;
+
+  /** null/omitted = applies to every post. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  mediaId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  mediaCaption?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @IsString({ each: true })
+  @MaxLength(60, { each: true })
+  keywords?: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  publicReply?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  dmMessage?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+}
+
+class UpdateAutomationDto {
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsString() @MaxLength(64) mediaId?: string;
+  @IsOptional() @IsString() @MaxLength(300) mediaCaption?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) keywords?: string[];
+  @IsOptional() @IsString() @MaxLength(1000) publicReply?: string;
+  @IsOptional() @IsString() @MaxLength(1000) dmMessage?: string;
+  @IsOptional() @IsBoolean() enabled?: boolean;
 }
 
 /** Built-in provider catalog surfaced to every tenant. */
@@ -82,6 +141,7 @@ export class IntegrationsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sales: SalesService,
+    private readonly automation: InstagramAutomationService,
   ) {}
 
   @Get()
@@ -364,5 +424,76 @@ export class IntegrationsController {
     }
 
     return { created, skipped, results };
+  }
+
+  // ===== Comment automation ("hansı rəyə hansı cavab + DM") =====
+
+  @Get('instagram/automations')
+  @RequirePermissions('integrations.read')
+  async listAutomations() {
+    const rules = await this.prisma.scoped.instagramAutomation.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return { automations: rules };
+  }
+
+  @Post('instagram/automations')
+  @RequirePermissions('integrations.manage')
+  async createAutomation(@Body() dto: AutomationDto, @CurrentUser() user: AuthUser) {
+    if (!dto.publicReply && !dto.dmMessage) {
+      throw new BadRequestException('Ən azı bir cavab (şərh cavabı və ya DM) daxil edin');
+    }
+    const rule = await this.prisma.scoped.instagramAutomation.create({
+      data: {
+        tenantId: requireTenantId(),
+        name: dto.name,
+        mediaId: dto.mediaId?.trim() || null,
+        mediaCaption: dto.mediaCaption ?? null,
+        keywords: (dto.keywords ?? []).map((k) => k.trim()).filter(Boolean),
+        publicReply: dto.publicReply?.trim() || null,
+        dmMessage: dto.dmMessage?.trim() || null,
+        enabled: dto.enabled ?? true,
+        createdById: user.userId,
+      },
+    });
+    return rule;
+  }
+
+  @Patch('instagram/automations/:id')
+  @RequirePermissions('integrations.manage')
+  async updateAutomation(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateAutomationDto) {
+    return this.prisma.scoped.instagramAutomation.update({
+      where: { id },
+      data: {
+        name: dto.name ?? undefined,
+        mediaId: dto.mediaId !== undefined ? dto.mediaId.trim() || null : undefined,
+        mediaCaption: dto.mediaCaption ?? undefined,
+        keywords: dto.keywords ? dto.keywords.map((k) => k.trim()).filter(Boolean) : undefined,
+        publicReply: dto.publicReply !== undefined ? dto.publicReply.trim() || null : undefined,
+        dmMessage: dto.dmMessage !== undefined ? dto.dmMessage.trim() || null : undefined,
+        enabled: dto.enabled ?? undefined,
+      },
+    });
+  }
+
+  @Delete('instagram/automations/:id')
+  @RequirePermissions('integrations.manage')
+  async deleteAutomation(@Param('id', ParseUUIDPipe) id: string) {
+    await this.prisma.scoped.instagramAutomation.deleteMany({ where: { id } });
+    return { ok: true };
+  }
+
+  /**
+   * Manually runs the automation rules against recent comments — the catch-up
+   * path used before (or instead of) real-time webhooks. Safe to repeat.
+   */
+  @Post('instagram/process-comments')
+  @RequirePermissions('integrations.manage')
+  async processComments() {
+    try {
+      return await this.automation.processRecentComments(requireTenantId());
+    } catch (e) {
+      throw new BadRequestException(e instanceof Error ? e.message : 'naməlum xəta');
+    }
   }
 }

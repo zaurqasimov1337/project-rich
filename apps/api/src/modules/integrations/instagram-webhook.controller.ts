@@ -8,6 +8,7 @@ import { PrismaService } from '../../core/prisma/prisma.service';
 import { SalesService } from '../crm/sales.service';
 import type { CreateSalesLeadDto } from '../crm/dto/sales.dto';
 import { extractPhoneNumber } from './instagram.util';
+import { InstagramAutomationService } from './instagram-automation.service';
 
 /**
  * Public receiver for Meta's Instagram Messaging webhooks. Unauthenticated by
@@ -22,6 +23,7 @@ export class InstagramWebhookController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sales: SalesService,
+    private readonly automation: InstagramAutomationService,
   ) {}
 
   @Public()
@@ -43,6 +45,8 @@ export class InstagramWebhookController {
     for (const entry of body?.entry ?? []) {
       const igUserId: string | undefined = entry.id;
       if (!igUserId) continue;
+
+      // DM messages → phone-number lead capture (existing behaviour).
       for (const messaging of entry.messaging ?? []) {
         const senderId: string | undefined = messaging.sender?.id;
         const text: string | undefined = messaging.message?.text;
@@ -50,6 +54,23 @@ export class InstagramWebhookController {
         const phone = extractPhoneNumber(text);
         if (!phone) continue;
         await this.createLeadForPhone(igUserId, senderId, phone, text);
+      }
+
+      // Comment events → run the reply/DM automation rules.
+      for (const change of entry.changes ?? []) {
+        if (change.field !== 'comments') continue;
+        const v = change.value ?? {};
+        const commentId: string | undefined = v.id;
+        const text: string | undefined = v.text;
+        const fromId: string | undefined = v.from?.id;
+        if (!commentId || !text || fromId === igUserId) continue;
+        await this.automation
+          .handleWebhookComment(
+            igUserId,
+            { id: commentId, text, username: v.from?.username, userId: fromId },
+            v.media?.id,
+          )
+          .catch(() => undefined);
       }
     }
     return { received: true };

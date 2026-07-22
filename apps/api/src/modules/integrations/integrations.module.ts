@@ -5,6 +5,7 @@ import { InstagramWebhookController } from './instagram-webhook.controller';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { ApiKeysController } from './api-keys.controller';
+import { InstagramAutomationService } from './instagram-automation.service';
 
 @Global()
 @Module({
@@ -15,7 +16,7 @@ import { ApiKeysController } from './api-keys.controller';
     ApiKeysController,
     InstagramWebhookController,
   ],
-  providers: [WebhooksService],
-  exports: [WebhooksService],
+  providers: [WebhooksService, InstagramAutomationService],
+  exports: [WebhooksService, InstagramAutomationService],
 })
 export class IntegrationsModule {}
