@@ -12,9 +12,11 @@ import type { Request, Response } from 'express';
 import { REFRESH_TOKEN_TTL_SEC } from '@edusphere/shared';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser, type AuthUser } from '../../common/decorators/current-user.decorator';
+import { RateLimit } from '../../common/guards/rate-limit.guard';
 import { AuthService } from './auth.service';
 import {
   AcceptInvitationDto,
+  ChangePasswordDto,
   ForgotPasswordDto,
   LoginDto,
   RegisterTenantDto,
@@ -45,6 +47,8 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(200)
+  // Per-IP ceiling on top of the per-account lockout in AuthService.
+  @RateLimit(10, 5 * 60)
   async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const { accessToken, refreshToken, user } = await this.auth.login(dto, meta(req));
     setRefreshCookie(res, refreshToken);
@@ -85,6 +89,8 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(200)
+  // Reset mails are outbound spend — keep the per-IP budget small.
+  @RateLimit(5, 15 * 60)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.auth.forgotPassword(dto);
     return { ok: true };
@@ -93,9 +99,29 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(200)
+  @RateLimit(10, 15 * 60)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.auth.resetPassword(dto);
     return { ok: true };
+  }
+
+  @ApiBearerAuth()
+  @Post('change-password')
+  @HttpCode(200)
+  @RateLimit(5, 15 * 60)
+  async changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken } = await this.auth.changePassword(
+      user.userId,
+      dto,
+      meta(req),
+    );
+    setRefreshCookie(res, refreshToken);
+    return { accessToken };
   }
 
   @Public()

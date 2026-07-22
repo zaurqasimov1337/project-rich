@@ -190,6 +190,29 @@
     "resetLinkSentInfo": "Əgər bu e-poçt qeydiyyatdadırsa, yeniləmə keçidi göndərildi. Poçt qutunuzu yoxlayın.",
     "setNewPassword": "Yeni şifrə təyin et"
   },
+  "password": {
+    "strength": {
+      "0": "Çox zəif",
+      "1": "Zəif",
+      "2": "Orta",
+      "3": "Güclü",
+      "4": "Çox güclü"
+    },
+    "mismatch": "Şifrələr uyğun gəlmir",
+    "rules": {
+      "minLength": "Ən azı 8 simvol",
+      "maxLength": "Ən çoxu 72 simvol",
+      "lowercase": "Bir kiçik hərf (a-z)",
+      "uppercase": "Bir böyük hərf (A-Z)",
+      "digit": "Bir rəqəm (0-9)",
+      "special": "Bir xüsusi simvol (!@#$%)",
+      "noSpaces": "Boşluq olmamalıdır",
+      "notCommon": "Bu şifrə çox geniş yayılıb",
+      "noRepeats": "Eyni simvol 4 dəfə təkrarlanmamalıdır",
+      "noSequence": "\"1234\" və ya \"abcd\" ardıcıllığı olmamalıdır",
+      "notPersonal": "Ad, soyad və ya e-poçtunuzu təkrarlamamalıdır"
+    }
+  },
   "nav": {
     "dashboard": "İdarə paneli",
     "crm": "CRM / Müraciətlər",
@@ -713,7 +736,14 @@
     "scopes": "İcazələr",
     "scopeRead": "Yalnız oxu",
     "scopeReadWrite": "Oxu və yazı",
-    "events": "Hadisələr"
+    "events": "Hadisələr",
+    "tabSecurity": "Təhlükəsizlik",
+    "changePassword": "Şifrəni dəyiş",
+    "changePasswordHint": "Şifrəni dəyişdikdən sonra digər bütün cihazlardakı sessiyalar bağlanacaq.",
+    "currentPassword": "Cari şifrə",
+    "newPasswordLabel": "Yeni şifrə",
+    "confirmNewPassword": "Yeni şifrəni təsdiqlə",
+    "passwordChanged": "Şifrə uğurla dəyişdirildi"
   },
   "platform": {
     "platformManagement": "Platform İdarəetməsi",

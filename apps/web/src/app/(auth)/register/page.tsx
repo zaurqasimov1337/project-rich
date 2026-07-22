@@ -9,6 +9,8 @@ import { api, setAccessToken } from '@/lib/api';
 import { useAuth, type Me } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
+import { PasswordField } from '@/components/password-field';
+import { validatePassword } from '@edusphere/shared';
 
 interface FormValues {
   centerName: string;
@@ -27,8 +29,17 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>();
+  } = useForm<FormValues>({ mode: 'onChange' });
+
+  const tp = useTranslations('password');
+  const pwContext = {
+    email: watch('email'),
+    firstName: watch('firstName'),
+    lastName: watch('lastName'),
+    centerName: watch('centerName'),
+  };
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -100,22 +111,21 @@ export default function RegisterPage() {
             <Label htmlFor="phone">{t('phoneOptional')}</Label>
             <Input id="phone" placeholder="+994 50 123 45 67" {...register('phone')} />
           </div>
-          <div>
-            <Label htmlFor="password">{t('password')}</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              error={errors.password?.message}
-              {...register('password', {
-                required: t('passwordRequired'),
-                pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-                  message: t('passwordPattern'),
-                },
-              })}
-            />
-          </div>
+          <PasswordField
+            id="password"
+            label={t('password')}
+            autoComplete="new-password"
+            value={watch('password') ?? ''}
+            context={pwContext}
+            error={errors.password?.message}
+            {...register('password', {
+              required: t('passwordRequired'),
+              validate: (v) => {
+                const failed = validatePassword(v, pwContext);
+                return failed.length === 0 || tp(`rules.${failed[0]}`);
+              },
+            })}
+          />
           <Button type="submit" className="w-full" loading={isSubmitting}>
             {t('register')}
           </Button>

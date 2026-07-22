@@ -5,7 +5,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { api } from '@/lib/api';
+import { validatePassword } from '@edusphere/shared';
+import { api, setAccessToken } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
 import { StatusBadge } from '@/components/data-table';
+import { PasswordField } from '@/components/password-field';
 
 interface UserRow {
   id: string;
@@ -44,11 +46,19 @@ const TABS = [
   { key: 'roles', tkey: 'tabRoles' },
   { key: 'holidays', tkey: 'tabHolidays' },
   { key: 'billing', tkey: 'tabBilling' },
+  { key: 'security', tkey: 'tabSecurity' },
 ] as const;
+
+interface ChangePasswordForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const tc = useTranslations('common');
+  const tp = useTranslations('password');
   const qc = useQueryClient();
   const { user, can } = useAuth();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('users');
@@ -92,6 +102,21 @@ export default function SettingsPage() {
   const deleteHoliday = useMutation({
     mutationFn: (id: string) => api.delete(`/settings/holidays/${id}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['holidays'] }),
+  });
+
+  const passwordForm = useForm<ChangePasswordForm>({ mode: 'onChange' });
+  const changePassword = useMutation({
+    mutationFn: (v: ChangePasswordForm) =>
+      api.post<{ accessToken: string }>('/auth/change-password', {
+        currentPassword: v.currentPassword,
+        newPassword: v.newPassword,
+      }),
+    onSuccess: (res) => {
+      // The server revoked every session; adopt the fresh token so this tab
+      // isn't logged out by its own password change.
+      setAccessToken(res.accessToken);
+      passwordForm.reset();
+    },
   });
 
   return (
@@ -265,6 +290,69 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'security' && (
+        <div className="max-w-md rounded-xl border border-border bg-surface p-5 shadow-sm">
+          <h2 className="font-semibold">{t('changePassword')}</h2>
+          <p className="mt-0.5 text-sm text-muted">{t('changePasswordHint')}</p>
+
+          <form
+            onSubmit={passwordForm.handleSubmit((v) => changePassword.mutate(v))}
+            className="mt-4 space-y-4"
+          >
+            {changePassword.isError && (
+              <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+                {(changePassword.error as Error).message}
+              </div>
+            )}
+            {changePassword.isSuccess && (
+              <div className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
+                {t('passwordChanged')}
+              </div>
+            )}
+
+            <PasswordField
+              label={t('currentPassword')}
+              autoComplete="current-password"
+              showMeter={false}
+              error={passwordForm.formState.errors.currentPassword?.message}
+              {...passwordForm.register('currentPassword', { required: t('fieldRequired') })}
+            />
+            <PasswordField
+              label={t('newPasswordLabel')}
+              autoComplete="new-password"
+              value={passwordForm.watch('newPassword') ?? ''}
+              context={{ email: user?.email, firstName: user?.firstName, lastName: user?.lastName }}
+              error={passwordForm.formState.errors.newPassword?.message}
+              {...passwordForm.register('newPassword', {
+                required: t('fieldRequired'),
+                validate: (v) => {
+                  const failed = validatePassword(v, {
+                    email: user?.email,
+                    firstName: user?.firstName,
+                    lastName: user?.lastName,
+                  });
+                  return failed.length === 0 || tp(`rules.${failed[0]}`);
+                },
+              })}
+            />
+            <PasswordField
+              label={t('confirmNewPassword')}
+              autoComplete="new-password"
+              showMeter={false}
+              error={passwordForm.formState.errors.confirmPassword?.message}
+              {...passwordForm.register('confirmPassword', {
+                required: t('fieldRequired'),
+                validate: (v) => v === passwordForm.watch('newPassword') || tp('mismatch'),
+              })}
+            />
+
+            <Button type="submit" loading={changePassword.isPending}>
+              {t('changePassword')}
+            </Button>
+          </form>
         </div>
       )}
 

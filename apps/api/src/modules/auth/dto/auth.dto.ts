@@ -3,14 +3,10 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
-  MinLength,
 } from 'class-validator';
-
-const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-const PASSWORD_MSG =
-  'Password must be at least 8 characters with upper, lower case letters and a digit';
+import { PASSWORD_MAX_LENGTH } from '@edusphere/shared';
+import { IsStrongPassword } from '../../../common/validators/is-strong-password.validator';
 
 export class LoginDto {
   @IsEmail()
@@ -18,6 +14,9 @@ export class LoginDto {
 
   @IsString()
   @IsNotEmpty()
+  // Not the policy check — login must accept whatever was set earlier; this only
+  // caps the body so an oversized string never reaches argon2.
+  @MaxLength(PASSWORD_MAX_LENGTH)
   password!: string;
 }
 
@@ -40,7 +39,7 @@ export class RegisterTenantDto {
   @IsEmail()
   email!: string;
 
-  @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
+  @IsStrongPassword()
   password!: string;
 
   @IsOptional()
@@ -59,17 +58,17 @@ export class ResetPasswordDto {
   @IsNotEmpty()
   token!: string;
 
-  @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
+  @IsStrongPassword()
   password!: string;
 }
 
 export class ChangePasswordDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(PASSWORD_MAX_LENGTH)
   currentPassword!: string;
 
-  @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
-  @MinLength(8)
+  @IsStrongPassword()
   newPassword!: string;
 }
 
@@ -88,6 +87,6 @@ export class AcceptInvitationDto {
   @MaxLength(60)
   lastName!: string;
 
-  @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
+  @IsStrongPassword()
   password!: string;
 }

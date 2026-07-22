@@ -14,6 +14,7 @@ import { MailService } from '../../core/mail/mail.service';
 import { TokenService } from './token.service';
 import type {
   AcceptInvitationDto,
+  ChangePasswordDto,
   ForgotPasswordDto,
   LoginDto,
   RegisterTenantDto,
@@ -132,6 +133,9 @@ export class AuthService {
       .slice(0, 40) || 'center';
 
     const starter = await this.prisma.plan.findUnique({ where: { code: 'starter' } });
+    // Hash outside the transaction: argon2 is deliberately slow and would burn
+    // a large slice of the transaction budget while holding row locks.
+    const passwordHash = await argon2.hash(dto.password);
 
     const result = await this.prisma.$transaction(async (tx) => {
       let slug = slugBase;
@@ -179,7 +183,7 @@ export class AuthService {
         data: {
           tenantId: tenant.id,
           email,
-          passwordHash: await argon2.hash(dto.password),
+          passwordHash,
           firstName: dto.firstName,
           lastName: dto.lastName,
           phone: dto.phone,
@@ -192,7 +196,10 @@ export class AuthService {
       });
 
       return { tenant, user };
-    });
+    },
+    // Seeding every system role is a dozen sequential round-trips; against a
+    // serverless Postgres that overruns the 5s default.
+    { timeout: 30_000, maxWait: 10_000 });
 
     const accessToken = this.tokens.signAccess(
       { sub: result.user.id, tid: result.tenant.id, email },
@@ -240,11 +247,60 @@ export class AuthService {
       throw new BadRequestException({ code: 'UNAUTHORIZED', message: 'Invalid or expired token' });
     }
     await this.redis.del(key);
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (await argon2.verify(user.passwordHash, dto.password)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Yeni şifrə köhnə şifrə ilə eyni ola bilməz',
+      });
+    }
     await this.prisma.user.update({
       where: { id: userId },
       data: { passwordHash: await argon2.hash(dto.password) },
     });
+    // A reset means the old credentials may be compromised — drop every session.
     await this.tokens.revokeAllForUser(userId);
+    await this.redis.del(`login:fail:${user.email}`, `login:lock:${user.email}`);
+  }
+
+  /**
+   * Self-service password change. Requires the current password, refuses a
+   * no-op change, and revokes all other sessions so a stolen refresh token
+   * cannot outlive the rotation.
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    meta: { ip?: string; userAgent?: string },
+  ) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+
+    if (!(await argon2.verify(user.passwordHash, dto.currentPassword))) {
+      throw new UnauthorizedException({
+        code: 'UNAUTHORIZED',
+        message: 'Cari şifrə yanlışdır',
+      });
+    }
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Yeni şifrə cari şifrə ilə eyni ola bilməz',
+      });
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: await argon2.hash(dto.newPassword) },
+    });
+    await this.tokens.revokeAllForUser(userId);
+
+    // Issue a fresh pair so the caller stays logged in on this device only.
+    const accessToken = this.tokens.signAccess(
+      { sub: user.id, tid: user.tenantId, email: user.email },
+      'tenant',
+    );
+    const refreshToken = await this.tokens.issueRefresh(user.id, 'tenant', meta);
+    return { accessToken, refreshToken };
   }
 
   // ---------- invitations ----------

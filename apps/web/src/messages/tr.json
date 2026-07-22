@@ -190,6 +190,29 @@
     "resetLinkSentInfo": "Bu e-posta kayıtlıysa, sıfırlama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.",
     "setNewPassword": "Yeni şifre belirle"
   },
+  "password": {
+    "strength": {
+      "0": "Çok zayıf",
+      "1": "Zayıf",
+      "2": "Orta",
+      "3": "Güçlü",
+      "4": "Çok güçlü"
+    },
+    "mismatch": "Şifreler eşleşmiyor",
+    "rules": {
+      "minLength": "En az 8 karakter",
+      "maxLength": "En fazla 72 karakter",
+      "lowercase": "Bir küçük harf (a-z)",
+      "uppercase": "Bir büyük harf (A-Z)",
+      "digit": "Bir rakam (0-9)",
+      "special": "Bir özel karakter (!@#$%)",
+      "noSpaces": "Boşluk kullanılamaz",
+      "notCommon": "Bu şifre çok yaygın",
+      "noRepeats": "Aynı karakter 4 kez tekrarlanamaz",
+      "noSequence": "\"1234\" veya \"abcd\" dizisi olamaz",
+      "notPersonal": "Adınızı veya e-postanızı içeremez"
+    }
+  },
   "nav": {
     "dashboard": "Panel",
     "crm": "CRM / Adaylar",
@@ -713,7 +736,14 @@
     "scopes": "İzinler",
     "scopeRead": "Yalnızca okuma",
     "scopeReadWrite": "Okuma ve yazma",
-    "events": "Olaylar"
+    "events": "Olaylar",
+    "tabSecurity": "Güvenlik",
+    "changePassword": "Şifreyi değiştir",
+    "changePasswordHint": "Şifre değiştirildiğinde diğer tüm cihazlardaki oturumlar kapanır.",
+    "currentPassword": "Mevcut şifre",
+    "newPasswordLabel": "Yeni şifre",
+    "confirmNewPassword": "Yeni şifreyi onayla",
+    "passwordChanged": "Şifre başarıyla değiştirildi"
   },
   "platform": {
     "platformManagement": "Platform Yönetimi",

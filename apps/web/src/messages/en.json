@@ -190,6 +190,29 @@
     "resetLinkSentInfo": "If this email is registered, a reset link has been sent. Check your inbox.",
     "setNewPassword": "Set a new password"
   },
+  "password": {
+    "strength": {
+      "0": "Very weak",
+      "1": "Weak",
+      "2": "Fair",
+      "3": "Strong",
+      "4": "Very strong"
+    },
+    "mismatch": "Passwords do not match",
+    "rules": {
+      "minLength": "At least 8 characters",
+      "maxLength": "At most 72 characters",
+      "lowercase": "One lowercase letter (a-z)",
+      "uppercase": "One uppercase letter (A-Z)",
+      "digit": "One digit (0-9)",
+      "special": "One special character (!@#$%)",
+      "noSpaces": "No spaces allowed",
+      "notCommon": "This password is too common",
+      "noRepeats": "No character repeated 4 times in a row",
+      "noSequence": "No \"1234\" or \"abcd\" sequences",
+      "notPersonal": "Must not contain your name or email"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "crm": "CRM / Leads",
@@ -713,7 +736,14 @@
     "scopes": "Permissions",
     "scopeRead": "Read only",
     "scopeReadWrite": "Read and write",
-    "events": "Events"
+    "events": "Events",
+    "tabSecurity": "Security",
+    "changePassword": "Change password",
+    "changePasswordHint": "Changing your password signs out every other device.",
+    "currentPassword": "Current password",
+    "newPasswordLabel": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "passwordChanged": "Password changed successfully"
   },
   "platform": {
     "platformManagement": "Platform Management",
