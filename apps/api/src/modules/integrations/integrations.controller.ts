@@ -304,7 +304,15 @@ export class IntegrationsController {
         mentionsCourse ||= s.mentionsCourse;
       }
 
-      const interested = !!phone || wantsEnroll || asksPrice;
+      // Qualify by depth, not by a single fleeting question. Sharing contact
+      // details or explicitly asking to enrol is genuine intent on its own. A
+      // bare price question — the classic "neçədir?" then silence — is not a
+      // lead unless the person actually stayed and kept the conversation going.
+      const MIN_ENGAGED_MESSAGES = 3;
+      const strong = !!phone || !!email || wantsEnroll;
+      const weakInterest = asksPrice || mentionsCourse;
+      const engaged = incoming.length >= MIN_ENGAGED_MESSAGES;
+      const interested = strong || (weakInterest && engaged);
       if (!interested) continue;
 
       const existing = await this.prisma.scoped.lead.findFirst({
@@ -319,9 +327,12 @@ export class IntegrationsController {
 
       const reasons = [
         phone ? 'telefon' : null,
+        email ? 'e-poçt' : null,
         wantsEnroll ? 'qeydiyyat istəyi' : null,
         asksPrice ? 'qiymət soruşdu' : null,
-        !phone && !wantsEnroll && !asksPrice && mentionsCourse ? 'kursla maraqlandı' : null,
+        mentionsCourse && !wantsEnroll ? 'kursla maraqlandı' : null,
+        // Flag the sustained-interest path so the rep knows this wasn't a one-liner.
+        !strong && engaged ? `${incoming.length} mesaj yazışma` : null,
       ].filter(Boolean) as string[];
       const reason = reasons.join(', ');
 
