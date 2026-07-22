@@ -76,7 +76,12 @@ export async function fetchMetaAdsSpend(
   since: Date,
   until: Date,
 ): Promise<MetaAdsSpend> {
-  const timeRange = JSON.stringify({ since: ymd(since), until: ymd(until) });
+  // Meta Ads Insights rejects a start date more than 37 months back; an
+  // "all time" query would otherwise error. Clamp to the earliest it accepts.
+  const floor = new Date();
+  floor.setMonth(floor.getMonth() - 37);
+  const from = since < floor ? floor : since;
+  const timeRange = JSON.stringify({ since: ymd(from), until: ymd(until) });
   const account = actId(adAccountId);
 
   const [byPlatform, byCampaign] = await Promise.all([

@@ -588,6 +588,21 @@
     "channel": {
       "offline": "Offline",
       "other": "Other"
+    },
+    "range": {
+      "last_7_days": "Last 7 days",
+      "last_30_days": "Last 30 days",
+      "this_month": "This month",
+      "last_month": "Last month",
+      "last_90_days": "Last 3 months",
+      "this_quarter": "This quarter",
+      "last_6_months": "Last 6 months",
+      "last_12_months": "Last 12 months",
+      "this_year": "This year",
+      "last_year": "Last year",
+      "last_2_years": "Last 2 years",
+      "all_time": "All time",
+      "custom": "Custom range"
     }
   },
   "hr": {

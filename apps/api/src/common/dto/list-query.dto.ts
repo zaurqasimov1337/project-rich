@@ -106,6 +106,21 @@ export function resolveDateRange(
       return { gte: d(y, 0, 1), lt: d(y + 1, 0, 1) };
     case 'last_year':
       return { gte: d(y - 1, 0, 1), lt: d(y, 0, 1) };
+    // Rolling windows end at the start of tomorrow (local) so today is included.
+    case 'last_7_days':
+      return { gte: d(y, m, day - 6), lt: d(y, m, day + 1) };
+    case 'last_30_days':
+      return { gte: d(y, m, day - 29), lt: d(y, m, day + 1) };
+    case 'last_90_days':
+      return { gte: d(y, m, day - 89), lt: d(y, m, day + 1) };
+    case 'last_6_months':
+      return { gte: d(y, m - 6, day), lt: d(y, m, day + 1) };
+    case 'last_12_months':
+      return { gte: d(y, m - 12, day), lt: d(y, m, day + 1) };
+    case 'last_2_years':
+      return { gte: d(y - 2, m, day), lt: d(y, m, day + 1) };
+    case 'all_time':
+      return { gte: new Date(0), lt: d(y, m, day + 1) };
   }
   if (q.from || q.to) {
     return {

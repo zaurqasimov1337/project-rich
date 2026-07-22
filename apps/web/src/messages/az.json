@@ -588,6 +588,21 @@
     "channel": {
       "offline": "Oflayn",
       "other": "Digər"
+    },
+    "range": {
+      "last_7_days": "Son 7 gün",
+      "last_30_days": "Son 30 gün",
+      "this_month": "Bu ay",
+      "last_month": "Keçən ay",
+      "last_90_days": "Son 3 ay",
+      "this_quarter": "Bu rüb",
+      "last_6_months": "Son 6 ay",
+      "last_12_months": "Son 12 ay",
+      "this_year": "Bu il",
+      "last_year": "Keçən il",
+      "last_2_years": "Son 2 il",
+      "all_time": "Bütün dövr",
+      "custom": "Fərdi aralıq"
     }
   },
   "hr": {

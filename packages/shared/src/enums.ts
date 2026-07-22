@@ -51,6 +51,10 @@ export const LEAD_ACTIVITY_TYPES = [
 export const DATE_RANGE_PRESETS = [
   'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month',
   'this_quarter', 'last_quarter', 'this_year', 'last_year',
+  // Rolling look-back windows, counted backwards from now rather than snapped
+  // to a calendar boundary — "the last 90 days", not "this quarter".
+  'last_7_days', 'last_30_days', 'last_90_days', 'last_6_months',
+  'last_12_months', 'last_2_years', 'all_time',
 ] as const;
 export type DateRangePreset = (typeof DATE_RANGE_PRESETS)[number];
 

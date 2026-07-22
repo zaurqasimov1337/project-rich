@@ -82,15 +82,32 @@ export default function CampaignsPage() {
   const [page, setPage] = useState(1);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [spendOpen, setSpendOpen] = useState(false);
+  const [range, setRange] = useState('this_month');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  const RANGE_OPTIONS = [
+    'last_7_days', 'last_30_days', 'this_month', 'last_month', 'last_90_days',
+    'this_quarter', 'last_6_months', 'last_12_months', 'this_year', 'last_year',
+    'last_2_years', 'all_time', 'custom',
+  ];
+  // Custom needs both ends before it means anything; until then fall back to the
+  // last committed preset so the page never queries an empty window.
+  const rangeQuery =
+    range === 'custom'
+      ? customFrom && customTo
+        ? `from=${customFrom}&to=${customTo}`
+        : 'range=this_month'
+      : `range=${range}`;
 
   const { data, isLoading } = useQuery({
     queryKey: ['campaigns', page],
     queryFn: () => api.list<CampaignRow>(`/campaigns?page=${page}&limit=20`),
     placeholderData: keepPreviousData,
   });
-  const { data: metrics } = useQuery({
-    queryKey: ['marketing-metrics'],
-    queryFn: () => api.get<Metrics>('/marketing/metrics?range=this_month'),
+  const { data: metrics, isFetching: metricsFetching } = useQuery({
+    queryKey: ['marketing-metrics', rangeQuery],
+    queryFn: () => api.get<Metrics>(`/marketing/metrics?${rangeQuery}`),
   });
 
   const campaignForm = useForm<CampaignForm>({
@@ -155,21 +172,51 @@ export default function CampaignsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('marketing.manage') && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setSpendOpen(true)}>
-              {t('addSpend')}
-            </Button>
-            <Button onClick={() => setCampaignOpen(true)}>
-              <Plus className="h-4 w-4" /> {t('newCampaign')}
-            </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="w-44">
+            <Select
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+              options={RANGE_OPTIONS.map((v) => ({ value: v, label: t(`range.${v}`) }))}
+            />
           </div>
-        )}
+          {range === 'custom' && (
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="date"
+                className="w-40"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+              />
+              <span className="text-muted">–</span>
+              <Input
+                type="date"
+                className="w-40"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+              />
+            </div>
+          )}
+          {can('marketing.manage') && (
+            <>
+              <Button variant="outline" onClick={() => setSpendOpen(true)}>
+                {t('addSpend')}
+              </Button>
+              <Button onClick={() => setCampaignOpen(true)}>
+                <Plus className="h-4 w-4" /> {t('newCampaign')}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div
+        className={`grid grid-cols-2 gap-4 transition-opacity sm:grid-cols-3 lg:grid-cols-5 ${metricsFetching ? 'opacity-50' : ''}`}
+      >
         {kpis.map((kpi) => (
           <div key={kpi.label} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="text-[13px] font-medium text-muted">{kpi.label}</div>
