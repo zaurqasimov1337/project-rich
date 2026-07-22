@@ -123,7 +123,7 @@ export async function fetchInstagramConversations(
   igUserId: string,
   dmAccessToken: string,
 ): Promise<InstagramConversation[]> {
-  const url = `${IG_LOGIN_BASE}/${encodeURIComponent(igUserId)}/conversations?platform=instagram&fields=participants,messages{id,from,message,created_time}&limit=50&access_token=${encodeURIComponent(dmAccessToken)}`;
+  const url = `${IG_LOGIN_BASE}/${encodeURIComponent(igUserId)}/conversations?platform=instagram&fields=participants,messages.limit(100){id,from,message,created_time}&limit=50&access_token=${encodeURIComponent(dmAccessToken)}`;
   const res = await fetch(url);
   const json: any = await res.json().catch(() => ({}));
   if (!res.ok || json?.error) {
@@ -150,6 +150,71 @@ export function extractPhoneNumber(text: string): string | null {
     if (bare.length >= 9 && bare.length <= 13) return digits;
   }
   return null;
+}
+
+/** First e-mail address in the text, or null. */
+export function extractEmail(text: string): string | null {
+  const m = text.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+  return m ? m[0].toLowerCase() : null;
+}
+
+/**
+ * Az/Ru/En keyword sets for reading buying intent out of a DM. Matched against a
+ * fold-cased, diacritic-stripped copy of the text so "İSTƏYİRƏM", "isteyirem" and
+ * "istəyirəm" all hit. Deliberately broad — a false positive just means an extra
+ * lead card to glance at, a false negative means a real prospect slips away.
+ */
+const ENROLL_KEYWORDS = [
+  'yazilmaq', 'yazila bil', 'yazilmak', 'qeydiyyat', 'qeyd olmaq', 'qosulmaq',
+  'qosula bil', 'qebul', 'muraciet', 'istirak', 'baslamaq iste', 'ders almaq',
+  'oxumaq iste', 'kursa yazil', 'kursa gel', 'nece yazil', 'nece qosul',
+  'nece qeydiyyat', 'ne etmeli', 'nece basla',
+  'enroll', 'sign up', 'signup', 'register', 'join the', 'how do i join',
+  'how to join', 'apply',
+  // Russian (Cyrillic — folding leaves these untouched)
+  'записаться', 'запис', 'поступить', 'хочу учиться', 'как записаться',
+];
+const PRICE_KEYWORDS = [
+  'qiymet', 'neceye', 'necedir', 'ne qeder', 'nə qədər', 'odenis', 'odenilir',
+  'aylig ne', 'ayliq ne', 'endirim', 'guzest', 'manat', 'azn', 'tarif',
+  'price', 'cost', 'how much', 'fee', 'payment',
+  // Russian
+  'сколько', 'цена', 'стоит', 'стоимость', 'оплата',
+];
+const COURSE_KEYWORDS = [
+  'kurs', 'kursu', 'kursa', 'kurslar', 'telim', 'təlim', 'ders', 'dərs',
+  'course', 'training', 'kurs haqq', 'melumat', 'məlumat', 'info', 'detal',
+];
+
+/** Diacritic-folded, lower-cased text so keyword matching is accent-insensitive. */
+function fold(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/ə/g, 'e').replace(/ı/g, 'i').replace(/İ/g, 'i')
+    .replace(/ğ/g, 'g').replace(/ş/g, 's').replace(/ç/g, 'c')
+    .replace(/ö/g, 'o').replace(/ü/g, 'u')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+export interface MessageSignals {
+  phone: string | null;
+  email: string | null;
+  wantsEnroll: boolean;
+  asksPrice: boolean;
+  mentionsCourse: boolean;
+}
+
+/** Reads every buying-intent signal we can out of one message. */
+export function analyzeMessage(text: string): MessageSignals {
+  const folded = fold(text);
+  const has = (kws: string[]) => kws.some((k) => folded.includes(fold(k)));
+  return {
+    phone: extractPhoneNumber(text),
+    email: extractEmail(text),
+    wantsEnroll: has(ENROLL_KEYWORDS),
+    asksPrice: has(PRICE_KEYWORDS),
+    mentionsCourse: has(COURSE_KEYWORDS),
+  };
 }
 
 /** Looks up the tenant's connected Instagram credentials, or null if not connected. */

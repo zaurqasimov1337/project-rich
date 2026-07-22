@@ -694,7 +694,7 @@
     "instagramFeedError": "Couldn't fetch posts.",
     "instagramFeedEmpty": "No posts found yet.",
     "dmSyncTitle": "Create leads from Instagram DMs",
-    "dmSyncHint": "Anyone who shared a phone number in a recent conversation is automatically added to the CRM as a lead.",
+    "dmSyncHint": "Users in recent DMs who share a phone number, ask to enroll, or ask about price are automatically captured as CRM leads.",
     "dmSyncButton": "Scan now",
     "dmTokenLabel": "Instagram Login Access Token (for messaging)",
     "dmSyncResult": "{created} new leads created, {skipped} already existed.",

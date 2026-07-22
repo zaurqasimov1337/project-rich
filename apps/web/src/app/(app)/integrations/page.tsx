@@ -100,7 +100,11 @@ export default function IntegrationsPage() {
 
   const syncDmLeadsMutation = useMutation({
     mutationFn: () =>
-      api.post<{ created: number; skipped: number }>('/integrations/instagram/sync-dm-leads'),
+      api.post<{
+        created: number;
+        skipped: number;
+        results: { username?: string; phone?: string; reason: string; status: 'created' | 'skipped' }[];
+      }>('/integrations/instagram/sync-dm-leads'),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['leads'] }),
   });
 
@@ -225,12 +229,29 @@ export default function IntegrationsPage() {
           )}
 
           {syncDmLeadsMutation.isSuccess && (
-            <p className="mt-3 text-sm text-success">
-              {t('dmSyncResult', {
-                created: syncDmLeadsMutation.data?.created ?? 0,
-                skipped: syncDmLeadsMutation.data?.skipped ?? 0,
-              })}
-            </p>
+            <div className="mt-3">
+              <p className="text-sm text-success">
+                {t('dmSyncResult', {
+                  created: syncDmLeadsMutation.data?.created ?? 0,
+                  skipped: syncDmLeadsMutation.data?.skipped ?? 0,
+                })}
+              </p>
+              {(syncDmLeadsMutation.data?.results ?? []).filter((r) => r.status === 'created').length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs text-muted">
+                  {syncDmLeadsMutation.data!.results
+                    .filter((r) => r.status === 'created')
+                    .slice(0, 15)
+                    .map((r, i) => (
+                      <li key={i} className="flex flex-wrap gap-x-2">
+                        <span className="font-medium text-foreground">
+                          {r.username ? `@${r.username}` : r.phone ?? '—'}
+                        </span>
+                        <span>· {r.reason}</span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
           )}
           {syncDmLeadsMutation.isError && (
             <p className="mt-3 text-sm text-danger">

@@ -694,7 +694,7 @@
     "instagramFeedError": "Postlar çəkilə bilmədi.",
     "instagramFeedEmpty": "Hələ post tapılmadı.",
     "dmSyncTitle": "Instagram DM-lərdən lead yarat",
-    "dmSyncHint": "Son yazışmalarda telefon nömrəsi paylaşan istifadəçilər avtomatik CRM-də lead kimi qeydə alınır.",
+    "dmSyncHint": "Son yazışmalarda telefon nömrəsi paylaşan, kursa yazılmaq və ya qiymət soruşan istifadəçilər avtomatik CRM-də lead kimi qeydə alınır.",
     "dmSyncButton": "İndi tara",
     "dmTokenLabel": "Instagram Login Access Token (mesajlaşma üçün)",
     "dmSyncResult": "{created} yeni lead yaradıldı, {skipped} artıq mövcud idi.",

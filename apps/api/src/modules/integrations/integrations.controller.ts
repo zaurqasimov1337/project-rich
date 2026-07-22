@@ -18,7 +18,7 @@ import { encryptSecret } from '../../core/crypto/crypto.util';
 import { SalesService } from '../crm/sales.service';
 import type { CreateSalesLeadDto } from '../crm/dto/sales.dto';
 import {
-  extractPhoneNumber,
+  analyzeMessage,
   fetchInstagramConversations,
   fetchInstagramInsights,
   fetchInstagramMedia,
@@ -240,9 +240,10 @@ export class IntegrationsController {
   }
 
   /**
-   * Scans recent Instagram DMs for phone numbers and turns each unique sender
-   * into a CRM lead (source: instagram_dm). Safe to call repeatedly — senders
-   * already matched by phone or Instagram handle are skipped.
+   * Scans recent Instagram DMs for buying intent — a phone number, a request to
+   * enroll ("kursa yazılmaq istəyirəm"), or a price question — and turns each
+   * unique interested sender into a CRM lead (source: instagram_dm). Safe to call
+   * repeatedly: senders already matched by phone or Instagram handle are skipped.
    */
   @Post('instagram/sync-dm-leads')
   @RequirePermissions('integrations.manage')
@@ -265,41 +266,87 @@ export class IntegrationsController {
 
     let created = 0;
     let skipped = 0;
-    const results: { username?: string; phone: string; status: 'created' | 'skipped' }[] = [];
+    const results: {
+      username?: string;
+      phone?: string;
+      reason: string;
+      status: 'created' | 'skipped';
+    }[] = [];
 
     for (const conv of conversations) {
-      const messageWithPhone = conv.messages
-        .filter((m) => m.from.id !== creds.igUserId && m.message)
-        .map((m) => ({ m, phone: extractPhoneNumber(m.message!) }))
-        .find((x) => x.phone);
-      if (!messageWithPhone?.phone) continue;
+      const incoming = conv.messages.filter((m) => m.from.id !== creds.igUserId && m.message);
+      if (incoming.length === 0) continue;
 
-      const phone = messageWithPhone.phone;
+      // Fold every message in the thread into one intent picture. The quote we
+      // keep is the message that first proved intent — the phone, else the
+      // enrolment/price ask — so the sales rep sees why the lead was captured.
+      let phone: string | null = null;
+      let email: string | null = null;
+      let wantsEnroll = false;
+      let asksPrice = false;
+      let mentionsCourse = false;
+      let quote: string | undefined;
+      for (const m of incoming) {
+        const s = analyzeMessage(m.message!);
+        if (!phone && s.phone) {
+          phone = s.phone;
+          quote ??= m.message!;
+        }
+        if (!email && s.email) email = s.email;
+        if (s.wantsEnroll && !wantsEnroll) {
+          wantsEnroll = true;
+          quote ??= m.message!;
+        }
+        if (s.asksPrice && !asksPrice) {
+          asksPrice = true;
+          quote ??= m.message!;
+        }
+        mentionsCourse ||= s.mentionsCourse;
+      }
+
+      const interested = !!phone || wantsEnroll || asksPrice;
+      if (!interested) continue;
+
       const existing = await this.prisma.scoped.lead.findFirst({
         where: {
           deletedAt: null,
           OR: [
-            { phone },
+            ...(phone ? [{ phone }] : []),
             ...(conv.participantUsername ? [{ instagram: conv.participantUsername }] : []),
           ],
         },
       });
+
+      const reasons = [
+        phone ? 'telefon' : null,
+        wantsEnroll ? 'qeydiyyat istəyi' : null,
+        asksPrice ? 'qiymət soruşdu' : null,
+        !phone && !wantsEnroll && !asksPrice && mentionsCourse ? 'kursla maraqlandı' : null,
+      ].filter(Boolean) as string[];
+      const reason = reasons.join(', ');
+
       if (existing) {
         skipped++;
-        results.push({ username: conv.participantUsername, phone, status: 'skipped' });
+        results.push({ username: conv.participantUsername, phone: phone ?? undefined, reason, status: 'skipped' });
         continue;
       }
 
       const leadDto: CreateSalesLeadDto = {
         fullName: conv.participantUsername ?? `Instagram istifadəçisi ${conv.participantId ?? ''}`.trim(),
-        phone,
+        phone: phone ?? undefined,
+        email: email ?? undefined,
         instagram: conv.participantUsername,
         source: 'instagram_dm',
-        notes: `Instagram DM-dən avtomatik yaradıldı: "${messageWithPhone.m.message}"`,
+        // Enrolment intent is treated as a demo-grade signal and a price question
+        // as a price ask, so lead scoring/priority reflect real buying intent.
+        askedDemo: wantsEnroll,
+        askedPrice: asksPrice,
+        // `interested` guarantees at least one signal fired, so `quote` is set.
+        notes: `Instagram DM (${reason}): "${quote ?? ''}"`,
       };
       await this.sales.createLead(leadDto, user.userId);
       created++;
-      results.push({ username: conv.participantUsername, phone, status: 'created' });
+      results.push({ username: conv.participantUsername, phone: phone ?? undefined, reason, status: 'created' });
     }
 
     return { created, skipped, results };

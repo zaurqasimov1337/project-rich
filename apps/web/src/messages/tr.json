@@ -694,7 +694,7 @@
     "instagramFeedError": "Gönderiler alınamadı.",
     "instagramFeedEmpty": "Henüz gönderi bulunamadı.",
     "dmSyncTitle": "Instagram DM'lerinden lead oluştur",
-    "dmSyncHint": "Son yazışmalarda telefon numarası paylaşan kişiler otomatik olarak CRM'e lead olarak eklenir.",
+    "dmSyncHint": "Son mesajlarda telefon numarası paylaşan, kaydolmak isteyen veya fiyat soran kullanıcılar otomatik olarak CRM'de aday olarak kaydedilir.",
     "dmSyncButton": "Şimdi tara",
     "dmTokenLabel": "Instagram Login Access Token (mesajlaşma için)",
     "dmSyncResult": "{created} yeni lead oluşturuldu, {skipped} zaten mevcuttu.",
