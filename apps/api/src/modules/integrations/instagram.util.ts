@@ -29,6 +29,8 @@ export interface InstagramMedia {
 export interface InstagramInsights {
   reach: number;
   profileViews: number;
+  accountsEngaged: number;
+  interactions: number;
 }
 
 /** Verifies an Instagram Graph API token by fetching the connected business account's public profile. */
@@ -62,9 +64,13 @@ export async function fetchInstagramMedia(
 }
 
 /**
- * 7-day reach & profile views. Requires `instagram_manage_insights` scope — many
+ * 7-day account insights. Requires `instagram_manage_insights` scope — many
  * basic tokens won't have it, so callers should treat a null return as "unavailable"
  * rather than an error.
+ *
+ * `metric_type=total_value` is mandatory since v22: without it Graph rejects the
+ * whole request with "(#100) ... should be specified with parameter metric_type",
+ * which is why the per-day `values` shape is gone and totals arrive pre-summed.
  */
 export async function fetchInstagramInsights(
   igUserId: string,
@@ -72,16 +78,25 @@ export async function fetchInstagramInsights(
 ): Promise<InstagramInsights | null> {
   const until = new Date();
   const since = new Date(until.getTime() - 7 * 24 * 3600 * 1000);
-  const url = `${GRAPH_BASE}/${encodeURIComponent(igUserId)}/insights?metric=reach,profile_views&period=day&since=${Math.floor(since.getTime() / 1000)}&until=${Math.floor(until.getTime() / 1000)}&access_token=${encodeURIComponent(accessToken)}`;
-  const res = await fetch(url);
+  const params = new URLSearchParams({
+    metric: 'reach,profile_views,accounts_engaged,total_interactions',
+    period: 'day',
+    metric_type: 'total_value',
+    since: String(Math.floor(since.getTime() / 1000)),
+    until: String(Math.floor(until.getTime() / 1000)),
+    access_token: accessToken,
+  });
+  const res = await fetch(`${GRAPH_BASE}/${encodeURIComponent(igUserId)}/insights?${params}`);
   const json: any = await res.json().catch(() => ({}));
   if (!res.ok || json?.error || !Array.isArray(json?.data)) return null;
-  const sum = (metric: string) =>
-    (json.data.find((m: any) => m.name === metric)?.values ?? []).reduce(
-      (s: number, v: any) => s + (v.value ?? 0),
-      0,
-    );
-  return { reach: sum('reach'), profileViews: sum('profile_views') };
+  const total = (metric: string) =>
+    json.data.find((m: any) => m.name === metric)?.total_value?.value ?? 0;
+  return {
+    reach: total('reach'),
+    profileViews: total('profile_views'),
+    accountsEngaged: total('accounts_engaged'),
+    interactions: total('total_interactions'),
+  };
 }
 
 export interface InstagramConversationMessage {

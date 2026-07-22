@@ -37,6 +37,8 @@ interface Metrics {
     followers?: number;
     reach?: number;
     profileViews?: number;
+    accountsEngaged?: number;
+    interactions?: number;
     leadsFromInstagram: number;
   } | null;
 }
@@ -177,31 +179,24 @@ export default function CampaignsPage() {
               )}
             </h2>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <div className="text-[13px] font-medium text-muted">{t('igFollowers')}</div>
-              <div className="mt-1 text-lg font-bold tabular-nums">
-                {metrics.instagram.followers ?? '—'}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {(
+              [
+                [t('igFollowers'), metrics.instagram.followers],
+                [t('igReach7d'), metrics.instagram.reach],
+                [t('igProfileViews7d'), metrics.instagram.profileViews],
+                [t('igEngaged7d'), metrics.instagram.accountsEngaged],
+                [t('igInteractions7d'), metrics.instagram.interactions],
+                [t('igLeads'), metrics.instagram.leadsFromInstagram],
+              ] as [string, number | undefined][]
+            ).map(([label, value]) => (
+              <div key={label}>
+                <div className="text-[13px] font-medium text-muted">{label}</div>
+                <div className="mt-1 text-lg font-bold tabular-nums">
+                  {value != null ? value.toLocaleString('az-Latn-AZ') : '—'}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-[13px] font-medium text-muted">{t('igReach7d')}</div>
-              <div className="mt-1 text-lg font-bold tabular-nums">
-                {metrics.instagram.reach ?? '—'}
-              </div>
-            </div>
-            <div>
-              <div className="text-[13px] font-medium text-muted">{t('igProfileViews7d')}</div>
-              <div className="mt-1 text-lg font-bold tabular-nums">
-                {metrics.instagram.profileViews ?? '—'}
-              </div>
-            </div>
-            <div>
-              <div className="text-[13px] font-medium text-muted">{t('igLeads')}</div>
-              <div className="mt-1 text-lg font-bold tabular-nums">
-                {metrics.instagram.leadsFromInstagram}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

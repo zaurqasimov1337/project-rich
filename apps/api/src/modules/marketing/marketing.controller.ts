@@ -31,6 +31,19 @@ import {
 
 const CHANNELS = ['meta', 'google', 'tiktok', 'instagram', 'offline', 'other'];
 
+/** Display names for the `sourceKey` values written by the sales module. */
+const SOURCE_KEY_LABELS: Record<string, string> = {
+  instagram_dm: 'Instagram DM',
+  whatsapp: 'WhatsApp',
+  telefon: 'Telefon',
+  referans: 'Referans',
+  website: 'Veb sayt',
+  event: 'Tədbir',
+  organic: 'Orqanik',
+  paid_ads: 'Ödənişli reklam',
+  tiktok: 'TikTok',
+};
+
 class CampaignDto {
   @IsString()
   @MaxLength(120)
@@ -203,7 +216,7 @@ export class MarketingController {
       gte: new Date(Date.now() - 30 * 24 * 3600 * 1000),
       lt: new Date(),
     };
-    const [spendByChannel, leadsBySource, wonLeads, tuitionIncome] = await Promise.all([
+    const [spendByChannel, leadsBySource, leadsBySourceKey, wonLeads, tuitionIncome] = await Promise.all([
       this.prisma.scoped.adSpend.groupBy({
         by: ['channel'],
         where: { date: { gte: range.gte, lt: range.lt } },
@@ -212,6 +225,14 @@ export class MarketingController {
       this.prisma.scoped.lead.groupBy({
         by: ['sourceId'],
         where: { deletedAt: null, createdAt: range },
+        _count: true,
+      }),
+      // Leads created through the sales module carry a free-text `sourceKey`
+      // ('instagram_dm', 'paid_ads', ...) and never populate the LeadSource
+      // relation, so grouping by sourceId alone reports every one as "Mənbəsiz".
+      this.prisma.scoped.lead.groupBy({
+        by: ['sourceKey'],
+        where: { deletedAt: null, createdAt: range, sourceKey: { not: null } },
         _count: true,
       }),
       this.prisma.scoped.lead.count({
@@ -228,6 +249,19 @@ export class MarketingController {
     const totalLeads = leadsBySource.reduce((s, l) => s + l._count, 0);
     const income = tuitionIncome._sum.amount ?? 0;
 
+    // A lead is attributed by either mechanism, never both, so the two groupings
+    // are merged by display label — a lead with no source at all lands in "Mənbəsiz".
+    const sourceTally = new Map<string, number>();
+    const tally = (label: string, n: number) =>
+      sourceTally.set(label, (sourceTally.get(label) ?? 0) + n);
+    for (const l of leadsBySource) {
+      if (l.sourceId) tally(sourceMap.get(l.sourceId) ?? '—', l._count);
+    }
+    for (const l of leadsBySourceKey) tally(SOURCE_KEY_LABELS[l.sourceKey!] ?? l.sourceKey!, l._count);
+    const attributed = [...sourceTally.values()].reduce((s, n) => s + n, 0);
+    if (totalLeads > attributed) tally('Mənbəsiz', totalLeads - attributed);
+    const bySource = [...sourceTally].map(([source, leads]) => ({ source, leads }));
+
     // Best-effort: surface live Instagram reach/followers next to lead-gen ROI so the
     // marketing team can correlate social performance with actual pipeline results.
     let instagram: {
@@ -235,6 +269,8 @@ export class MarketingController {
       followers?: number;
       reach?: number;
       profileViews?: number;
+      accountsEngaged?: number;
+      interactions?: number;
       leadsFromInstagram: number;
     } | null = null;
     const creds = await getInstagramCredentials(this.prisma);
@@ -249,9 +285,15 @@ export class MarketingController {
         followers: profile?.followers_count,
         reach: insights?.reach,
         profileViews: insights?.profileViews,
-        leadsFromInstagram: leadsBySource
-          .filter((l) => l.sourceId && igSourceIds.includes(l.sourceId))
-          .reduce((s, l) => s + l._count, 0),
+        accountsEngaged: insights?.accountsEngaged,
+        interactions: insights?.interactions,
+        leadsFromInstagram:
+          leadsBySource
+            .filter((l) => l.sourceId && igSourceIds.includes(l.sourceId))
+            .reduce((s, l) => s + l._count, 0) +
+          leadsBySourceKey
+            .filter((l) => /instagram/i.test(l.sourceKey ?? ''))
+            .reduce((s, l) => s + l._count, 0),
       };
     }
 
@@ -264,10 +306,7 @@ export class MarketingController {
       cac: wonLeads > 0 ? Math.round(totalSpend / wonLeads) : 0,
       roas: totalSpend > 0 ? Math.round((income / totalSpend) * 100) / 100 : null,
       byChannel: spendByChannel.map((c) => ({ channel: c.channel, spend: c._sum.amount ?? 0 })),
-      bySource: leadsBySource.map((l) => ({
-        source: l.sourceId ? (sourceMap.get(l.sourceId) ?? '—') : 'Mənbəsiz',
-        leads: l._count,
-      })),
+      bySource: bySource.sort((a, b) => b.leads - a.leads),
       instagram,
     };
   }

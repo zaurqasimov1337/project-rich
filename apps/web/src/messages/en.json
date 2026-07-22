@@ -574,6 +574,8 @@
     "igFollowers": "Followers",
     "igReach7d": "Reach (7d)",
     "igProfileViews7d": "Profile views (7d)",
+    "igEngaged7d": "Accounts engaged (7d)",
+    "igInteractions7d": "Interactions (7d)",
     "igLeads": "Leads from Instagram",
     "channel": {
       "offline": "Offline",
