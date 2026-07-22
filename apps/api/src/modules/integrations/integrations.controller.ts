@@ -200,8 +200,23 @@ export class IntegrationsController {
   @Post('instagram/dm-token')
   @RequirePermissions('integrations.manage')
   async saveDmToken(@Body() dto: DmTokenDto) {
+    const creds = await getInstagramCredentials(this.prisma);
+    if (!creds) throw new BadRequestException('Əvvəlcə Instagram inteqrasiyasını qoşun');
+
+    const token = dto.token.trim();
+    // Verify before storing — otherwise a wrong token looks saved and only
+    // fails later, when the user clicks "sync DM leads".
     try {
-      await saveInstagramDmToken(this.prisma, dto.token);
+      await fetchInstagramConversations(creds.igUserId, token);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : 'naməlum xəta';
+      throw new BadRequestException(
+        `Token yoxlanıla bilmədi: ${detail}. Bu, Facebook Page token-i deyil, "Instagram login" token-i olmalıdır (instagram_business_manage_messages icazəsi ilə).`,
+      );
+    }
+
+    try {
+      await saveInstagramDmToken(this.prisma, token);
     } catch (e) {
       throw new BadRequestException(e instanceof Error ? e.message : 'naməlum xəta');
     }
