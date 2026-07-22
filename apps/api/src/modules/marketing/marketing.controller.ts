@@ -28,6 +28,7 @@ import {
   fetchInstagramProfile,
   getInstagramCredentials,
 } from '../integrations/instagram.util';
+import { fetchMetaAdsSpend, getMetaAdsCredentials } from '../integrations/meta-ads.util';
 
 const CHANNELS = ['meta', 'google', 'tiktok', 'instagram', 'offline', 'other'];
 
@@ -245,7 +246,7 @@ export class MarketingController {
     ]);
     const sources = await this.prisma.scoped.leadSource.findMany();
     const sourceMap = new Map(sources.map((s) => [s.id, s.name]));
-    const totalSpend = spendByChannel.reduce((s, c) => s + (c._sum.amount ?? 0), 0);
+    const manualSpend = spendByChannel.reduce((s, c) => s + (c._sum.amount ?? 0), 0);
     const totalLeads = leadsBySource.reduce((s, l) => s + l._count, 0);
     const income = tuitionIncome._sum.amount ?? 0;
 
@@ -261,6 +262,32 @@ export class MarketingController {
     const attributed = [...sourceTally.values()].reduce((s, n) => s + n, 0);
     if (totalLeads > attributed) tally('Mənbəsiz', totalLeads - attributed);
     const bySource = [...sourceTally].map(([source, leads]) => ({ source, leads }));
+
+    // Pulled live from the Meta Ads API when connected, so nobody has to key in
+    // yesterday's ad spend by hand. Manually entered spend on the `meta`/`instagram`
+    // channels would double-count against it, so those rows are dropped once the
+    // API is the source of truth.
+    const adsCreds = await getMetaAdsCredentials(this.prisma);
+    const metaAds = adsCreds
+      ? await fetchMetaAdsSpend(adsCreds.adAccountId, adsCreds.token, range.gte, range.lt)
+          .then((s) => ({ ...s, currency: adsCreds.currency ?? 'AZN' }))
+          .catch(() => null)
+      : null;
+
+    const channelSpend = spendByChannel.map((c) => ({
+      channel: c.channel,
+      spend: c._sum.amount ?? 0,
+    }));
+    let byChannel = channelSpend;
+    let totalSpend = manualSpend;
+    if (metaAds) {
+      byChannel = [
+        ...channelSpend.filter((c) => c.channel !== 'meta' && c.channel !== 'instagram'),
+        { channel: 'instagram', spend: metaAds.instagram },
+        { channel: 'meta', spend: metaAds.facebook + metaAds.other },
+      ].filter((c) => c.spend > 0);
+      totalSpend = byChannel.reduce((s, c) => s + c.spend, 0);
+    }
 
     // Best-effort: surface live Instagram reach/followers next to lead-gen ROI so the
     // marketing team can correlate social performance with actual pipeline results.
@@ -305,7 +332,9 @@ export class MarketingController {
       cpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
       cac: wonLeads > 0 ? Math.round(totalSpend / wonLeads) : 0,
       roas: totalSpend > 0 ? Math.round((income / totalSpend) * 100) / 100 : null,
-      byChannel: spendByChannel.map((c) => ({ channel: c.channel, spend: c._sum.amount ?? 0 })),
+      byChannel,
+      manualSpend,
+      metaAds,
       bySource: bySource.sort((a, b) => b.leads - a.leads),
       instagram,
     };

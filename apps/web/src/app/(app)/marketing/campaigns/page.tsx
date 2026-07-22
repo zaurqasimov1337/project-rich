@@ -32,6 +32,15 @@ interface Metrics {
   cac: number;
   roas: number | null;
   bySource: { source: string; leads: number }[];
+  metaAds: {
+    total: number;
+    instagram: number;
+    facebook: number;
+    impressions: number;
+    clicks: number;
+    currency: string;
+    byCampaign: { name: string; spend: number }[];
+  } | null;
   instagram: {
     username?: string;
     followers?: number;
@@ -179,25 +188,70 @@ export default function CampaignsPage() {
               )}
             </h2>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {(
               [
                 [t('igFollowers'), metrics.instagram.followers],
                 [t('igReach7d'), metrics.instagram.reach],
                 [t('igProfileViews7d'), metrics.instagram.profileViews],
+                ...(metrics.metaAds
+                  ? ([[t('igAdSpend'), metrics.metaAds.instagram, true]] as [string, number, boolean][])
+                  : []),
                 [t('igEngaged7d'), metrics.instagram.accountsEngaged],
                 [t('igInteractions7d'), metrics.instagram.interactions],
                 [t('igLeads'), metrics.instagram.leadsFromInstagram],
-              ] as [string, number | undefined][]
-            ).map(([label, value]) => (
+              ] as [string, number | undefined, boolean?][]
+            ).map(([label, value, isMoney]) => (
               <div key={label}>
                 <div className="text-[13px] font-medium text-muted">{label}</div>
                 <div className="mt-1 text-lg font-bold tabular-nums">
-                  {value != null ? value.toLocaleString('az-Latn-AZ') : '—'}
+                  {value == null
+                    ? '—'
+                    : isMoney
+                      ? formatMoney(value)
+                      : value.toLocaleString('az-Latn-AZ')}
                 </div>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {metrics?.metaAds && (
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold">
+            {t('metaAdsTitle')}
+            <span className="ml-2 font-normal text-muted">{metrics.metaAds.currency}</span>
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            {(
+              [
+                [t('adsTotal'), formatMoney(metrics.metaAds.total)],
+                [t('adsInstagram'), formatMoney(metrics.metaAds.instagram)],
+                [t('adsFacebook'), formatMoney(metrics.metaAds.facebook)],
+                [t('adsImpressions'), metrics.metaAds.impressions.toLocaleString('az-Latn-AZ')],
+                [t('adsClicks'), metrics.metaAds.clicks.toLocaleString('az-Latn-AZ')],
+              ] as [string, string][]
+            ).map(([label, value]) => (
+              <div key={label}>
+                <div className="text-[13px] font-medium text-muted">{label}</div>
+                <div className="mt-1 text-lg font-bold tabular-nums">{value}</div>
+              </div>
+            ))}
+          </div>
+          {metrics.metaAds.byCampaign.length > 0 && (
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="mb-2 text-[13px] font-medium text-muted">{t('adsByCampaign')}</div>
+              <ul className="space-y-1.5">
+                {metrics.metaAds.byCampaign.slice(0, 5).map((c) => (
+                  <li key={c.name} className="flex justify-between gap-4 text-sm">
+                    <span className="truncate">{c.name}</span>
+                    <span className="shrink-0 tabular-nums">{formatMoney(c.spend)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

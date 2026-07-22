@@ -56,6 +56,7 @@ export default function IntegrationsPage() {
   const [connectKey, setConnectKey] = useState<Provider | null>(null);
   const [secret, setSecret] = useState('');
   const [igUserId, setIgUserId] = useState('');
+  const [adAccountId, setAdAccountId] = useState('');
   const [dmToken, setDmToken] = useState('');
 
   const { data } = useQuery({
@@ -76,13 +77,20 @@ export default function IntegrationsPage() {
     mutationFn: () =>
       api.post(`/integrations/${connectKey!.key}/connect`, {
         secret: secret || undefined,
-        config: connectKey?.key === 'instagram' ? { igUserId } : undefined,
+        config:
+          connectKey?.key === 'instagram'
+            ? { igUserId }
+            : connectKey?.key === 'meta_ads'
+              ? { adAccountId }
+              : undefined,
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['integrations'] });
+      void qc.invalidateQueries({ queryKey: ['marketing-metrics'] });
       setConnectKey(null);
       setSecret('');
       setIgUserId('');
+      setAdAccountId('');
     },
   });
   const disconnectMutation = useMutation({
@@ -299,10 +307,22 @@ export default function IntegrationsPage() {
           <p className="text-sm text-muted">
             {connectKey?.key === 'instagram'
               ? t('instagramConnectHint')
-              : connectKey?.category === 'ai'
-                ? t('aiConnectHint')
-                : t('defaultConnectHint')}
+              : connectKey?.key === 'meta_ads'
+                ? t('metaAdsConnectHint')
+                : connectKey?.category === 'ai'
+                  ? t('aiConnectHint')
+                  : t('defaultConnectHint')}
           </p>
+          {connectKey?.key === 'meta_ads' && (
+            <div>
+              <Label>{t('adAccountIdLabel')}</Label>
+              <Input
+                placeholder="act_1234567890"
+                value={adAccountId}
+                onChange={(e) => setAdAccountId(e.target.value)}
+              />
+            </div>
+          )}
           {connectKey?.key === 'instagram' && (
             <div>
               <Label>{t('igUserIdLabel')}</Label>

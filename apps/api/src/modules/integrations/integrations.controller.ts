@@ -27,6 +27,7 @@ import {
   getInstagramDmCredentials,
   saveInstagramDmToken,
 } from './instagram.util';
+import { fetchMetaAdAccount } from './meta-ads.util';
 
 class ConnectDto {
   @IsOptional()
@@ -55,7 +56,7 @@ const CATALOG = [
   { key: 'facebook', category: 'social', name: 'Facebook', comingSoon: true },
   { key: 'instagram', category: 'social', name: 'Instagram', comingSoon: false },
   { key: 'tiktok', category: 'social', name: 'TikTok', comingSoon: true },
-  { key: 'meta_ads', category: 'ads', name: 'Meta Ads', comingSoon: true },
+  { key: 'meta_ads', category: 'ads', name: 'Meta Ads', comingSoon: false },
   { key: 'google_ads', category: 'ads', name: 'Google Ads', comingSoon: true },
   { key: 'stripe', category: 'payment', name: 'Stripe', comingSoon: true },
   { key: 'paypal', category: 'payment', name: 'PayPal', comingSoon: true },
@@ -134,6 +135,21 @@ export class IntegrationsController {
       } catch (e) {
         throw new BadRequestException(
           `Instagram bağlantısı uğursuz oldu: ${e instanceof Error ? e.message : 'naməlum xəta'}`,
+        );
+      }
+    }
+
+    if (key === 'meta_ads') {
+      const adAccountId = typeof config.adAccountId === 'string' ? config.adAccountId.trim() : '';
+      if (!adAccountId || !dto.secret) {
+        throw new BadRequestException('Reklam hesabı ID-si və Access Token tələb olunur');
+      }
+      try {
+        const account = await fetchMetaAdAccount(adAccountId, dto.secret);
+        config = { adAccountId, account };
+      } catch (e) {
+        throw new BadRequestException(
+          `Meta Ads bağlantısı uğursuz oldu: ${e instanceof Error ? e.message : 'naməlum xəta'}. Token-də "ads_read" icazəsi olmalıdır.`,
         );
       }
     }
