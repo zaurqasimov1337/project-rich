@@ -304,15 +304,17 @@ export class IntegrationsController {
         mentionsCourse ||= s.mentionsCourse;
       }
 
-      // Qualify by depth, not by a single fleeting question. Sharing contact
-      // details or explicitly asking to enrol is genuine intent on its own. A
-      // bare price question — the classic "neçədir?" then silence — is not a
-      // lead unless the person actually stayed and kept the conversation going.
-      const MIN_ENGAGED_MESSAGES = 3;
+      // Qualify by depth AND relevance, not by a single fleeting question.
+      // Sharing contact details or explicitly asking to enrol is genuine intent
+      // on its own. Otherwise we only capture a sustained conversation that is
+      // actually about the training — a real back-and-forth (>= 4 incoming
+      // messages) that references a course, not a lone "neçədir?" then silence
+      // and not idle chatter unrelated to what we offer.
+      const MIN_ENGAGED_MESSAGES = 4;
       const strong = !!phone || !!email || wantsEnroll;
-      const weakInterest = asksPrice || mentionsCourse;
+      const aboutCourse = mentionsCourse || asksPrice;
       const engaged = incoming.length >= MIN_ENGAGED_MESSAGES;
-      const interested = strong || (weakInterest && engaged);
+      const interested = strong || (aboutCourse && engaged);
       if (!interested) continue;
 
       const existing = await this.prisma.scoped.lead.findFirst({
@@ -331,8 +333,9 @@ export class IntegrationsController {
         wantsEnroll ? 'qeydiyyat istəyi' : null,
         asksPrice ? 'qiymət soruşdu' : null,
         mentionsCourse && !wantsEnroll ? 'kursla maraqlandı' : null,
-        // Flag the sustained-interest path so the rep knows this wasn't a one-liner.
-        !strong && engaged ? `${incoming.length} mesaj yazışma` : null,
+        // Flag the sustained-interest path so the rep knows this was a real
+        // course-related back-and-forth, not a one-liner.
+        !strong && engaged ? `təlimlə bağlı ${incoming.length} mesaj` : null,
       ].filter(Boolean) as string[];
       const reason = reasons.join(', ');
 
