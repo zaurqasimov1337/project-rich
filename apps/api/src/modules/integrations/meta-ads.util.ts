@@ -28,6 +28,28 @@ async function graph(path: string, params: Record<string, string>): Promise<any>
   return json;
 }
 
+/**
+ * Exchanges a short-lived user token for a long-lived one (~60 days). Needs the
+ * Facebook app id + secret in the environment; without them we can't call the
+ * exchange endpoint, so the original token is returned unchanged (callers should
+ * then rely on a non-expiring System User token instead).
+ */
+export async function extendToLongLivedToken(shortToken: string): Promise<string> {
+  const appId = process.env.META_APP_ID ?? process.env.FACEBOOK_APP_ID;
+  const appSecret = process.env.META_APP_SECRET ?? process.env.FACEBOOK_APP_SECRET;
+  if (!appId || !appSecret) return shortToken;
+  const params = new URLSearchParams({
+    grant_type: 'fb_exchange_token',
+    client_id: appId,
+    client_secret: appSecret,
+    fb_exchange_token: shortToken,
+  });
+  const res = await fetch(`${GRAPH_BASE}/oauth/access_token?${params}`);
+  const json: any = await res.json().catch(() => ({}));
+  // Best-effort: a failed exchange must not block connecting with the token we have.
+  return typeof json?.access_token === 'string' ? json.access_token : shortToken;
+}
+
 export interface MetaAdAccount {
   id: string;
   name: string;

@@ -37,7 +37,7 @@ import {
   getInstagramDmCredentials,
   saveInstagramDmToken,
 } from './instagram.util';
-import { fetchMetaAdAccount } from './meta-ads.util';
+import { extendToLongLivedToken, fetchMetaAdAccount } from './meta-ads.util';
 import { InstagramAutomationService } from './instagram-automation.service';
 
 class ConnectDto {
@@ -212,6 +212,10 @@ export class IntegrationsController {
           `Meta Ads bağlantısı uğursuz oldu: ${e instanceof Error ? e.message : 'naməlum xəta'}. Token-də "ads_read" icazəsi olmalıdır.`,
         );
       }
+      // Upgrade a short-lived Explorer token to a 60-day one when the app secret
+      // is configured; otherwise it's stored as-is (use a System User token to
+      // avoid expiry entirely).
+      dto.secret = await extendToLongLivedToken(dto.secret);
     }
 
     const credentialsEnc = dto.secret ? encryptSecret(dto.secret) : undefined;

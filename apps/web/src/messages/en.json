@@ -603,7 +603,8 @@
       "last_2_years": "Last 2 years",
       "all_time": "All time",
       "custom": "Custom range"
-    }
+    },
+    "metaAdsError": "Meta ad spend could not be refreshed — the token has expired. Reconnect it under Integrations → Meta Ads."
   },
   "hr": {
     "title": "Employees",

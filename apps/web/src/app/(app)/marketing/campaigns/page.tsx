@@ -32,6 +32,7 @@ interface Metrics {
   cac: number;
   roas: number | null;
   bySource: { source: string; leads: number }[];
+  metaAdsError: string | null;
   metaAds: {
     total: number;
     instagram: number;
@@ -261,6 +262,12 @@ export default function CampaignsPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {metrics?.metaAdsError && (
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
+          {t('metaAdsError')} <span className="text-muted">({metrics.metaAdsError})</span>
         </div>
       )}
 

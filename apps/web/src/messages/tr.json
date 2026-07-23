@@ -603,7 +603,8 @@
       "last_2_years": "Son 2 yıl",
       "all_time": "Tüm zamanlar",
       "custom": "Özel aralık"
-    }
+    },
+    "metaAdsError": "Meta reklam harcaması güncellenemedi — jetonun süresi doldu. Entegrasyonlar → Meta Ads bölümünden yeniden bağlayın."
   },
   "hr": {
     "title": "Çalışanlar",

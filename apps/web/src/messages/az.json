@@ -603,7 +603,8 @@
       "last_2_years": "Son 2 il",
       "all_time": "Bütün dövr",
       "custom": "Fərdi aralıq"
-    }
+    },
+    "metaAdsError": "Meta reklam xərci yenilənə bilmədi — token vaxtı bitib. İnteqrasiyalar → Meta Ads bölməsindən yeni token qoşun."
   },
   "hr": {
     "title": "İşçilər",
