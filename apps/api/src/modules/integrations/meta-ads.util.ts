@@ -3,6 +3,23 @@ import { decryptSecret } from '../../core/crypto/crypto.util';
 
 const GRAPH_BASE = 'https://graph.facebook.com/v21.0';
 
+/**
+ * Fixed USD→AZN rate used to fold the ad account's dollar spend into the local
+ * AZN books. The ad account bills in USD but the finance ledger is kept in manat,
+ * so a spend figure has to be converted before it can be added to a manat total.
+ */
+export const USD_TO_AZN = 1.7;
+
+/**
+ * Converts an ad-spend amount (minor units of the account currency) into AZN
+ * minor units. A USD account is multiplied by {@link USD_TO_AZN}; an account
+ * already billed in AZN passes through unchanged.
+ */
+export function adSpendToAzn(minor: number, currency?: string): number {
+  const rate = (currency ?? 'USD').toUpperCase() === 'AZN' ? 1 : USD_TO_AZN;
+  return Math.round(minor * rate);
+}
+
 /** Ad account ids are passed around bare; the Graph API wants the `act_` prefix. */
 function actId(adAccountId: string): string {
   const id = adAccountId.trim();

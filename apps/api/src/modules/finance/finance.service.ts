@@ -4,6 +4,7 @@ import { requireTenantId } from '../../core/context/request-context';
 import { AuditService } from '../../core/audit/audit.service';
 import { WebhooksService } from '../integrations/webhooks.service';
 import { ListQueryDto, paginated, resolveDateRange } from '../../common/dto/list-query.dto';
+import { adSpendToAzn, fetchMetaAdsSpend, getMetaAdsCredentials } from '../integrations/meta-ads.util';
 import type { CreateInvoiceDto, CreatePaymentDto } from './dto/finance.dto';
 
 @Injectable()
@@ -289,10 +290,32 @@ export class FinanceService {
       this.monthlySeries(),
     ]);
     const totalIncome = income._sum.amount ?? 0;
-    const totalExpense = expenses._sum.amount ?? 0;
+
+    // Instagram ad spend is billed by Meta in USD, but the books are kept in AZN.
+    // Convert the period's Instagram spend at the fixed rate and fold it into the
+    // expense total so "how much did we spend" reflects the ad budget too.
+    let adSpendAzn = 0;
+    const adsCreds = await getMetaAdsCredentials(this.prisma);
+    if (adsCreds) {
+      try {
+        const spend = await fetchMetaAdsSpend(
+          adsCreds.adAccountId,
+          adsCreds.token,
+          range.gte,
+          range.lt,
+        );
+        adSpendAzn = adSpendToAzn(spend.instagram, adsCreds.currency);
+      } catch {
+        // An expired/invalid token must not blank the whole finance summary.
+        adSpendAzn = 0;
+      }
+    }
+
+    const totalExpense = (expenses._sum.amount ?? 0) + adSpendAzn;
     return {
       income: totalIncome,
       expense: totalExpense,
+      adSpend: adSpendAzn,
       profit: totalIncome - totalExpense,
       outstandingDebt: debts._sum.total ?? 0,
       series: monthlySeries,
