@@ -84,7 +84,29 @@ export interface MetaAdsSpend {
   other: number;
   impressions: number;
   clicks: number;
+  /** Unique accounts reached (not additive across placements, read at account level). */
+  reach: number;
+  /** Avg times each account saw an ad = impressions / reach. */
+  frequency: number;
+  /** All money fields are minor units (qəpik/cents) so the client formats them uniformly. */
+  cpm: number; // cost per 1000 impressions
+  cpc: number; // cost per click
+  ctr: number; // click-through rate, percent
+  instagram_impressions: number;
+  instagram_clicks: number;
+  instagram_cpm: number;
+  instagram_cpc: number;
+  instagram_ctr: number;
   byCampaign: { name: string; spend: number }[];
+}
+
+/** CPM/CPC/CTR from raw counts. Spend is already minor units, so results are too. */
+function derive(spendMinor: number, impressions: number, clicks: number) {
+  return {
+    cpm: impressions > 0 ? Math.round((spendMinor / impressions) * 1000) : 0,
+    cpc: clicks > 0 ? Math.round(spendMinor / clicks) : 0,
+    ctr: impressions > 0 ? Math.round((clicks / impressions) * 10000) / 100 : 0,
+  };
 }
 
 /**
@@ -106,7 +128,7 @@ export async function fetchMetaAdsSpend(
   const timeRange = JSON.stringify({ since: ymd(from), until: ymd(until) });
   const account = actId(adAccountId);
 
-  const [byPlatform, byCampaign] = await Promise.all([
+  const [byPlatform, account_totals, byCampaign] = await Promise.all([
     graph(`${account}/insights`, {
       fields: 'spend,impressions,clicks',
       breakdowns: 'publisher_platform',
@@ -114,6 +136,14 @@ export async function fetchMetaAdsSpend(
       time_range: timeRange,
       access_token: accessToken,
     }),
+    // Reach is unique-per-account, so it can't be summed from the placement rows —
+    // it must be read once at the account level for the same window.
+    graph(`${account}/insights`, {
+      fields: 'reach',
+      level: 'account',
+      time_range: timeRange,
+      access_token: accessToken,
+    }).catch(() => ({ data: [] })),
     // A campaign with no delivery in the window is simply absent from the response.
     graph(`${account}/insights`, {
       fields: 'campaign_name,spend',
@@ -125,16 +155,39 @@ export async function fetchMetaAdsSpend(
   ]);
 
   const rows = (byPlatform.data ?? []) as any[];
-  const sumWhere = (pred: (p: string) => boolean) =>
+  const igRows = rows.filter((r) => (r.publisher_platform ?? '') === 'instagram');
+  const spendWhere = (pred: (p: string) => boolean) =>
     rows.filter((r) => pred(r.publisher_platform ?? '')).reduce((s, r) => s + toMinorUnits(r.spend), 0);
+  const countWhere = (rs: any[], field: string) => rs.reduce((s, r) => s + Number(r[field] ?? 0), 0);
+
+  const total = rows.reduce((s, r) => s + toMinorUnits(r.spend), 0);
+  const impressions = countWhere(rows, 'impressions');
+  const clicks = countWhere(rows, 'clicks');
+  const reach = Number((account_totals.data?.[0]?.reach as string) ?? 0);
+  const overall = derive(total, impressions, clicks);
+
+  const igSpend = spendWhere((p) => p === 'instagram');
+  const igImpr = countWhere(igRows, 'impressions');
+  const igClicks = countWhere(igRows, 'clicks');
+  const ig = derive(igSpend, igImpr, igClicks);
 
   return {
-    total: rows.reduce((s, r) => s + toMinorUnits(r.spend), 0),
-    instagram: sumWhere((p) => p === 'instagram'),
-    facebook: sumWhere((p) => p === 'facebook'),
-    other: sumWhere((p) => p !== 'instagram' && p !== 'facebook'),
-    impressions: rows.reduce((s, r) => s + Number(r.impressions ?? 0), 0),
-    clicks: rows.reduce((s, r) => s + Number(r.clicks ?? 0), 0),
+    total,
+    instagram: igSpend,
+    facebook: spendWhere((p) => p === 'facebook'),
+    other: spendWhere((p) => p !== 'instagram' && p !== 'facebook'),
+    impressions,
+    clicks,
+    reach,
+    frequency: reach > 0 ? Math.round((impressions / reach) * 100) / 100 : 0,
+    cpm: overall.cpm,
+    cpc: overall.cpc,
+    ctr: overall.ctr,
+    instagram_impressions: igImpr,
+    instagram_clicks: igClicks,
+    instagram_cpm: ig.cpm,
+    instagram_cpc: ig.cpc,
+    instagram_ctr: ig.ctr,
     byCampaign: ((byCampaign.data ?? []) as any[])
       .map((r) => ({ name: r.campaign_name as string, spend: toMinorUnits(r.spend) }))
       .filter((c) => c.spend > 0)

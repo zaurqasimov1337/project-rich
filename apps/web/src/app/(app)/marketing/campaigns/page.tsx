@@ -39,6 +39,16 @@ interface Metrics {
     facebook: number;
     impressions: number;
     clicks: number;
+    reach: number;
+    frequency: number;
+    cpm: number;
+    cpc: number;
+    ctr: number;
+    instagram_impressions: number;
+    instagram_clicks: number;
+    instagram_cpm: number;
+    instagram_cpc: number;
+    instagram_ctr: number;
     currency: string;
     byCampaign: { name: string; spend: number }[];
   } | null;
@@ -277,14 +287,19 @@ export default function CampaignsPage() {
             {t('metaAdsTitle')}
             <span className="ml-2 font-normal text-muted">{metrics.metaAds.currency}</span>
           </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {(
               [
                 [t('adsTotal'), formatMoney(metrics.metaAds.total)],
                 [t('adsInstagram'), formatMoney(metrics.metaAds.instagram)],
                 [t('adsFacebook'), formatMoney(metrics.metaAds.facebook)],
                 [t('adsImpressions'), metrics.metaAds.impressions.toLocaleString('az-Latn-AZ')],
+                [t('adsReach'), metrics.metaAds.reach.toLocaleString('az-Latn-AZ')],
                 [t('adsClicks'), metrics.metaAds.clicks.toLocaleString('az-Latn-AZ')],
+                ['CPM', formatMoney(metrics.metaAds.cpm)],
+                ['CPC', formatMoney(metrics.metaAds.cpc)],
+                ['CTR', `${metrics.metaAds.ctr}%`],
+                [t('adsFrequency'), metrics.metaAds.frequency.toLocaleString('az-Latn-AZ')],
               ] as [string, string][]
             ).map(([label, value]) => (
               <div key={label}>
@@ -292,6 +307,26 @@ export default function CampaignsPage() {
                 <div className="mt-1 text-lg font-bold tabular-nums">{value}</div>
               </div>
             ))}
+          </div>
+
+          <div className="mt-4 border-t border-border pt-3">
+            <div className="mb-2 text-[13px] font-medium text-muted">{t('adsInstagramOnly')}</div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {(
+                [
+                  [t('adsInstagram'), formatMoney(metrics.metaAds.instagram)],
+                  [t('adsImpressions'), metrics.metaAds.instagram_impressions.toLocaleString('az-Latn-AZ')],
+                  [t('adsClicks'), metrics.metaAds.instagram_clicks.toLocaleString('az-Latn-AZ')],
+                  ['CPM', formatMoney(metrics.metaAds.instagram_cpm)],
+                  ['CTR', `${metrics.metaAds.instagram_ctr}%`],
+                ] as [string, string][]
+              ).map(([label, value]) => (
+                <div key={label}>
+                  <div className="text-[13px] font-medium text-muted">{label}</div>
+                  <div className="mt-1 text-lg font-bold tabular-nums">{value}</div>
+                </div>
+              ))}
+            </div>
           </div>
           {metrics.metaAds.byCampaign.length > 0 && (
             <div className="mt-4 border-t border-border pt-3">

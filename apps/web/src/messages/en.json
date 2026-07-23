@@ -604,7 +604,10 @@
       "all_time": "All time",
       "custom": "Custom range"
     },
-    "metaAdsError": "Meta ad spend could not be refreshed — the token has expired. Reconnect it under Integrations → Meta Ads."
+    "metaAdsError": "Meta ad spend could not be refreshed — the token has expired. Reconnect it under Integrations → Meta Ads.",
+    "adsReach": "Reach",
+    "adsFrequency": "Frequency",
+    "adsInstagramOnly": "Instagram only"
   },
   "hr": {
     "title": "Employees",

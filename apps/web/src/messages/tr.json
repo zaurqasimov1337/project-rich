@@ -604,7 +604,10 @@
       "all_time": "Tüm zamanlar",
       "custom": "Özel aralık"
     },
-    "metaAdsError": "Meta reklam harcaması güncellenemedi — jetonun süresi doldu. Entegrasyonlar → Meta Ads bölümünden yeniden bağlayın."
+    "metaAdsError": "Meta reklam harcaması güncellenemedi — jetonun süresi doldu. Entegrasyonlar → Meta Ads bölümünden yeniden bağlayın.",
+    "adsReach": "Erişim",
+    "adsFrequency": "Sıklık",
+    "adsInstagramOnly": "Sadece Instagram"
   },
   "hr": {
     "title": "Çalışanlar",

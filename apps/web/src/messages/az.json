@@ -604,7 +604,10 @@
       "all_time": "Bütün dövr",
       "custom": "Fərdi aralıq"
     },
-    "metaAdsError": "Meta reklam xərci yenilənə bilmədi — token vaxtı bitib. İnteqrasiyalar → Meta Ads bölməsindən yeni token qoşun."
+    "metaAdsError": "Meta reklam xərci yenilənə bilmədi — token vaxtı bitib. İnteqrasiyalar → Meta Ads bölməsindən yeni token qoşun.",
+    "adsReach": "Əhatə",
+    "adsFrequency": "Tezlik",
+    "adsInstagramOnly": "Yalnız Instagram"
   },
   "hr": {
     "title": "İşçilər",
