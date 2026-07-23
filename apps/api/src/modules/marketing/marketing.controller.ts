@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -189,6 +190,13 @@ export class MarketingController {
         note: dto.note,
       },
     });
+  }
+
+  @Delete('ad-spends/:id')
+  @RequirePermissions('marketing.manage')
+  async deleteSpend(@Param('id', ParseUUIDPipe) id: string) {
+    await this.prisma.scoped.adSpend.delete({ where: { id } });
+    return { ok: true };
   }
 
   @Get('ad-spends')

@@ -1,7 +1,7 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -76,6 +76,16 @@ interface SpendForm {
   channel: string;
   amount: number;
   date: string;
+  note?: string;
+}
+
+interface SpendRow {
+  id: string;
+  channel: string;
+  amount: number;
+  date: string;
+  note: string | null;
+  campaign: { name: string } | null;
 }
 
 export default function CampaignsPage() {
@@ -122,6 +132,10 @@ export default function CampaignsPage() {
     queryKey: ['marketing-metrics', rangeQuery],
     queryFn: () => api.get<Metrics>(`/marketing/metrics?${rangeQuery}`),
   });
+  const { data: spends } = useQuery({
+    queryKey: ['ad-spends', rangeQuery],
+    queryFn: () => api.list<SpendRow>(`/ad-spends?${rangeQuery}&limit=50`),
+  });
 
   const campaignForm = useForm<CampaignForm>({
     defaultValues: { channel: 'meta', startAt: new Date().toISOString().slice(0, 10) },
@@ -158,13 +172,23 @@ export default function CampaignsPage() {
       api.post('/ad-spends', {
         ...v,
         campaignId: v.campaignId || undefined,
+        note: v.note?.trim() || undefined,
         amount: Math.round(Number(v.amount) * 100),
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['campaigns'] });
       void qc.invalidateQueries({ queryKey: ['marketing-metrics'] });
+      void qc.invalidateQueries({ queryKey: ['ad-spends'] });
       setSpendOpen(false);
       spendForm.reset();
+    },
+  });
+
+  const deleteSpend = useMutation({
+    mutationFn: (id: string) => api.delete(`/ad-spends/${id}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['marketing-metrics'] });
+      void qc.invalidateQueries({ queryKey: ['ad-spends'] });
     },
   });
 
@@ -392,6 +416,62 @@ export default function CampaignsPage() {
         </div>
       )}
 
+      <div className="rounded-xl border border-border bg-surface shadow-sm">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <h2 className="text-sm font-semibold">{t('manualSpendTitle')}</h2>
+          {can('marketing.manage') && (
+            <Button size="sm" variant="outline" onClick={() => setSpendOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('addSpend')}
+            </Button>
+          )}
+        </div>
+        {(spends?.data ?? []).length === 0 ? (
+          <p className="p-6 text-center text-sm text-muted">{t('manualSpendEmpty')}</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted">
+                  <th className="px-4 py-2 font-medium">{tc('date')}</th>
+                  <th className="px-4 py-2 font-medium">{t('channelHeader')}</th>
+                  <th className="px-4 py-2 font-medium">{t('spendNote')}</th>
+                  <th className="px-4 py-2 font-medium">{t('campaign')}</th>
+                  <th className="px-4 py-2 text-right font-medium">{tc('amount')}</th>
+                  <th className="px-4 py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {(spends?.data ?? []).map((s) => (
+                  <tr key={s.id} className="border-b border-border last:border-0">
+                    <td className="whitespace-nowrap px-4 py-2 text-muted">
+                      {new Date(s.date).toLocaleDateString('az-Latn-AZ')}
+                    </td>
+                    <td className="px-4 py-2">{CHANNEL_LABELS[s.channel] ?? s.channel}</td>
+                    <td className="px-4 py-2">{s.note ?? '—'}</td>
+                    <td className="px-4 py-2 text-muted">{s.campaign?.name ?? '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums">
+                      {formatMoney(s.amount)}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {can('marketing.manage') && (
+                        <button
+                          type="button"
+                          onClick={() => deleteSpend.mutate(s.id)}
+                          className="text-muted transition hover:text-danger"
+                          aria-label={tc('delete')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <DataTable
         columns={columns}
         data={data?.data}
@@ -498,6 +578,10 @@ export default function CampaignsPage() {
           <div>
             <Label>{tc('date')} *</Label>
             <Input type="date" {...spendForm.register('date', { required: true })} />
+          </div>
+          <div>
+            <Label>{t('spendNote')}</Label>
+            <Input placeholder={t('spendNotePlaceholder')} {...spendForm.register('note')} />
           </div>
         </form>
       </Drawer>
