@@ -279,13 +279,24 @@ export class FinanceService {
       gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
       lt: new Date(),
     };
-    const [income, expenses, debts, monthlySeries] = await Promise.all([
+    const [income, expenses, marketingSpend, debts, monthlySeries] = await Promise.all([
       this.prisma.scoped.transaction.aggregate({
         where: { type: 'income', date: { gte: range.gte, lt: range.lt } },
         _sum: { amount: true },
       }),
       this.prisma.scoped.transaction.aggregate({
         where: { type: { in: ['expense', 'payroll'] }, date: { gte: range.gte, lt: range.lt } },
+        _sum: { amount: true },
+      }),
+      // Manually entered marketing spend (offline flyers, blogger ads, ...). It's
+      // already in AZN, so it's added as-is. Meta/Instagram channels are excluded
+      // because that spend is pulled live from the ads API below — counting both
+      // the manual row and the API figure would double it.
+      this.prisma.scoped.adSpend.aggregate({
+        where: {
+          date: { gte: range.gte, lt: range.lt },
+          channel: { notIn: ['meta', 'instagram'] },
+        },
         _sum: { amount: true },
       }),
       this.prisma.scoped.invoice.aggregate({
@@ -321,11 +332,12 @@ export class FinanceService {
       }
     }
 
-    const totalExpense = (expenses._sum.amount ?? 0) + adSpendAzn;
+    const manualMarketing = marketingSpend._sum.amount ?? 0;
+    const totalExpense = (expenses._sum.amount ?? 0) + adSpendAzn + manualMarketing;
     return {
       income: totalIncome,
       expense: totalExpense,
-      adSpend: adSpendAzn,
+      adSpend: adSpendAzn + manualMarketing,
       profit: totalIncome - totalExpense,
       outstandingDebt: debts._sum.total ?? 0,
       series: monthlySeries,
