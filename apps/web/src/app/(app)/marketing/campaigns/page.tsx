@@ -50,6 +50,7 @@ interface Metrics {
     instagram_cpc: number;
     instagram_ctr: number;
     currency: string;
+    commissionPct: number;
     byCampaign: { name: string; spend: number }[];
   } | null;
   instagram: {
@@ -96,6 +97,7 @@ export default function CampaignsPage() {
   const [range, setRange] = useState('this_month');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [commission, setCommission] = useState('');
 
   const RANGE_OPTIONS = [
     'last_7_days', 'last_30_days', 'this_month', 'last_month', 'last_90_days',
@@ -138,6 +140,16 @@ export default function CampaignsPage() {
       void qc.invalidateQueries({ queryKey: ['campaigns'] });
       setCampaignOpen(false);
       campaignForm.reset();
+    },
+  });
+
+  const saveCommission = useMutation({
+    mutationFn: () =>
+      api.post('/integrations/meta-ads/commission', { commissionPct: Number(commission) || 0 }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['marketing-metrics'] });
+      void qc.invalidateQueries({ queryKey: ['finance-summary'] });
+      setCommission('');
     },
   });
 
@@ -291,6 +303,38 @@ export default function CampaignsPage() {
             {t('metaAdsTitle')}
             <span className="ml-2 font-normal text-muted">{metrics.metaAds.currency}</span>
           </h2>
+
+          {can('marketing.manage') && (
+            <div className="mb-4 rounded-lg border border-border bg-muted-bg/40 p-3">
+              <div className="text-[13px] font-medium">{t('commissionTitle')}</div>
+              <p className="mt-0.5 text-xs text-muted">{t('commissionHint')}</p>
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <div className="w-28">
+                  <Label>{t('commissionLabel')}</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    placeholder={String(metrics.metaAds.commissionPct ?? 0)}
+                    value={commission}
+                    onChange={(e) => setCommission(e.target.value)}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  loading={saveCommission.isPending}
+                  disabled={commission === ''}
+                  onClick={() => saveCommission.mutate()}
+                >
+                  {tc('save')}
+                </Button>
+                <span className="text-xs text-muted">
+                  {t('commissionCurrent', { pct: metrics.metaAds.commissionPct ?? 0 })}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {(
               [

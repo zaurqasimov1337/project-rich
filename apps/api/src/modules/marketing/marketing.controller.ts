@@ -268,14 +268,16 @@ export class MarketingController {
     // channels would double-count against it, so those rows are dropped once the
     // API is the source of truth.
     const adsCreds = await getMetaAdsCredentials(this.prisma);
-    let metaAds: (Awaited<ReturnType<typeof fetchMetaAdsSpend>> & { currency: string }) | null = null;
+    let metaAds:
+      | (Awaited<ReturnType<typeof fetchMetaAdsSpend>> & { currency: string; commissionPct: number })
+      | null = null;
     // Surfaced to the UI instead of silently blanking the spend, so an expired
     // token reads as "reconnect", not as "we spent nothing".
     let metaAdsError: string | null = null;
     if (adsCreds) {
       try {
         const spend = await fetchMetaAdsSpend(adsCreds.adAccountId, adsCreds.token, range.gte, range.lt);
-        metaAds = { ...spend, currency: adsCreds.currency ?? 'AZN' };
+        metaAds = { ...spend, currency: adsCreds.currency ?? 'AZN', commissionPct: adsCreds.commissionPct };
       } catch (e) {
         metaAdsError = e instanceof Error ? e.message : 'naməlum xəta';
       }
