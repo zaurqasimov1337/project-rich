@@ -14,10 +14,13 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { INTEGRATION_CATEGORIES } from '@edusphere/shared';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -56,6 +59,14 @@ class DmTokenDto {
   @IsString()
   @MaxLength(2000)
   token!: string;
+}
+
+class CommissionDto {
+  /** Reseller/agency commission on ad spend, in percent. 0 = no commission. */
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  commissionPct!: number;
 }
 
 class AutomationDto {
@@ -206,7 +217,16 @@ export class IntegrationsController {
       }
       try {
         const account = await fetchMetaAdAccount(adAccountId, dto.secret);
-        config = { adAccountId, account };
+        // Preserve a previously set commission across a token refresh; allow the
+        // connect form to seed it too. `config` is fully rebuilt below, so a
+        // commission stored earlier would otherwise be lost on reconnect.
+        const existing = await this.prisma.scoped.tenantIntegration.findFirst({
+          where: { catalogKey: 'meta_ads' },
+        });
+        const prevPct = Number((existing?.config as { commissionPct?: number })?.commissionPct) || 0;
+        const formPct = Number((dto.config as { commissionPct?: number })?.commissionPct);
+        const commissionPct = Number.isFinite(formPct) ? formPct : prevPct;
+        config = { adAccountId, account, commissionPct };
       } catch (e) {
         throw new BadRequestException(
           `Meta Ads bağlantısı uğursuz oldu: ${e instanceof Error ? e.message : 'naməlum xəta'}. Token-də "ads_read" icazəsi olmalıdır.`,
@@ -243,6 +263,27 @@ export class IntegrationsController {
   async disconnect(@Param('key') key: string) {
     await this.prisma.scoped.tenantIntegration.deleteMany({ where: { catalogKey: key } });
     return { ok: true };
+  }
+
+  /**
+   * Sets the optional ad-spend commission (%) on the connected Meta Ads account.
+   * Kept separate from `connect` so the advertiser can adjust it without having to
+   * re-enter the access token. 0 removes it. Merged into the existing config so
+   * the ad account id / token stay intact.
+   */
+  @Post('meta-ads/commission')
+  @RequirePermissions('integrations.manage')
+  async setMetaAdsCommission(@Body() dto: CommissionDto) {
+    const conn = await this.prisma.scoped.tenantIntegration.findFirst({
+      where: { catalogKey: 'meta_ads' },
+    });
+    if (!conn) throw new BadRequestException('Meta Ads inteqrasiyası qoşulmayıb');
+    const config = { ...((conn.config ?? {}) as object), commissionPct: dto.commissionPct };
+    await this.prisma.scoped.tenantIntegration.update({
+      where: { id: conn.id },
+      data: { config },
+    });
+    return { ok: true, commissionPct: dto.commissionPct };
   }
 
   @Get('instagram/media')

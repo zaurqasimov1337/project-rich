@@ -33,7 +33,13 @@ interface Provider {
   connected: boolean;
   hasSecret: boolean;
   hasDmToken: boolean;
-  config?: { igUserId?: string; profile?: { username?: string; followers_count?: number; media_count?: number } };
+  config?: {
+    igUserId?: string;
+    profile?: { username?: string; followers_count?: number; media_count?: number };
+    adAccountId?: string;
+    commissionPct?: number;
+    account?: { name?: string; currency?: string };
+  };
 }
 
 const CATEGORY_KEYS: Record<string, string> = {
@@ -59,11 +65,15 @@ export default function IntegrationsPage() {
   const [igUserId, setIgUserId] = useState('');
   const [adAccountId, setAdAccountId] = useState('');
   const [dmToken, setDmToken] = useState('');
+  const [commission, setCommission] = useState('');
 
   const { data } = useQuery({
     queryKey: ['integrations'],
     queryFn: () => api.get<{ categories: string[]; providers: Provider[] }>('/integrations'),
   });
+
+  const metaAdsProvider = data?.providers.find((p) => p.key === 'meta_ads');
+  const metaAdsConnected = !!metaAdsProvider?.connected;
 
   const instagramProvider = data?.providers.find((p) => p.key === 'instagram');
   const instagramConnected = !!instagramProvider?.connected;
@@ -82,7 +92,7 @@ export default function IntegrationsPage() {
           connectKey?.key === 'instagram'
             ? { igUserId }
             : connectKey?.key === 'meta_ads'
-              ? { adAccountId }
+              ? { adAccountId, ...(commission !== '' ? { commissionPct: Number(commission) } : {}) }
               : undefined,
       }),
     onSuccess: () => {
@@ -92,6 +102,7 @@ export default function IntegrationsPage() {
       setSecret('');
       setIgUserId('');
       setAdAccountId('');
+      setCommission('');
     },
   });
   const disconnectMutation = useMutation({
@@ -107,6 +118,17 @@ export default function IntegrationsPage() {
         results: { username?: string; phone?: string; reason: string; status: 'created' | 'skipped' }[];
       }>('/integrations/instagram/sync-dm-leads'),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['leads'] }),
+  });
+
+  const saveCommissionMutation = useMutation({
+    mutationFn: () =>
+      api.post('/integrations/meta-ads/commission', { commissionPct: Number(commission) || 0 }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['integrations'] });
+      void qc.invalidateQueries({ queryKey: ['marketing-metrics'] });
+      void qc.invalidateQueries({ queryKey: ['finance-summary'] });
+      setCommission('');
+    },
   });
 
   const saveDmTokenMutation = useMutation({
@@ -183,6 +205,43 @@ export default function IntegrationsPage() {
           </div>
         </div>
       ))}
+
+      {metaAdsConnected && can('integrations.manage') && (
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+          <div>
+            <h2 className="text-sm font-semibold">{t('commissionTitle')}</h2>
+            <p className="mt-1 text-xs text-muted">{t('commissionHint')}</p>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <div className="w-32">
+              <Label>{t('commissionLabel')}</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                placeholder={String(metaAdsProvider?.config?.commissionPct ?? 0)}
+                value={commission}
+                onChange={(e) => setCommission(e.target.value)}
+              />
+            </div>
+            <Button
+              size="sm"
+              loading={saveCommissionMutation.isPending}
+              disabled={commission === ''}
+              onClick={() => saveCommissionMutation.mutate()}
+            >
+              {tc('save')}
+            </Button>
+            <span className="text-xs text-muted">
+              {t('commissionCurrent', { pct: metaAdsProvider?.config?.commissionPct ?? 0 })}
+            </span>
+          </div>
+          {saveCommissionMutation.isSuccess && (
+            <p className="mt-2 text-sm text-success">{t('commissionSaved')}</p>
+          )}
+        </div>
+      )}
 
       {instagramConnected && (
         <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
@@ -338,14 +397,29 @@ export default function IntegrationsPage() {
                   : t('defaultConnectHint')}
           </p>
           {connectKey?.key === 'meta_ads' && (
-            <div>
-              <Label>{t('adAccountIdLabel')}</Label>
-              <Input
-                placeholder="act_1234567890"
-                value={adAccountId}
-                onChange={(e) => setAdAccountId(e.target.value)}
-              />
-            </div>
+            <>
+              <div>
+                <Label>{t('adAccountIdLabel')}</Label>
+                <Input
+                  placeholder="act_1234567890"
+                  value={adAccountId}
+                  onChange={(e) => setAdAccountId(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>{t('commissionLabel')}</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={commission}
+                  onChange={(e) => setCommission(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-muted">{t('commissionHint')}</p>
+              </div>
+            </>
           )}
           {connectKey?.key === 'instagram' && (
             <div>

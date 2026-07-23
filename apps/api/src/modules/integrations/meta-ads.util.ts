@@ -214,16 +214,36 @@ export async function fetchMetaAdsSpend(
 
 export async function getMetaAdsCredentials(
   prisma: PrismaService,
-): Promise<{ adAccountId: string; token: string; currency?: string } | null> {
+): Promise<{
+  adAccountId: string;
+  token: string;
+  currency?: string;
+  /** Optional reseller/agency commission on ad spend, in percent (0 = none). */
+  commissionPct: number;
+} | null> {
   const conn = await prisma.scoped.tenantIntegration.findFirst({
     where: { catalogKey: 'meta_ads' },
   });
   if (!conn?.credentialsEnc) return null;
-  const config = (conn.config ?? {}) as { adAccountId?: string; account?: { currency?: string } };
+  const config = (conn.config ?? {}) as {
+    adAccountId?: string;
+    account?: { currency?: string };
+    commissionPct?: number;
+  };
   if (!config.adAccountId) return null;
   return {
     adAccountId: config.adAccountId,
     token: decryptSecret(conn.credentialsEnc),
     currency: config.account?.currency,
+    commissionPct: Number(config.commissionPct) || 0,
   };
+}
+
+/**
+ * Adds a reseller/agency commission on top of an ad-spend amount. The commission
+ * is a percentage the advertiser pays on the media cost; 0 (or unset) adds nothing.
+ */
+export function applyCommission(minor: number, commissionPct: number): number {
+  if (!commissionPct || commissionPct <= 0) return minor;
+  return Math.round(minor * (1 + commissionPct / 100));
 }

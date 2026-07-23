@@ -4,7 +4,12 @@ import { requireTenantId } from '../../core/context/request-context';
 import { AuditService } from '../../core/audit/audit.service';
 import { WebhooksService } from '../integrations/webhooks.service';
 import { ListQueryDto, paginated, resolveDateRange } from '../../common/dto/list-query.dto';
-import { adSpendToAzn, fetchMetaAdsSpend, getMetaAdsCredentials } from '../integrations/meta-ads.util';
+import {
+  adSpendToAzn,
+  applyCommission,
+  fetchMetaAdsSpend,
+  getMetaAdsCredentials,
+} from '../integrations/meta-ads.util';
 import type { CreateInvoiceDto, CreatePaymentDto } from './dto/finance.dto';
 
 @Injectable()
@@ -304,7 +309,12 @@ export class FinanceService {
           range.gte,
           range.lt,
         );
-        adSpendAzn = adSpendToAzn(spend.instagram, adsCreds.currency);
+        // Convert the spend to AZN, then add the reseller commission on top
+        // when one is configured — so the expense reflects what was actually paid.
+        adSpendAzn = applyCommission(
+          adSpendToAzn(spend.instagram, adsCreds.currency),
+          adsCreds.commissionPct,
+        );
       } catch {
         // An expired/invalid token must not blank the whole finance summary.
         adSpendAzn = 0;
