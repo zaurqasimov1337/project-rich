@@ -63,27 +63,19 @@ export async function fetchInstagramMedia(
   return (json.data ?? []) as InstagramMedia[];
 }
 
-/**
- * 7-day account insights. Requires `instagram_manage_insights` scope — many
- * basic tokens won't have it, so callers should treat a null return as "unavailable"
- * rather than an error.
- *
- * `metric_type=total_value` is mandatory since v22: without it Graph rejects the
- * whole request with "(#100) ... should be specified with parameter metric_type",
- * which is why the per-day `values` shape is gone and totals arrive pre-summed.
- */
-export async function fetchInstagramInsights(
+/** One ≤30-day window of account insights, or null if the request failed. */
+async function fetchInsightsWindow(
   igUserId: string,
   accessToken: string,
+  sinceSec: number,
+  untilSec: number,
 ): Promise<InstagramInsights | null> {
-  const until = new Date();
-  const since = new Date(until.getTime() - 7 * 24 * 3600 * 1000);
   const params = new URLSearchParams({
     metric: 'reach,profile_views,accounts_engaged,total_interactions',
     period: 'day',
     metric_type: 'total_value',
-    since: String(Math.floor(since.getTime() / 1000)),
-    until: String(Math.floor(until.getTime() / 1000)),
+    since: String(sinceSec),
+    until: String(untilSec),
     access_token: accessToken,
   });
   const res = await fetch(`${GRAPH_BASE}/${encodeURIComponent(igUserId)}/insights?${params}`);
@@ -97,6 +89,54 @@ export async function fetchInstagramInsights(
     accountsEngaged: total('accounts_engaged'),
     interactions: total('total_interactions'),
   };
+}
+
+/**
+ * Account insights for a period (defaults to the last 7 days). Requires
+ * `instagram_manage_insights`; a null return means "unavailable", not an error.
+ *
+ * `metric_type=total_value` is mandatory since v22. Instagram also rejects any
+ * window longer than 30 days, so a longer range is split into ≤30-day chunks and
+ * summed. profile_views/engaged/interactions add up exactly; reach is a unique
+ * count, so its cross-chunk sum is a close upper estimate — acceptable here.
+ */
+export async function fetchInstagramInsights(
+  igUserId: string,
+  accessToken: string,
+  since?: Date,
+  until?: Date,
+): Promise<InstagramInsights | null> {
+  const end = until ?? new Date();
+  const start = since ?? new Date(end.getTime() - 7 * 24 * 3600 * 1000);
+  const DAY = 24 * 3600 * 1000;
+  const MAX = 30 * DAY;
+
+  // Build ≤30-day windows, newest first, capped at ~12 (a year) so an "all time"
+  // query doesn't fan out into dozens of calls.
+  const windows: [number, number][] = [];
+  let e = end.getTime();
+  const floor = start.getTime();
+  while (e > floor && windows.length < 12) {
+    const s = Math.max(e - MAX, floor);
+    windows.push([Math.floor(s / 1000), Math.floor(e / 1000)]);
+    e = s;
+  }
+  if (windows.length === 0) return null;
+
+  const parts = await Promise.all(
+    windows.map(([s, u]) => fetchInsightsWindow(igUserId, accessToken, s, u)),
+  );
+  if (parts.every((p) => p === null)) return null;
+
+  return parts.reduce<InstagramInsights>(
+    (acc, p) => ({
+      reach: acc.reach + (p?.reach ?? 0),
+      profileViews: acc.profileViews + (p?.profileViews ?? 0),
+      accountsEngaged: acc.accountsEngaged + (p?.accountsEngaged ?? 0),
+      interactions: acc.interactions + (p?.interactions ?? 0),
+    }),
+    { reach: 0, profileViews: 0, accountsEngaged: 0, interactions: 0 },
+  );
 }
 
 export interface InstagramConversationMessage {

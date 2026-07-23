@@ -311,7 +311,7 @@ export class MarketingController {
     if (creds) {
       const [profile, insights] = await Promise.all([
         fetchInstagramProfile(creds.igUserId, creds.token).catch(() => null),
-        fetchInstagramInsights(creds.igUserId, creds.token),
+        fetchInstagramInsights(creds.igUserId, creds.token, range.gte, range.lt),
       ]);
       const igSourceIds = sources.filter((s) => /instagram/i.test(s.name)).map((s) => s.id);
       instagram = {
