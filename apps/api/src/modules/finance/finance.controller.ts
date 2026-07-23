@@ -15,6 +15,7 @@ import { ListQueryDto, paginated, resolveDateRange } from '../../common/dto/list
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
 import { FinanceService } from './finance.service';
+import { fetchMetaAdsSpend, getMetaAdsCredentials } from '../integrations/meta-ads.util';
 import {
   CashAccountDto,
   CategoryNameDto,
@@ -142,12 +143,32 @@ export class FinanceController {
 
   @Get('expenses/summary')
   @RequirePermissions('finance.read')
-  async expensesSummary() {
+  async expensesSummary(@Query() q: ListQueryDto) {
     const [recurring, oneTime] = await Promise.all([
       this.prisma.scoped.expense.aggregate({ where: { recurring: true }, _sum: { amount: true } }),
       this.prisma.scoped.expense.aggregate({ where: { recurring: false }, _sum: { amount: true } }),
     ]);
-    return { recurring: recurring._sum.amount ?? 0, oneTime: oneTime._sum.amount ?? 0 };
+
+    // Meta/Instagram ad spend is pulled live for the period (default: this month)
+    // and shown as its own card. It's kept separate from the recurring/one-time
+    // totals because it's in the ad account's currency (e.g. USD), not the local
+    // one — mixing them into a single sum would be meaningless.
+    const range = resolveDateRange(q) ?? {
+      gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      lt: new Date(),
+    };
+    let metaAds: { total: number; instagram: number; currency: string } | null = null;
+    const adsCreds = await getMetaAdsCredentials(this.prisma);
+    if (adsCreds) {
+      try {
+        const s = await fetchMetaAdsSpend(adsCreds.adAccountId, adsCreds.token, range.gte, range.lt);
+        metaAds = { total: s.total, instagram: s.instagram, currency: adsCreds.currency ?? 'AZN' };
+      } catch {
+        metaAds = null;
+      }
+    }
+
+    return { recurring: recurring._sum.amount ?? 0, oneTime: oneTime._sum.amount ?? 0, metaAds };
   }
 
   @Get('expenses')

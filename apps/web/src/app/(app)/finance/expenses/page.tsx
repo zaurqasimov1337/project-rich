@@ -55,7 +55,12 @@ export default function ExpensesPage() {
   });
   const { data: summary } = useQuery({
     queryKey: ['expenses-summary'],
-    queryFn: () => api.get<{ recurring: number; oneTime: number }>('/expenses/summary'),
+    queryFn: () =>
+      api.get<{
+        recurring: number;
+        oneTime: number;
+        metaAds: { total: number; instagram: number; currency: string } | null;
+      }>('/expenses/summary'),
   });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ExpenseForm>({
@@ -114,7 +119,7 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border border-border bg-surface p-4">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
             {t('expenses.recurringExpenses')}
@@ -129,6 +134,24 @@ export default function ExpensesPage() {
           </div>
           <div className="mt-1 text-2xl font-bold tabular-nums">{formatMoney(summary?.oneTime ?? 0)}</div>
         </div>
+        {summary?.metaAds && (
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                {t('expenses.adSpendMonth')}
+              </div>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                {t('expenses.live')}
+              </span>
+            </div>
+            <div className="mt-1 text-2xl font-bold tabular-nums text-danger">
+              {formatMoney(summary.metaAds.total, summary.metaAds.currency)}
+            </div>
+            <div className="mt-0.5 text-xs text-muted">
+              Instagram: {formatMoney(summary.metaAds.instagram, summary.metaAds.currency)}
+            </div>
+          </div>
+        )}
       </div>
 
       <DataTable

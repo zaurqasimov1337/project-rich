@@ -508,7 +508,9 @@
       "recurring": "Tekrarlı",
       "oneTime": "Tek seferlik",
       "recurringExpenses": "Aylık tekrarlı giderler",
-      "oneTimeExpenses": "Tek seferlik giderler"
+      "oneTimeExpenses": "Tek seferlik giderler",
+      "adSpendMonth": "Reklam harcaması (bu ay)",
+      "live": "CANLI"
     },
     "payroll": {
       "title": "Bordro",

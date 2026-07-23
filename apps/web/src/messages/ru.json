@@ -508,7 +508,9 @@
       "recurring": "Повторяющийся",
       "oneTime": "Разовый",
       "recurringExpenses": "Ежемесячные регулярные расходы",
-      "oneTimeExpenses": "Разовые расходы"
+      "oneTimeExpenses": "Разовые расходы",
+      "adSpendMonth": "Расходы на рекламу (этот месяц)",
+      "live": "LIVE"
     },
     "payroll": {
       "title": "Зарплата",

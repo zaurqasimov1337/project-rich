@@ -508,7 +508,9 @@
       "recurring": "Təkrar",
       "oneTime": "Birdəfəlik",
       "recurringExpenses": "Aylıq təkrar xərclər",
-      "oneTimeExpenses": "Birdəfəlik xərclər"
+      "oneTimeExpenses": "Birdəfəlik xərclər",
+      "adSpendMonth": "Reklam xərci (bu ay)",
+      "live": "CANLI"
     },
     "payroll": {
       "title": "Əməkhaqqı",
