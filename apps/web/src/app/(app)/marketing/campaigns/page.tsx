@@ -156,11 +156,15 @@ export default function CampaignsPage() {
     },
   });
 
+  // Ad spend is driven by the Meta account's currency (e.g. USD); tuition income
+  // is in the local currency. Spend-derived KPIs follow the ad currency so a $
+  // figure never wears a ₼ sign.
+  const adCur = metrics?.metaAds?.currency;
   const kpis = [
-    { label: t('adSpendMonth'), value: metrics ? formatMoney(metrics.totalSpend) : '—' },
+    { label: t('adSpendMonth'), value: metrics ? formatMoney(metrics.totalSpend, adCur) : '—' },
     { label: t('leads'), value: metrics?.totalLeads ?? '—' },
-    { label: 'CPL', value: metrics ? formatMoney(metrics.cpl) : '—' },
-    { label: 'CAC', value: metrics ? formatMoney(metrics.cac) : '—' },
+    { label: 'CPL', value: metrics ? formatMoney(metrics.cpl, adCur) : '—' },
+    { label: 'CAC', value: metrics ? formatMoney(metrics.cac, adCur) : '—' },
     { label: 'ROAS', value: metrics?.roas != null ? `${metrics.roas}x` : '—' },
   ];
 
@@ -253,20 +257,20 @@ export default function CampaignsPage() {
                 [t('igReach7d'), metrics.instagram.reach],
                 [t('igProfileViews7d'), metrics.instagram.profileViews],
                 ...(metrics.metaAds
-                  ? ([[t('igAdSpend'), metrics.metaAds.instagram, true]] as [string, number, boolean][])
+                  ? ([[t('igAdSpend'), metrics.metaAds.instagram, true, metrics.metaAds.currency]] as [string, number, boolean, string][])
                   : []),
                 [t('igEngaged7d'), metrics.instagram.accountsEngaged],
                 [t('igInteractions7d'), metrics.instagram.interactions],
                 [t('igLeads'), metrics.instagram.leadsFromInstagram],
-              ] as [string, number | undefined, boolean?][]
-            ).map(([label, value, isMoney]) => (
+              ] as [string, number | undefined, boolean?, string?][]
+            ).map(([label, value, isMoney, cur]) => (
               <div key={label}>
                 <div className="text-[13px] font-medium text-muted">{label}</div>
                 <div className="mt-1 text-lg font-bold tabular-nums">
                   {value == null
                     ? '—'
                     : isMoney
-                      ? formatMoney(value)
+                      ? formatMoney(value, cur)
                       : value.toLocaleString('az-Latn-AZ')}
                 </div>
               </div>
@@ -290,14 +294,14 @@ export default function CampaignsPage() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {(
               [
-                [t('adsTotal'), formatMoney(metrics.metaAds.total)],
-                [t('adsInstagram'), formatMoney(metrics.metaAds.instagram)],
-                [t('adsFacebook'), formatMoney(metrics.metaAds.facebook)],
+                [t('adsTotal'), formatMoney(metrics.metaAds.total, metrics.metaAds.currency)],
+                [t('adsInstagram'), formatMoney(metrics.metaAds.instagram, metrics.metaAds.currency)],
+                [t('adsFacebook'), formatMoney(metrics.metaAds.facebook, metrics.metaAds.currency)],
                 [t('adsImpressions'), metrics.metaAds.impressions.toLocaleString('az-Latn-AZ')],
                 [t('adsReach'), metrics.metaAds.reach.toLocaleString('az-Latn-AZ')],
                 [t('adsClicks'), metrics.metaAds.clicks.toLocaleString('az-Latn-AZ')],
-                ['CPM', formatMoney(metrics.metaAds.cpm)],
-                ['CPC', formatMoney(metrics.metaAds.cpc)],
+                ['CPM', formatMoney(metrics.metaAds.cpm, metrics.metaAds.currency)],
+                ['CPC', formatMoney(metrics.metaAds.cpc, metrics.metaAds.currency)],
                 ['CTR', `${metrics.metaAds.ctr}%`],
                 [t('adsFrequency'), metrics.metaAds.frequency.toLocaleString('az-Latn-AZ')],
               ] as [string, string][]
@@ -314,10 +318,10 @@ export default function CampaignsPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {(
                 [
-                  [t('adsInstagram'), formatMoney(metrics.metaAds.instagram)],
+                  [t('adsInstagram'), formatMoney(metrics.metaAds.instagram, metrics.metaAds.currency)],
                   [t('adsImpressions'), metrics.metaAds.instagram_impressions.toLocaleString('az-Latn-AZ')],
                   [t('adsClicks'), metrics.metaAds.instagram_clicks.toLocaleString('az-Latn-AZ')],
-                  ['CPM', formatMoney(metrics.metaAds.instagram_cpm)],
+                  ['CPM', formatMoney(metrics.metaAds.instagram_cpm, metrics.metaAds.currency)],
                   ['CTR', `${metrics.metaAds.instagram_ctr}%`],
                 ] as [string, string][]
               ).map(([label, value]) => (
@@ -335,7 +339,7 @@ export default function CampaignsPage() {
                 {metrics.metaAds.byCampaign.slice(0, 5).map((c) => (
                   <li key={c.name} className="flex justify-between gap-4 text-sm">
                     <span className="truncate">{c.name}</span>
-                    <span className="shrink-0 tabular-nums">{formatMoney(c.spend)}</span>
+                    <span className="shrink-0 tabular-nums">{formatMoney(c.spend, metrics.metaAds!.currency)}</span>
                   </li>
                 ))}
               </ul>
