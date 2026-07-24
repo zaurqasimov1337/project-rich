@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -135,21 +136,21 @@ export default function TasksPage() {
   const pages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold">Tapşırıqlar</h1>
-          <p className="mt-0.5 text-sm text-muted">Cəmi {total} tapşırıq</p>
-        </div>
-        {canManage && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni tapşırıq
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Tapşırıqlar"
+        description={`Cəmi ${total} tapşırıq`}
+        actions={
+          canManage && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> Yeni tapşırıq
+            </Button>
+          )
+        }
+      />
 
       {/* filters */}
-      <div className="flex items-center gap-2 overflow-x-auto rounded-xl border border-border bg-surface p-3">
+      <div className="flex items-center gap-2 overflow-x-auto rounded-xl border border-border bg-surface p-3 shadow-[var(--shadow-sm)]">
         <Select
           value={status}
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
@@ -176,7 +177,7 @@ export default function TasksPage() {
       </div>
 
       {/* table */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
         <table className="w-full min-w-[900px] text-[13px]">
           <thead>
             <tr className="border-b border-border bg-muted-bg/50">

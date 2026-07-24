@@ -4,6 +4,7 @@ import { requireTenantId } from '../../core/context/request-context';
 import { AuditService } from '../../core/audit/audit.service';
 import { PlanService } from '../../core/plan/plan.service';
 import { ListQueryDto, paginated } from '../../common/dto/list-query.dto';
+import type { BrandedColumn } from '../../common/export/branded-export';
 import type { CreateStudentDto, UpdateStudentDto } from './dto/students.dto';
 
 @Injectable()
@@ -48,7 +49,15 @@ export class StudentsService {
         include: {
           enrollments: {
             where: { status: 'active' },
-            include: { group: { select: { id: true, name: true } } },
+            include: {
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                  course: { select: { price: true, pricingModel: true } },
+                },
+              },
+            },
           },
         },
         orderBy: q.orderBy('createdAt', ['createdAt', 'firstName', 'lastName', 'code']),
@@ -57,15 +66,136 @@ export class StudentsService {
       }),
       this.prisma.scoped.student.count({ where }),
     ]);
+
+    // Payment overview per student: invoiced total vs collected, + monthly fee
+    // from active enrollments' monthly-priced courses.
+    const ids = data.map((s) => s.id);
+    const [invoiceAgg, paymentAgg] = await Promise.all([
+      ids.length
+        ? this.prisma.scoped.invoice.groupBy({
+            by: ['studentId'],
+            where: { studentId: { in: ids }, status: { not: 'void' } },
+            _sum: { total: true },
+          })
+        : [],
+      ids.length
+        ? this.prisma.scoped.payment.groupBy({
+            by: ['studentId'],
+            where: { studentId: { in: ids } },
+            _sum: { amount: true },
+          })
+        : [],
+    ]);
+    const dueMap = new Map(invoiceAgg.map((i) => [i.studentId, i._sum.total ?? 0]));
+    const paidMap = new Map(paymentAgg.map((p) => [p.studentId, p._sum.amount ?? 0]));
+
+    // CRM-side payments of converted leads also count (student.leadId link).
+    const leadIds = data.map((s) => s.leadId).filter(Boolean) as string[];
+    const leadPayAgg = leadIds.length
+      ? await this.prisma.scoped.leadPayment.groupBy({
+          by: ['leadId'],
+          where: { leadId: { in: leadIds }, status: { not: 'legv_edilib' } },
+          _sum: { amountPaid: true, amountDue: true },
+        })
+      : [];
+    const leadPayMap = new Map(leadPayAgg.map((p) => [p.leadId, p._sum]));
+
     return paginated(
-      data.map((s) => ({
-        ...s,
-        groups: s.enrollments.map((e) => e.group),
-        enrollments: undefined,
-      })),
+      data.map((s) => {
+        const lp = s.leadId ? leadPayMap.get(s.leadId) : undefined;
+        return {
+          ...s,
+          groups: s.enrollments.map((e) => ({ id: e.group.id, name: e.group.name })),
+          monthlyFee: s.enrollments.reduce(
+            (acc, e) => acc + (e.group.course?.pricingModel === 'monthly' ? e.group.course.price : 0),
+            0,
+          ),
+          totalDue: (dueMap.get(s.id) ?? 0) + (lp?.amountDue ?? 0),
+          totalPaid: (paidMap.get(s.id) ?? 0) + (lp?.amountPaid ?? 0),
+          enrollments: undefined,
+        };
+      }),
       total,
       q,
     );
+  }
+
+  /** Dataset for the CSV/XLSX/PDF export routes (same aggregation as list()). */
+  async exportData(): Promise<{ columns: BrandedColumn[]; rows: Record<string, unknown>[] }> {
+    const students = await this.prisma.scoped.student.findMany({
+      where: { deletedAt: null },
+      include: {
+        enrollments: {
+          where: { status: 'active' },
+          include: {
+            group: {
+              select: {
+                id: true,
+                name: true,
+                course: { select: { price: true, pricingModel: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+    });
+
+    const ids = students.map((s) => s.id);
+    const [invoiceAgg, paymentAgg] = await Promise.all([
+      ids.length
+        ? this.prisma.scoped.invoice.groupBy({
+            by: ['studentId'],
+            where: { studentId: { in: ids }, status: { not: 'void' } },
+            _sum: { total: true },
+          })
+        : [],
+      ids.length
+        ? this.prisma.scoped.payment.groupBy({
+            by: ['studentId'],
+            where: { studentId: { in: ids } },
+            _sum: { amount: true },
+          })
+        : [],
+    ]);
+    const dueMap = new Map(invoiceAgg.map((i) => [i.studentId, i._sum.total ?? 0]));
+    const paidMap = new Map(paymentAgg.map((p) => [p.studentId, p._sum.amount ?? 0]));
+    const exLeadIds = students.map((s) => s.leadId).filter(Boolean) as string[];
+    const exLeadPayAgg = exLeadIds.length
+      ? await this.prisma.scoped.leadPayment.groupBy({
+          by: ['leadId'],
+          where: { leadId: { in: exLeadIds }, status: { not: 'legv_edilib' } },
+          _sum: { amountPaid: true, amountDue: true },
+        })
+      : [];
+    const exLeadPayMap = new Map(exLeadPayAgg.map((p) => [p.leadId, p._sum]));
+
+    const columns: BrandedColumn[] = [
+      { key: 'code', header: 'Kod' },
+      { key: 'name', header: 'Ad Soyad' },
+      { key: 'phone', header: 'Telefon' },
+      { key: 'groups', header: 'Qruplar' },
+      { key: 'monthlyFee', header: 'Aylıq ödəniş', type: 'money' },
+      { key: 'totalPaid', header: 'Ödənilib', type: 'money' },
+      { key: 'totalDue', header: 'Hesablanıb', type: 'money' },
+    ];
+    const rows = students.map((s) => {
+      const lp = s.leadId ? exLeadPayMap.get(s.leadId) : undefined;
+      return {
+        code: s.code,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        phone: s.phone ?? '',
+        groups: s.enrollments.map((e) => e.group.name).join(', '),
+        monthlyFee: s.enrollments.reduce(
+          (acc, e) => acc + (e.group.course?.pricingModel === 'monthly' ? e.group.course.price : 0),
+          0,
+        ),
+        totalPaid: (paidMap.get(s.id) ?? 0) + (lp?.amountPaid ?? 0),
+        totalDue: (dueMap.get(s.id) ?? 0) + (lp?.amountDue ?? 0),
+      };
+    });
+    return { columns, rows };
   }
 
   async detail(id: string) {

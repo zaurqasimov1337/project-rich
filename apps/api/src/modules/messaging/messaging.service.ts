@@ -64,7 +64,7 @@ export class MessagingService {
 
       try {
         if (input.channel === 'email') {
-          await this.mail.send(recipient, subject ?? 'EduSphere', body);
+          await this.mail.send(recipient, subject ?? 'Mactab', body);
         } else if (!smsProvider) {
           // No SMS provider connected — record as failed with guidance.
           status = 'failed';

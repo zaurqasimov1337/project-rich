@@ -38,7 +38,7 @@ async function createAndStart(): Promise<void> {
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('EduSphere API')
+      .setTitle('Mactab API')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

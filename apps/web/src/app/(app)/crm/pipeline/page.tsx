@@ -17,6 +17,7 @@ interface PipelineLead {
   priority: string;
   score: number;
   trainingName: string | null;
+  assigneeName: string | null;
 }
 interface PipelineColumn {
   key: string;
@@ -25,8 +26,9 @@ interface PipelineColumn {
   leads: PipelineLead[];
 }
 
-// Muted, status-aligned column accents (enterprise SaaS — no neon).
-const COLUMN_COLORS = ['#94a3b8', '#60a5fa', '#7dd3fc', '#fbbf24', '#6e65c8', '#4ade80', '#f87171'];
+// MilliSec reference: dashed column outlines, each column with its own accent.
+// Mid tones — readable on both light and dark themes.
+const COLUMN_COLORS = ['#64748b', '#06b6d4', '#0ea5e9', '#f59e0b', '#8b5cf6', '#10b981', '#ef4444'];
 
 export default function PipelinePage() {
   const router = useRouter();
@@ -50,16 +52,14 @@ export default function PipelinePage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold">Satış boru xətti</h1>
-        <p className="mt-0.5 text-sm text-muted">
-          Kartı sütunlar arasında sürüşdürərək statusu dəyişin.
-        </p>
+        <h1 className="text-2xl font-bold">Sales Pipeline</h1>
+        <p className="mt-1 text-sm text-muted">Lead-ləri sütunlar arasında sürüşdürərək statusu dəyişin.</p>
       </div>
 
       {isLoading ? (
         <div className="flex gap-4 overflow-x-auto pb-3">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-80 w-[280px] shrink-0 animate-pulse rounded-xl bg-muted-bg" />
+            <div key={i} className="h-80 w-[290px] shrink-0 animate-pulse rounded-xl bg-muted-bg" />
           ))}
         </div>
       ) : (
@@ -69,9 +69,10 @@ export default function PipelinePage() {
             return (
               <div
                 key={col.key}
-                className={`flex w-[280px] shrink-0 flex-col rounded-xl border bg-muted-bg/30 transition-colors ${
-                  dragOver === col.key ? 'border-primary bg-primary/5' : 'border-border'
+                className={`flex min-h-[420px] w-[290px] shrink-0 flex-col rounded-xl border-2 border-dashed p-2 transition-colors ${
+                  dragOver === col.key ? 'bg-accent/5' : ''
                 }`}
+                style={{ borderColor: dragOver === col.key ? color : 'var(--border)' }}
                 onDragOver={(e) => {
                   if (!canMove) return;
                   e.preventDefault();
@@ -84,25 +85,14 @@ export default function PipelinePage() {
                   setDragOver(null);
                 }}
               >
-                <div
-                  className="flex items-center gap-2 rounded-t-xl px-3 py-2.5"
-                  style={{ borderTop: `3px solid ${color}` }}
-                >
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
-                  <span className="text-sm font-semibold">{col.label}</span>
-                  <span
-                    className="ml-auto rounded-md px-2 py-0.5 text-xs font-semibold"
-                    style={{ background: `${color}1a`, color }}
-                  >
-                    {col.count}
-                  </span>
+                <div className="flex items-center justify-between px-2 py-2">
+                  <span className="text-[15px] font-bold">{col.label}</span>
+                  <span className="text-sm font-semibold tabular-nums text-muted">{col.count}</span>
                 </div>
 
-                <div className="flex-1 space-y-2 px-2 pb-2">
+                <div className="flex-1 space-y-2.5">
                   {col.leads.length === 0 ? (
-                    <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted">
-                      Boşdur
-                    </div>
+                    <div className="flex h-24 items-center justify-center text-xs text-muted">Boşdur</div>
                   ) : (
                     col.leads.map((lead) => (
                       <div
@@ -117,30 +107,29 @@ export default function PipelinePage() {
                           if (dragging) return;
                           router.push(`/crm/leads/${lead.id}`);
                         }}
-                        className={`group rounded-lg border border-border bg-surface p-3 shadow-sm transition-shadow hover:shadow-md ${
+                        className={`group rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-shadow hover:shadow-md ${
                           canMove ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                         } ${dragging === lead.id ? 'opacity-50' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="truncate font-medium">{lead.fullName}</div>
-                            <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted">
-                              <Phone className="h-3 w-3 shrink-0" />
-                              {lead.phone ?? '—'}
+                            <div className="truncate text-[15px] font-bold">{lead.fullName}</div>
+                            <div className="mt-0.5 truncate text-sm text-muted">
+                              {lead.trainingName ?? 'Təlim təyin edilməyib'}
                             </div>
                           </div>
                           {canMove && (
-                            <GripVertical className="h-4 w-4 shrink-0 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+                            <GripVertical className="h-4 w-4 shrink-0 text-muted opacity-40 transition-opacity group-hover:opacity-100" />
                           )}
                         </div>
 
-                        <div className="mt-2 truncate text-xs text-muted">
-                          {lead.trainingName ?? 'Təlim təyin edilməyib'}
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-between">
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="flex min-w-0 items-center gap-1.5 text-sm text-muted">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{lead.assigneeName ?? 'Təyin yox'}</span>
+                          </span>
                           <span
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold"
+                            className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold"
                             style={priorityBadgeStyle(lead.priority)}
                           >
                             <span
@@ -148,9 +137,6 @@ export default function PipelinePage() {
                               style={{ background: priorityBadgeStyle(lead.priority).color }}
                             />
                             {PRIORITY_LABELS[lead.priority] ?? lead.priority}
-                          </span>
-                          <span className="text-xs font-semibold tabular-nums text-muted">
-                            Skor: {lead.score}
                           </span>
                         </div>
                       </div>

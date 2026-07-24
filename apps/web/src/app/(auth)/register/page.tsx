@@ -1,5 +1,7 @@
 'use client';
 
+import { BrandLogo } from '@/components/brand';
+
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -57,16 +59,18 @@ export default function RegisterPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-primary">EduSphere</h1>
-          <p className="mt-1 text-sm text-muted">{t('registerSubtitle')}</p>
+    <main className="auth-backdrop flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-[400px] animate-scale-in rounded-2xl border border-border bg-surface/80 p-8 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+        {/* Brand block */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandLogo className="h-9" />
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
+            {t('registerTitle')}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted">{t('registerSubtitle')}</p>
         </div>
-        <form
-          onSubmit={onSubmit}
-          className="space-y-4 rounded-xl border border-border bg-surface p-6 shadow-sm"
-        >
+
+        <form onSubmit={onSubmit} className="space-y-4">
           {serverError && (
             <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{serverError}</div>
           )}
@@ -126,16 +130,17 @@ export default function RegisterPage() {
               },
             })}
           />
-          <Button type="submit" className="w-full" loading={isSubmitting}>
+          <Button type="submit" className="h-10 w-full" loading={isSubmitting}>
             {t('register')}
           </Button>
-          <p className="text-center text-sm text-muted">
-            {t('haveAccount')}{' '}
-            <Link href="/login" className="text-primary hover:underline">
-              {t('login')}
-            </Link>
-          </p>
         </form>
+
+        <p className="mt-6 text-center text-sm text-muted">
+          {t('haveAccount')}{' '}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            {t('login')}
+          </Link>
+        </p>
       </div>
     </main>
   );

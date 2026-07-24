@@ -9,6 +9,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -222,10 +224,11 @@ export default function CampaignsPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          <>
           <div className="w-44">
             <Select
               value={range}
@@ -262,24 +265,22 @@ export default function CampaignsPage() {
               </Button>
             </>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div
         className={`grid grid-cols-2 gap-4 transition-opacity sm:grid-cols-3 lg:grid-cols-5 ${metricsFetching ? 'opacity-50' : ''}`}
       >
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-            <div className="text-[13px] font-medium text-muted">{kpi.label}</div>
-            <div className="mt-1.5 text-xl font-bold tabular-nums">{kpi.value}</div>
-          </div>
+          <StatCard key={kpi.label} label={kpi.label} value={kpi.value} />
         ))}
       </div>
 
       {metrics?.instagram && (
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-[15px] font-bold">
               {t('instagramPerformance')}
               {metrics.instagram.username && (
                 <span className="ml-2 font-normal text-muted">@{metrics.instagram.username}</span>
@@ -322,8 +323,8 @@ export default function CampaignsPage() {
       )}
 
       {metrics?.metaAds && (
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
+          <h2 className="mb-3 text-[15px] font-bold">
             {t('metaAdsTitle')}
             <span className="ml-2 font-normal text-muted">{metrics.metaAds.currency}</span>
           </h2>

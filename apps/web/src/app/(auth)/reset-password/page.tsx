@@ -1,5 +1,7 @@
 'use client';
 
+import { BrandLogo } from '@/components/brand';
+
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
@@ -34,7 +36,7 @@ function ResetForm() {
   });
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       {serverError && (
         <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">{serverError}</div>
       )}
@@ -63,7 +65,7 @@ function ResetForm() {
           validate: (v) => v === watch('password') || tp('mismatch'),
         })}
       />
-      <Button type="submit" className="w-full" loading={isSubmitting}>
+      <Button type="submit" className="h-10 w-full" loading={isSubmitting}>
         {t('updatePassword')}
       </Button>
     </form>
@@ -73,9 +75,15 @@ function ResetForm() {
 export default function ResetPasswordPage() {
   const t = useTranslations('auth');
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <h1 className="text-lg font-bold">{t('setNewPassword')}</h1>
+    <main className="auth-backdrop flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-[400px] animate-scale-in rounded-2xl border border-border bg-surface/80 p-8 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+        {/* Brand block */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandLogo className="h-9" />
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
+            {t('setNewPassword')}
+          </h1>
+        </div>
         <Suspense>
           <ResetForm />
         </Suspense>

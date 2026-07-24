@@ -9,7 +9,10 @@ import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
 import { useDebounced } from '@/lib/hooks';
 import { useAuth } from '@/lib/auth-store';
+import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ExportMenu } from '@/components/export-menu';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -23,6 +26,9 @@ interface StudentRow {
   phone: string | null;
   status: string;
   groups: { id: string; name: string }[];
+  monthlyFee: number;
+  totalDue: number;
+  totalPaid: number;
   createdAt: string;
 }
 
@@ -105,19 +111,61 @@ export default function StudentsPage() {
           <span className="text-muted">—</span>
         ),
     },
+    {
+      key: 'payments',
+      header: 'Ödəniş',
+      className: 'min-w-[160px]',
+      render: (r) => {
+        if (r.totalDue <= 0 && r.totalPaid <= 0) return <span className="text-muted">—</span>;
+        const pct = r.totalDue > 0 ? Math.min(100, Math.round((r.totalPaid / r.totalDue) * 100)) : 100;
+        const full = r.totalDue > 0 && r.totalPaid >= r.totalDue;
+        return (
+          <div className="tabular-nums">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className={full ? 'font-semibold text-success' : 'font-semibold'}>
+                {formatMoney(r.totalPaid)}
+                <span className="font-normal text-muted"> / {formatMoney(r.totalDue)}</span>
+              </span>
+              <span className="text-xs text-muted">{pct}%</span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted-bg">
+              <div
+                className={full ? 'h-full rounded-full bg-success' : 'h-full rounded-full bg-primary'}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'monthly',
+      header: 'Aylıq',
+      render: (r) => (r.monthlyFee > 0 ? <span className="tabular-nums">{formatMoney(r.monthlyFee)}</span> : '—'),
+    },
     { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('students.create') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> {t('newStudent')}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          <>
+            {can('students.read') && (
+              <ExportMenu
+                urlFor={(f) => `/api/v1/students/export.${f}`}
+                filenameFor={(f) => `students.${f}`}
+              />
+            )}
+            {can('students.create') && (
+              <Button onClick={() => setDrawerOpen(true)}>
+                <Plus className="h-4 w-4" /> {t('newStudent')}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <DataTable
         columns={columns}

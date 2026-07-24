@@ -64,7 +64,7 @@ class CourseDto {
   defaultCapacity?: number;
 
   @IsOptional()
-  @IsIn(['online', 'offline'])
+  @IsIn(['online', 'offline', 'hybrid'])
   format?: string;
 
   @IsOptional()
@@ -112,7 +112,7 @@ class UpdateCourseDto {
   defaultCapacity?: number;
 
   @IsOptional()
-  @IsIn(['online', 'offline'])
+  @IsIn(['online', 'offline', 'hybrid'])
   format?: string;
 
   @IsOptional()

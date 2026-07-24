@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -75,18 +76,20 @@ export default function LeavePage() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Link href="/hr/employees" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('leaveRequests')}</h1>
-        <Button onClick={() => setDrawerOpen(true)}>
-          <Plus className="h-4 w-4" /> {t('newRequest')}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('leaveRequests')}
+        actions={
+          <Button onClick={() => setDrawerOpen(true)}>
+            <Plus className="h-4 w-4" /> {t('newRequest')}
+          </Button>
+        }
+      />
 
-      <div className="rounded-xl border border-border bg-surface shadow-sm">
+      <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
         {isLoading ? (
           <div className="space-y-2 p-4">
             {Array.from({ length: 3 }).map((_, i) => (

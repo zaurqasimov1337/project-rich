@@ -49,10 +49,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
       <aside className="fixed inset-y-0 left-0 z-30 flex w-[240px] flex-col border-r border-border bg-surface">
         <div className="flex h-14 items-center gap-2 border-b border-border px-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-admin-primary text-sm font-bold text-white">
-            E
+            M
           </div>
           <div>
-            <div className="text-sm font-bold leading-tight">EduSphere</div>
+            <div className="text-sm font-bold leading-tight">Mactab</div>
             <div className="text-[10px] uppercase tracking-wider text-admin-primary">Super Admin</div>
           </div>
         </div>

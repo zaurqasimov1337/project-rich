@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EduSphere",
+    "appName": "Mactab",
     "loading": "Yüklənir...",
     "saving": "Saxlanılır...",
     "save": "Yadda saxla",
@@ -176,7 +176,7 @@
     "rememberMe": "Məni xatırla",
     "showPassword": "Şifrəni göstər",
     "hidePassword": "Şifrəni gizlət",
-    "copyright": "© {year} EduSphere",
+    "copyright": "© {year} Mactab",
     "registerSubtitle": "Tədris mərkəzinizi qeydiyyatdan keçirin — 14 gün pulsuz",
     "centerNamePlaceholder": "Məs: Zirvə Tədris Mərkəzi",
     "centerNameRequired": "Mərkəz adı tələb olunur",
@@ -242,7 +242,17 @@
     "crmDashboard": "Satış paneli",
     "crmLeads": "Müraciətlər",
     "crmPipeline": "Pipeline",
-    "crmFollowUps": "Follow-up-lar"
+    "crmFollowUps": "Follow-up-lar",
+    "crmTrainings": "Təlimlər",
+    "crmPayments": "Ödənişlər",
+    "crmTeam": "Satış komandası",
+    "crmReports": "Satış hesabatları",
+    "hrStructure": "Struktur",
+    "hrOrgChart": "Org sxem",
+    "hrDashboard": "HR Panel",
+    "hrLeave": "Məzuniyyət",
+    "hrAttendance": "Davamiyyət",
+    "sectionHr": "HR Management"
   },
   "topbar": {
     "trial": "Sınaq müddəti",
@@ -392,6 +402,7 @@
     "format": "Format",
     "formatOnline": "Onlayn",
     "formatOffline": "Oflayn",
+    "formatHybrid": "Hibrid",
     "duration": "Müddət"
   },
   "exams": {
@@ -631,6 +642,7 @@
     "contractFullTime": "Tam ştat",
     "contractPartTime": "Yarım ştat",
     "contractContract": "Müqavilə",
+    "contractFreelance": "Freelance",
     "noEmployees": "Hələ işçi yoxdur",
     "noEmployeesDesc": "İşçini əlavə etmək üçün əvvəlcə istifadəçi dəvət edin, sonra onu HR profili ilə əlaqələndirin.",
     "user": "İstifadəçi",
@@ -653,7 +665,29 @@
     "selectEmployee": "İşçi seçin",
     "startDate": "Başlanğıc",
     "endDate": "Bitmə",
-    "reason": "Səbəb"
+    "reason": "Səbəb",
+    "structureTitle": "Struktur",
+    "addUnit": "Yeni struktur vahidi",
+    "editUnit": "Struktur vahidini redaktə et",
+    "kindLabel": "Növ",
+    "kindDepartament": "Departament",
+    "kindSobe": "Şöbə",
+    "kindBolme": "Bölmə",
+    "unitName": "Ad",
+    "parentUnit": "Üst vahid",
+    "noParent": "Yoxdur (kök)",
+    "noteLabel": "Qeyd",
+    "employeesCount": "{count} işçi",
+    "teachersCount": "{count} müəllim",
+    "noUnits": "Struktur hələ qurulmayıb",
+    "noUnitsDesc": "Departament, şöbə və bölmələri əlavə edərək təşkilati strukturu qurun.",
+    "confirmDeleteUnit": "Struktur vahidini sil?",
+    "confirmDeleteUnitDesc": "Bu əməliyyat geri qaytarıla bilməz. Alt bölmələri və ya işçiləri olan vahid silinə bilməz.",
+    "department": "Şöbə",
+    "selectDepartment": "Şöbə seçin",
+    "bonus": "Bonus",
+    "bonusAzn": "Bonus (₼)",
+    "whoWhere": "Kim haradadır"
   },
   "messaging": {
     "title": "Mesajlaşma",
@@ -847,10 +881,10 @@
     "heroLine1": "Bütün platformanı",
     "heroLine2": "tək yerdən idarə et.",
     "heroSubtitle": "Təşkilatlar, planlar, abunəliklər və platforma analitikası — vahid super admin panelində.",
-    "emailPlaceholder": "admin@edusphere.app",
+    "emailPlaceholder": "admin@mactab.app",
     "showPassword": "Şifrəni göstər",
     "hidePassword": "Şifrəni gizlət",
-    "copyright": "© {year} EduSphere"
+    "copyright": "© {year} Mactab"
   },
   "automations": {
     "title": "Avtomatik cavab (şərh → cavab + DM)",

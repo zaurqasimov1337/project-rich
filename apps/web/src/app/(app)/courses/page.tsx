@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-store';
 import { useDebounced } from '@/lib/hooks';
 import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -64,6 +65,14 @@ export default function CoursesPage() {
     enabled: drawerOpen,
   });
 
+  // Sales view (merged from CRM trainings): lead + registration counts per course.
+  const { data: salesStats } = useQuery({
+    queryKey: ['sales-trainings'],
+    queryFn: () => api.get<{ id: string; leadCount: number; registeredCount: number }[]>('/sales/trainings'),
+    enabled: can('leads.read'),
+  });
+  const statsMap = new Map((salesStats ?? []).map((s) => [s.id, s]));
+
   const {
     register,
     handleSubmit,
@@ -112,24 +121,42 @@ export default function CoursesPage() {
       header: t('format'),
       render: (r) => (
         <span className="inline-flex rounded-full bg-muted-bg px-2 py-0.5 text-xs font-medium text-muted">
-          {r.format === 'online' ? t('formatOnline') : t('formatOffline')}
+          {r.format === 'online' ? t('formatOnline') : r.format === 'hybrid' ? t('formatHybrid') : t('formatOffline')}
         </span>
       ),
     },
     { key: 'groups', header: t('activeGroups'), render: (r) => r.activeGroups },
+    ...(can('leads.read')
+      ? ([
+          {
+            key: 'leads',
+            header: 'Lead',
+            render: (r) => <span className="font-mono tabular-nums">{statsMap.get(r.id)?.leadCount ?? 0}</span>,
+          },
+          {
+            key: 'registered',
+            header: 'Qeyd.',
+            render: (r) => (
+              <span className="font-mono tabular-nums text-success">{statsMap.get(r.id)?.registeredCount ?? 0}</span>
+            ),
+          },
+        ] as Column<CourseRow>[])
+      : []),
     { key: 'status', header: tc('status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('courses.manage') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> {t('new')}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          can('courses.manage') && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('new')}
+            </Button>
+          )
+        }
+      />
 
       <DataTable
         columns={columns}
@@ -226,6 +253,7 @@ export default function CoursesPage() {
               options={[
                 { value: 'offline', label: t('formatOffline') },
                 { value: 'online', label: t('formatOnline') },
+                { value: 'hybrid', label: t('formatHybrid') },
               ]}
               {...register('format')}
             />

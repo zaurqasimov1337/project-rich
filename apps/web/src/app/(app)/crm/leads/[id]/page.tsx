@@ -10,13 +10,19 @@ import { useAuth } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { formatMoney } from '@/lib/utils';
 import {
   ACTIVITY_LABELS,
+  DEMO_STATUS_LABELS,
   fmtDate,
   fmtDateTime,
   GENDER_LABELS,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_ORDER,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_PLAN_LABELS,
+  PAYMENT_STATUS_LABELS,
+  paymentStatusBadgeStyle,
   priorityBadgeStyle,
   PRIORITY_LABELS,
   SCORE_FLAG_LABELS,
@@ -26,16 +32,22 @@ import {
 
 interface Followup { id: string; dueAt: string; doneAt: string | null; isDone: boolean; note: string | null; }
 interface Activity { id: string; type: string; title: string | null; body: string | null; createdAt: string; }
+interface LeadPaymentRow {
+  id: string; amountDue: number; amountPaid: number; monthlyAmount: number | null;
+  nextDueAt: string | null; status: string; method: string | null; note: string | null; createdAt: string;
+}
 interface LeadDetail {
   id: string; leadNo: number | null; fullName: string; name: string; phone: string | null; email: string | null;
   instagram: string | null; age: number | null; gender: string | null; city: string | null;
   educationStatus: string | null; currentField: string | null; courseInterestId: string | null;
   sourceKey: string | null; status: string; priority: string; score: number; assignedTo: string | null;
   notes: string | null; lostReason: string | null; objectionReason: string | null;
+  demoStatus: string | null; paymentStatus: string | null; paymentMethod: string | null;
+  paymentPlan: string | null; discountPct: number | null; courseStartDate: string | null;
   askedDemo: boolean; askedPrice: boolean; callAnswered: boolean; parentInvolved: boolean;
   budgetOk: boolean; notResponding: boolean; passive7d: boolean;
   followupCount: number; createdAt: string;
-  activities: Activity[]; followups: Followup[];
+  activities: Activity[]; followups: Followup[]; payments: LeadPaymentRow[];
   training: { id: string; name: string } | null;
   assignee: { firstName: string; lastName: string } | null;
 }
@@ -54,6 +66,8 @@ export default function LeadDetailPage() {
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [fuDate, setFuDate] = useState('');
   const [fuNote, setFuNote] = useState('');
+  const [payForm, setPayForm] = useState({ due: '', paid: '', status: 'gozleyir', method: '', nextDueAt: '' });
+  const canPay = can('leads.settings');
   useEffect(() => {
     if (lead) {
       setForm({
@@ -61,6 +75,9 @@ export default function LeadDetailPage() {
         age: lead.age ?? '', gender: lead.gender ?? '', city: lead.city ?? '', educationStatus: lead.educationStatus ?? '',
         currentField: lead.currentField ?? '', interestedTrainingId: lead.courseInterestId ?? '', source: lead.sourceKey ?? '',
         assignedTo: lead.assignedTo ?? '', notes: lead.notes ?? '',
+        demoStatus: lead.demoStatus ?? '', paymentStatus: lead.paymentStatus ?? '', paymentMethod: lead.paymentMethod ?? '',
+        paymentPlan: lead.paymentPlan ?? '', discountPct: lead.discountPct ?? '',
+        courseStartDate: lead.courseStartDate ? lead.courseStartDate.slice(0, 10) : '',
       });
     }
   }, [lead]);
@@ -81,6 +98,25 @@ export default function LeadDetailPage() {
     mutationFn: (fid: string) => api.patch(`/followups/${fid}`, { isDone: true }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['lead', id] }),
   });
+  const toMinor = (s: string) => {
+    const n = Number(s.replace(',', '.'));
+    return Number.isFinite(n) && s.trim() !== '' ? Math.round(n * 100) : undefined;
+  };
+  const createPay = useMutation({
+    mutationFn: () =>
+      api.post('/lead-payments', {
+        leadId: id,
+        amountDue: toMinor(payForm.due) ?? 0,
+        amountPaid: toMinor(payForm.paid),
+        status: payForm.status || undefined,
+        method: payForm.method || undefined,
+        nextDueAt: payForm.nextDueAt ? new Date(payForm.nextDueAt).toISOString() : undefined,
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['lead', id] });
+      setPayForm({ due: '', paid: '', status: 'gozleyir', method: '', nextDueAt: '' });
+    },
+  });
 
   if (isLoading || !lead) {
     return <div className="h-64 animate-pulse rounded-xl bg-muted-bg" />;
@@ -90,6 +126,7 @@ export default function LeadDetailPage() {
   const saveProfile = () => {
     const payload: Record<string, unknown> = { ...form };
     payload.age = form.age === '' ? undefined : Number(form.age);
+    payload.discountPct = form.discountPct === '' ? undefined : Number(form.discountPct);
     for (const k of Object.keys(payload)) if (payload[k] === '') payload[k] = undefined;
     patch.mutate(payload);
   };
@@ -153,11 +190,71 @@ export default function LeadDetailPage() {
             </div>
             <div className="mt-3"><Label>Qeydlər</Label>
               <textarea disabled={!editable} value={form.notes as string ?? ''} onChange={(e) => set('notes', e.target.value)}
-                className="h-20 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-60" />
+                className="h-20 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground disabled:opacity-60" />
             </div>
             {editable && (
               <div className="mt-3 flex justify-end">
                 <Button loading={patch.isPending} onClick={saveProfile}>Yadda saxla</Button>
+              </div>
+            )}
+          </div>
+
+          {/* sales & payment state */}
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <h2 className="mb-3 text-sm font-semibold">Satış və ödəniş</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div><Label>Demo statusu</Label><Select disabled={!editable} value={form.demoStatus as string ?? ''} onChange={(e) => set('demoStatus', e.target.value)} placeholder="Seçin"
+                options={Object.entries(DEMO_STATUS_LABELS).map(([v, l]) => ({ value: v, label: l }))} /></div>
+              <div><Label>Ödəniş statusu</Label><Select disabled={!editable} value={form.paymentStatus as string ?? ''} onChange={(e) => set('paymentStatus', e.target.value)} placeholder="Seçin"
+                options={Object.entries(PAYMENT_STATUS_LABELS).map(([v, l]) => ({ value: v, label: l }))} /></div>
+              <div><Label>Ödəniş üsulu</Label><Select disabled={!editable} value={form.paymentMethod as string ?? ''} onChange={(e) => set('paymentMethod', e.target.value)} placeholder="Seçin"
+                options={Object.entries(PAYMENT_METHOD_LABELS).map(([v, l]) => ({ value: v, label: l }))} /></div>
+              <div><Label>Ödəniş planı</Label><Select disabled={!editable} value={form.paymentPlan as string ?? ''} onChange={(e) => set('paymentPlan', e.target.value)} placeholder="Seçin"
+                options={Object.entries(PAYMENT_PLAN_LABELS).map(([v, l]) => ({ value: v, label: l }))} /></div>
+              <div><Label>Endirim %</Label><Input type="number" min="0" max="100" disabled={!editable} value={form.discountPct as string ?? ''} onChange={(e) => set('discountPct', e.target.value)} /></div>
+              <div><Label>Kursun başlama tarixi</Label><Input type="date" lang="az" disabled={!editable} value={form.courseStartDate as string ?? ''} onChange={(e) => set('courseStartDate', e.target.value)} /></div>
+            </div>
+            {editable && (
+              <div className="mt-3 flex justify-end">
+                <Button loading={patch.isPending} onClick={saveProfile}>Yadda saxla</Button>
+              </div>
+            )}
+            {canPay && (
+              <div className="mt-4 border-t border-border pt-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Ödəniş qeyd et</div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <Input type="number" min="0" step="0.01" placeholder="Məbləğ ₼" value={payForm.due}
+                    onChange={(e) => setPayForm((f) => ({ ...f, due: e.target.value }))} />
+                  <Input type="number" min="0" step="0.01" placeholder="Ödənilib ₼" value={payForm.paid}
+                    onChange={(e) => setPayForm((f) => ({ ...f, paid: e.target.value }))} />
+                  <Select value={payForm.status} onChange={(e) => setPayForm((f) => ({ ...f, status: e.target.value }))}
+                    options={Object.entries(PAYMENT_STATUS_LABELS).map(([v, l]) => ({ value: v, label: l }))} />
+                  <Select value={payForm.method} onChange={(e) => setPayForm((f) => ({ ...f, method: e.target.value }))} placeholder="Üsul"
+                    options={Object.entries(PAYMENT_METHOD_LABELS).map(([v, l]) => ({ value: v, label: l }))} />
+                  <Input type="date" lang="az" title="Növbəti ödəniş" value={payForm.nextDueAt}
+                    onChange={(e) => setPayForm((f) => ({ ...f, nextDueAt: e.target.value }))} />
+                  <Button size="sm" className="h-9" disabled={!payForm.due || createPay.isPending} onClick={() => createPay.mutate()}>
+                    <Plus className="h-4 w-4" /> Əlavə et
+                  </Button>
+                </div>
+              </div>
+            )}
+            {lead.payments.length > 0 && (
+              <div className="mt-4 border-t border-border pt-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Ödəniş tarixçəsi</div>
+                <div className="space-y-2">
+                  {lead.payments.map((p) => (
+                    <div key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border px-3 py-2 text-sm">
+                      <span className="font-medium">{formatMoney(p.amountPaid)} / {formatMoney(p.amountDue)}</span>
+                      {p.monthlyAmount != null && <span className="text-xs text-muted">aylıq {formatMoney(p.monthlyAmount)}</span>}
+                      {p.nextDueAt && <span className="text-xs text-muted">növbəti: {fmtDate(p.nextDueAt)}</span>}
+                      {p.method && <span className="text-xs text-muted">{PAYMENT_METHOD_LABELS[p.method] ?? p.method}</span>}
+                      <span className="ml-auto rounded-full px-2 py-0.5 text-xs font-semibold" style={paymentStatusBadgeStyle(p.status)}>
+                        {PAYMENT_STATUS_LABELS[p.status] ?? p.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

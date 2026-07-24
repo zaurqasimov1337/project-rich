@@ -28,6 +28,14 @@ const SUGGESTION_KEYS = [
   'suggestion5',
 ];
 
+/** HR Copilot quick prompts (HCM Phase 2B) — shown as chips above the input. */
+const HR_QUICK_PROMPTS = [
+  'Müqaviləsi 30 günə bitəcək işçiləri göstər',
+  'Son 6 ayda maaşı artmayan işçilər',
+  'Məzuniyyət limiti bitmək üzrə olanlar',
+  'Bu ay ən çox gecikən işçilər',
+];
+
 export default function AiPage() {
   const t = useTranslations('ai');
   const qc = useQueryClient();
@@ -103,7 +111,7 @@ export default function AiPage() {
             key={c.id}
             onClick={() => setConversationId(c.id)}
             className={cn(
-              'w-full truncate rounded-lg border border-border bg-surface px-3 py-2 text-left text-sm hover:border-primary',
+              'w-full truncate rounded-lg border border-border bg-input px-3 py-2 text-left text-sm hover:border-primary',
               conversationId === c.id && 'border-primary ring-1 ring-primary/20',
             )}
           >
@@ -112,7 +120,7 @@ export default function AiPage() {
         ))}
       </div>
 
-      <div className="flex flex-col rounded-xl border border-border bg-surface shadow-sm">
+      <div className="flex flex-col rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
         <div className="flex items-center gap-2 border-b border-border px-5 py-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Bot className="h-4.5 w-4.5" />
@@ -175,18 +183,32 @@ export default function AiPage() {
           <div ref={bottomRef} />
         </div>
 
+        <div className="flex flex-wrap gap-2 border-t border-border px-4 pt-3">
+          {HR_QUICK_PROMPTS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              disabled={chatMutation.isPending}
+              onClick={() => send(p)}
+              className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
             send(input);
           }}
-          className="flex gap-2 border-t border-border p-4"
+          className="flex gap-2 p-4"
         >
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('inputPlaceholder')}
-            className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 flex-1 rounded-lg border border-border bg-input px-3 text-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]"
           />
           <Button type="submit" disabled={!input.trim()} loading={chatMutation.isPending}>
             <Send className="h-4 w-4" />

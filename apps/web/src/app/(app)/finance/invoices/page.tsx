@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { DataTable, StatusBadge, type Column } from '@/components/data-table';
 
 interface InvoiceRow {
@@ -89,18 +90,20 @@ export default function InvoicesPage() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('invoices.title')}</h1>
-        {can('finance.invoices.manage') && (
-          <Button loading={generateMutation.isPending} onClick={() => generateMutation.mutate()}>
-            <FileText className="h-4 w-4" /> {t('invoices.generate')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('invoices.title')}
+        actions={
+          can('finance.invoices.manage') && (
+            <Button loading={generateMutation.isPending} onClick={() => generateMutation.mutate()}>
+              <FileText className="h-4 w-4" /> {t('invoices.generate')}
+            </Button>
+          )
+        }
+      />
       {generateMutation.isSuccess && (
         <div className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
           {t('invoices.generated', {

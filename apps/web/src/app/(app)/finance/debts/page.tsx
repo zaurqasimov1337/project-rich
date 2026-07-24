@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -117,11 +118,11 @@ export default function DebtsPage() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <h1 className="text-xl font-bold">{t('debts.title')}</h1>
+      <PageHeader title={t('debts.title')} />
 
       <DataTable
         columns={columns}

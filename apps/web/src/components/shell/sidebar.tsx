@@ -12,12 +12,14 @@ import {
   CalendarDays,
   CheckSquare,
   ClipboardCheck,
+  Clock,
   DoorOpen,
   GraduationCap,
   KanbanSquare,
   LayoutDashboard,
   Megaphone,
   MessageSquare,
+  Network,
   PieChart,
   Puzzle,
   Settings,
@@ -29,6 +31,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-store';
+import { BrandIcon, BrandLogo } from '@/components/brand';
 
 interface NavItem {
   href: string;
@@ -49,6 +52,7 @@ const SECTIONS: { titleKey?: string; items: NavItem[] }[] = [
       { href: '/crm/leads', labelKey: 'crmLeads', icon: Users, permission: 'leads.read' },
       { href: '/crm/pipeline', labelKey: 'crmPipeline', icon: KanbanSquare, permission: 'leads.read' },
       { href: '/crm/follow-ups', labelKey: 'crmFollowUps', icon: Bell, permission: 'leads.read' },
+      { href: '/crm/team', labelKey: 'crmTeam', icon: UserRound, permission: 'leads.read' },
       { href: '/tasks', labelKey: 'tasks', icon: CheckSquare, permission: 'tasks.read' },
     ],
   },
@@ -70,9 +74,19 @@ const SECTIONS: { titleKey?: string; items: NavItem[] }[] = [
       { href: '/rooms', labelKey: 'rooms', icon: DoorOpen, permission: 'rooms.read' },
       { href: '/branches', labelKey: 'branches', icon: Building2, permission: 'branches.read' },
       { href: '/finance', labelKey: 'finance', icon: Wallet, permission: 'finance.read' },
-      { href: '/hr/employees', labelKey: 'hr', icon: Briefcase, permission: 'hr.employees.read' },
       { href: '/marketing/campaigns', labelKey: 'marketing', icon: Megaphone, permission: 'marketing.read' },
       { href: '/messaging', labelKey: 'messaging', icon: MessageSquare, permission: 'messages.send' },
+    ],
+  },
+  {
+    titleKey: 'sectionHr',
+    items: [
+      { href: '/hr/dashboard', labelKey: 'hrDashboard', icon: LayoutDashboard, permission: 'hr.employees.read' },
+      { href: '/hr/employees', labelKey: 'hr', icon: Briefcase, permission: 'hr.employees.read' },
+      { href: '/hr/structure', labelKey: 'hrStructure', icon: Building2, permission: 'hr.employees.read' },
+      { href: '/hr/org-chart', labelKey: 'hrOrgChart', icon: Network, permission: 'hr.employees.read' },
+      { href: '/hr/attendance', labelKey: 'hrAttendance', icon: Clock, permission: 'hr.employees.read' },
+      { href: '/hr/leave', labelKey: 'hrLeave', icon: CalendarDays, permission: 'hr.leave.read' },
     ],
   },
   {
@@ -90,23 +104,36 @@ const SECTIONS: { titleKey?: string; items: NavItem[] }[] = [
   },
 ];
 
-export function Sidebar({ collapsed }: { collapsed: boolean }) {
+export function Sidebar({
+  collapsed,
+  mobileOpen = false,
+  onCloseMobile,
+}: {
+  collapsed: boolean;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const can = useAuth((s) => s.can);
 
   return (
-    <aside
-      className={cn(
-        'fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border bg-surface transition-[width]',
-        collapsed ? 'w-16' : 'w-[260px]',
+    <>
+      {mobileOpen && (
+        <div
+          className="animate-fade-in fixed inset-0 z-30 bg-black/50 backdrop-blur-[2px] lg:hidden"
+          onClick={onCloseMobile}
+        />
       )}
-    >
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-          E
-        </div>
-        {!collapsed && <span className="text-lg font-bold text-foreground">EduSphere</span>}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-border bg-sidebar/75 backdrop-blur-xl transition-transform duration-200 lg:translate-x-0 lg:transition-[width]',
+          collapsed ? 'lg:w-16' : 'lg:w-[260px]',
+          mobileOpen ? 'translate-x-0 shadow-[var(--shadow-lg)]' : '-translate-x-full',
+        )}
+      >
+      <div className="flex h-14 items-center border-b border-border px-4">
+        {collapsed ? <BrandIcon className="h-8" /> : <BrandLogo className="h-8" />}
       </div>
       <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-4">
         {SECTIONS.map((section, i) => {
@@ -128,16 +155,35 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={onCloseMobile}
                     title={collapsed ? t(item.labelKey) : undefined}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                      'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150',
                       active
-                        ? 'bg-primary/10 text-primary'
+                        ? 'bg-primary/10 font-semibold text-foreground'
                         : 'text-muted hover:bg-muted-bg hover:text-foreground',
                     )}
                   >
-                    <Icon className="h-4.5 w-4.5 shrink-0" />
-                    {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                    <span
+                      className={cn(
+                        'absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-primary transition-all duration-150 ease-[var(--ease)]',
+                        active ? 'opacity-100' : 'scale-y-0 opacity-0',
+                      )}
+                    />
+                    <Icon
+                      className={cn(
+                        'h-4.5 w-4.5 shrink-0 transition-transform duration-150 ease-[var(--ease)] group-hover:scale-105',
+                        active && 'text-primary',
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'truncate transition-[opacity,transform] duration-200 ease-[var(--ease)]',
+                        collapsed && 'lg:pointer-events-none lg:w-0 lg:-translate-x-1 lg:opacity-0',
+                      )}
+                    >
+                      {t(item.labelKey)}
+                    </span>
                   </Link>
                 );
               })}
@@ -145,6 +191,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
           );
         })}
       </nav>
-    </aside>
+      </aside>
+    </>
   );
 }

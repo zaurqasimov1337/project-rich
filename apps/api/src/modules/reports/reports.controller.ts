@@ -13,6 +13,16 @@ import { ListQueryDto } from '../../common/dto/list-query.dto';
 import { ReportsService } from './reports.service';
 import { ExportService } from './export.service';
 
+const REPORT_CATALOG = [
+  { key: 'revenue', name: 'Gəlir hesabatı', icon: 'wallet' },
+  { key: 'debts', name: 'Borclar', icon: 'alert' },
+  { key: 'attendance', name: 'Davamiyyət', icon: 'clipboard' },
+  { key: 'group-fill', name: 'Qrup doluluğu', icon: 'users' },
+  { key: 'teacher-load', name: 'Müəllim yükü', icon: 'user' },
+  { key: 'course-roi', name: 'Kurs gəlirliliyi', icon: 'book' },
+  { key: 'lead-funnel', name: 'Müraciət konversiyası', icon: 'filter' },
+];
+
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports')
@@ -25,15 +35,7 @@ export class ReportsController {
   @Get('catalog')
   @RequirePermissions('reports.view')
   catalog() {
-    return [
-      { key: 'revenue', name: 'Gəlir hesabatı', icon: 'wallet' },
-      { key: 'debts', name: 'Borclar', icon: 'alert' },
-      { key: 'attendance', name: 'Davamiyyət', icon: 'clipboard' },
-      { key: 'group-fill', name: 'Qrup doluluğu', icon: 'users' },
-      { key: 'teacher-load', name: 'Müəllim yükü', icon: 'user' },
-      { key: 'course-roi', name: 'Kurs gəlirliliyi', icon: 'book' },
-      { key: 'lead-funnel', name: 'Müraciət konversiyası', icon: 'filter' },
-    ];
+    return REPORT_CATALOG;
   }
 
   @Get(':key')
@@ -50,7 +52,7 @@ export class ReportsController {
   async export(
     @Param('key') key: string,
     @Query() q: ListQueryDto,
-    @Query('format') format: 'xlsx' | 'csv',
+    @Query('format') format: 'xlsx' | 'csv' | 'pdf',
     @Res() res: Response,
   ) {
     if (!this.reports.isValidKey(key)) {
@@ -58,10 +60,13 @@ export class ReportsController {
     }
     const result = await this.reports.run(key, q);
     const filename = `${key}-${new Date().toISOString().slice(0, 10)}`;
+    const reportName = REPORT_CATALOG.find((r) => r.key === key)?.name ?? key;
     if (format === 'csv') {
-      this.exporter.toCsv(res, filename, result.columns, result.rows);
+      this.exporter.toCsv(res, filename, result.columns, result.rows, reportName);
+    } else if (format === 'pdf') {
+      this.exporter.toPdf(res, filename, result.columns, result.rows, reportName);
     } else {
-      await this.exporter.toXlsx(res, filename, result.columns, result.rows);
+      await this.exporter.toXlsx(res, filename, result.columns, result.rows, reportName);
     }
   }
 }

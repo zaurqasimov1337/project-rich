@@ -277,7 +277,7 @@ export function InstagramAutomations({ media }: { media: MediaOption[] }) {
           <div>
             <Label>{t('replyLabel')}</Label>
             <textarea
-              className="min-h-[72px] w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="min-h-[72px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]"
               value={form.publicReply}
               placeholder={t('replyPlaceholder')}
               onChange={(e) => setForm({ ...form, publicReply: e.target.value })}
@@ -286,7 +286,7 @@ export function InstagramAutomations({ media }: { media: MediaOption[] }) {
           <div>
             <Label>{t('dmLabel')}</Label>
             <textarea
-              className="min-h-[72px] w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="min-h-[72px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]"
               value={form.dmMessage}
               placeholder={t('dmPlaceholder')}
               onChange={(e) => setForm({ ...form, dmMessage: e.target.value })}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -19,6 +19,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn, formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ExportMenu } from '@/components/export-menu';
+import { PageHeader } from '@/components/ui/page-header';
 import { Select } from '@/components/ui/select';
 
 interface Column {
@@ -74,36 +76,21 @@ export default function ReportDetailPage() {
   });
   const colCount = data?.columns.length ?? 4;
 
-  const exportUrl = (format: 'xlsx' | 'csv') =>
+  const exportUrl = (format: 'xlsx' | 'csv' | 'pdf') =>
     `${process.env.NEXT_PUBLIC_API_URL ?? '/api/v1'}/reports/${key}/export?range=${range}&format=${format}`;
 
-  const download = async (format: 'xlsx' | 'csv') => {
-    // fetch with auth then trigger a blob download (export endpoint needs Bearer)
-    const { getAccessToken } = await import('@/lib/api');
-    const res = await fetch(exportUrl(format), {
-      headers: { Authorization: `Bearer ${getAccessToken() ?? ''}` },
-      credentials: 'include',
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${key}-${range}.${format}`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="print:hidden">
         <Link href="/reports" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> {t('title')}
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{NAME_TKEYS[key] ? t(NAME_TKEYS[key]) : key}</h1>
-        <div className="flex items-center gap-2 print:hidden">
+      <PageHeader
+        title={NAME_TKEYS[key] ? t(NAME_TKEYS[key]) : key}
+        actions={
+          <div className="flex items-center gap-2 print:hidden">
           <Select
             value={range}
             onChange={(e) => setRange(e.target.value)}
@@ -111,26 +98,24 @@ export default function ReportDetailPage() {
             className="w-40"
           />
           {can('reports.export') && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => download('xlsx')}>
-                <Download className="h-4 w-4" /> Excel
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => download('csv')}>
-                <Download className="h-4 w-4" /> CSV
-              </Button>
-            </>
+            <ExportMenu
+              size="sm"
+              urlFor={(f) => exportUrl(f)}
+              filenameFor={(f) => `${key}-${range}.${f}`}
+            />
           )}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> {tc('print')}
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Totals */}
       {data?.totals && (
         <div className="flex flex-wrap gap-4">
           {Object.entries(data.totals).map(([k, v]) => (
-            <div key={k} className="rounded-lg border border-border bg-surface px-4 py-2 shadow-sm">
+            <div key={k} className="rounded-lg border border-border bg-surface px-4 py-2 shadow-[var(--shadow-sm)]">
               <span className="text-xs text-muted">{k}</span>
               <div className="font-bold tabular-nums">
                 {['income', 'expense', 'profit', 'totalDebt'].includes(k)
@@ -144,7 +129,7 @@ export default function ReportDetailPage() {
 
       {/* Chart */}
       {data?.chart && data.chart.length > 0 && (
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.chart}>
@@ -167,7 +152,7 @@ export default function ReportDetailPage() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-border bg-muted-bg/50 text-left text-muted">

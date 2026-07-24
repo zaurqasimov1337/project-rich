@@ -71,10 +71,10 @@ export function DataTable<T extends { id: string }>({
         {toolbar}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+      <div className="max-h-[70vh] overflow-auto rounded-2xl border border-border bg-surface shadow-[var(--shadow-sm)]">
         <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-border bg-muted-bg/50">
+          <thead className="sticky top-0 z-10">
+            <tr className="border-b border-border bg-muted-bg/80 backdrop-blur-sm">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -94,7 +94,7 @@ export function DataTable<T extends { id: string }>({
                 <tr key={i} className="border-b border-border last:border-0">
                   {columns.map((col) => (
                     <td key={col.key} className="px-4 py-3">
-                      <div className="h-4 w-24 animate-pulse rounded bg-muted-bg" />
+                      <div className="h-4 w-24 animate-shimmer rounded bg-muted-bg" />
                     </td>
                   ))}
                 </tr>
@@ -109,12 +109,13 @@ export function DataTable<T extends { id: string }>({
                 </td>
               </tr>
             ) : (
-              data.map((row) => (
+              data.map((row, i) => (
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
+                  style={{ '--row-i': Math.min(i, 15) } as React.CSSProperties}
                   className={cn(
-                    'border-b border-border last:border-0',
+                    'animate-row-in border-b border-border transition-colors duration-150 last:border-0',
                     onRowClick && 'cursor-pointer hover:bg-muted-bg/50',
                   )}
                 >

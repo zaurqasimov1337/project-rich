@@ -150,6 +150,11 @@ class UpdateTeacherDto {
   @Min(0)
   @Max(100)
   revenuePct?: number;
+
+  /** Org-structure department (departments table). */
+  @IsOptional()
+  @IsUUID()
+  departmentId?: string;
 }
 
 class RateDto {
@@ -218,6 +223,7 @@ export class TeachersController {
         maxWeeklyHours: t.maxWeeklyHours,
         hiredAt: t.hiredAt,
         activeGroups: t.groups.map((g) => ({ id: g.id, name: g.name })),
+        rates: t.rates,
         revenuePct,
         monthlyEarnings,
       };
@@ -407,6 +413,11 @@ export class TeachersController {
       }
     }
 
+    if (dto.departmentId) {
+      const dep = await this.prisma.scoped.department.findFirst({ where: { id: dto.departmentId } });
+      if (!dep) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Department not found' });
+    }
+
     return this.prisma.scoped.teacher.update({
       where: { id },
       data: {
@@ -415,6 +426,7 @@ export class TeachersController {
         hiredAt: dto.hiredAt ? new Date(dto.hiredAt) : undefined,
         workingHours: dto.workingHours ?? undefined,
         maxWeeklyHours: dto.maxWeeklyHours ?? undefined,
+        departmentId: dto.departmentId ?? undefined,
       },
     });
   }

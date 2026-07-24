@@ -6,7 +6,7 @@ import { QueryProvider } from '@/lib/query-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'EduSphere', template: '%s · EduSphere' },
+  title: { default: 'Mactab', template: '%s · Mactab' },
   description: 'Education management platform',
 };
 

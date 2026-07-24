@@ -90,7 +90,7 @@ export class UsersService {
     const url = `${this.config.get('APP_URL_WEB')}/invite/${raw}`;
     await this.mail.send(
       email,
-      'EduSphere dəvəti',
+      'Mactab dəvəti',
       `Sizi komandaya dəvət edirlər. Qeydiyyat üçün keçid (7 gün etibarlıdır): ${url}`,
     );
     return { ok: true };

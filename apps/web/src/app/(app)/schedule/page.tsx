@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface LessonEvent {
   id: string;
@@ -74,10 +75,11 @@ export default function SchedulePage() {
   const today = new Date().toDateString();
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        <div className="flex items-center gap-2">
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          <>
           <Button
             variant="outline"
             size="icon"
@@ -102,10 +104,11 @@ export default function SchedulePage() {
               month: '2-digit',
             })}
           </span>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
         <div className="grid min-w-[900px] grid-cols-[60px_repeat(7,1fr)]">
           {/* header row */}
           <div className="border-b border-r border-border" />

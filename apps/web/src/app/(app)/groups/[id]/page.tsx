@@ -88,7 +88,7 @@ export default function GroupDetailPage() {
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
 
-      <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -116,8 +116,8 @@ export default function GroupDetailPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-border px-5 py-3 font-semibold">{t('students')}</div>
+      <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
+        <div className="border-b border-border px-5 py-3 text-[15px] font-bold">{t('students')}</div>
         {group.students.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted">{t('noStudents')}</div>
         ) : (

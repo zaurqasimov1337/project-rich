@@ -16,3 +16,5 @@ pg-data/
 playwright-report/
 test-results/
 .gstack/
+
+.reference-projects/

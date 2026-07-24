@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Drawer } from '@/components/ui/drawer';
 import { InstagramAutomations } from '@/components/instagram-automations';
@@ -123,11 +124,8 @@ export default function IntegrationsPage() {
   }, {});
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted">{t('subtitle')}</p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
       {Object.entries(byCategory).map(([cat, providers]) => (
         <div key={cat}>
@@ -139,7 +137,7 @@ export default function IntegrationsPage() {
               <div
                 key={p.key}
                 className={cn(
-                  'flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-sm',
+                  'flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]',
                   p.comingSoon && 'opacity-60',
                 )}
               >
@@ -185,10 +183,10 @@ export default function IntegrationsPage() {
       ))}
 
       {instagramConnected && (
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold">{t('dmSyncTitle')}</h2>
+              <h2 className="text-[15px] font-bold">{t('dmSyncTitle')}</h2>
               <p className="mt-1 text-xs text-muted">{t('dmSyncHint')}</p>
             </div>
             {can('integrations.manage') && instagramHasDmToken && (
@@ -282,7 +280,7 @@ export default function IntegrationsPage() {
                   href={m.permalink}
                   target="_blank"
                   rel="noreferrer"
-                  className="group overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
+                  className="group overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]"
                 >
                   <div className="aspect-square w-full overflow-hidden bg-muted-bg">
                     {(m.media_url || m.thumbnail_url) && (

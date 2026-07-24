@@ -11,8 +11,17 @@ import { useDebounced } from '@/lib/hooks';
 import { initials, formatMoney } from '@/lib/utils';
 import { DataTable, type Column } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
+
+interface TeacherRate {
+  id: string;
+  type: string;
+  amount: number; // qəpik (minor units), or percent*100 for revenue_pct
+  courseId?: string | null;
+}
 
 interface TeacherRow {
   id: string;
@@ -20,8 +29,48 @@ interface TeacherRow {
   subjects: string[];
   maxWeeklyHours: number;
   activeGroups: { id: string; name: string }[];
+  rates: TeacherRate[];
   revenuePct: number;
   monthlyEarnings: number;
+}
+
+const RATE_TYPE_LABELS: Record<string, string> = {
+  per_lesson: 'Dərs başı',
+  per_hour: 'Saat başı',
+  per_student: 'Hər tələbədən',
+  per_group: 'Hər qrupdan',
+  fixed_monthly: 'Fix aylıq maaş',
+  revenue_pct: 'Gəlirdən faiz (%)',
+};
+
+const RATE_TYPE_SHORT: Record<string, string> = {
+  per_lesson: 'Dərs',
+  per_hour: 'Saat',
+  per_student: 'Tələbə',
+  per_group: 'Qrup',
+  fixed_monthly: 'Fix',
+  revenue_pct: '',
+};
+
+const RATE_TYPE_OPTIONS = Object.entries(RATE_TYPE_LABELS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
+/** amount is stored ×100: qəpik for money types, percent*100 for revenue_pct. */
+function formatRateAmount(rate: TeacherRate): string {
+  return rate.type === 'revenue_pct' ? `${rate.amount / 100}%` : formatMoney(rate.amount);
+}
+
+function rateSummary(rates: TeacherRate[] | undefined): string {
+  if (!rates?.length) return '—';
+  return rates
+    .map((r) => {
+      const short = RATE_TYPE_SHORT[r.type] ?? r.type;
+      const amount = formatRateAmount(r);
+      return short ? `${short} ${amount}` : amount;
+    })
+    .join(' · ');
 }
 
 interface TeacherForm {
@@ -43,6 +92,8 @@ export default function TeachersPage() {
   const [search, setSearch] = useState('');
   const [drawer, setDrawer] = useState(false);
   const [editing, setEditing] = useState<TeacherRow | null>(null);
+  const [rateType, setRateType] = useState<string>('per_lesson');
+  const [rateAmount, setRateAmount] = useState('');
   const debouncedSearch = useDebounced(search);
 
   const { data, isLoading } = useQuery({
@@ -63,6 +114,8 @@ export default function TeachersPage() {
   };
   const openEdit = (r: TeacherRow) => {
     setEditing(r);
+    setRateType('per_lesson');
+    setRateAmount('');
     form.reset({
       firstName: r.user?.firstName ?? '',
       lastName: r.user?.lastName ?? '',
@@ -122,6 +175,27 @@ export default function TeachersPage() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['teachers'] }),
   });
 
+  // Keep the drawer's rate list in sync after add/delete refetches.
+  const editingRow = editing ? (data?.data.find((r) => r.id === editing.id) ?? editing) : null;
+
+  const addRateMutation = useMutation({
+    mutationFn: () =>
+      api.post(`/teachers/${editing!.id}/rates`, {
+        type: rateType,
+        // Stored ×100: AZN → qəpik for money types, percent → percent*100 for revenue_pct.
+        amount: Math.round(Number(rateAmount) * 100),
+      }),
+    onSuccess: () => {
+      setRateAmount('');
+      void qc.invalidateQueries({ queryKey: ['teachers'] });
+    },
+  });
+
+  const deleteRateMutation = useMutation({
+    mutationFn: (rateId: string) => api.delete(`/teachers/${editing!.id}/rates/${rateId}`),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['teachers'] }),
+  });
+
   const columns: Column<TeacherRow>[] = [
     {
       key: 'name',
@@ -164,8 +238,12 @@ export default function TeachersPage() {
     },
     {
       key: 'salaryModel',
-      header: t('salaryModel'),
-      render: (r) => <span className="tabular-nums">{r.revenuePct}%</span>,
+      header: 'Ödəniş modeli',
+      render: (r) => (
+        <span className="text-sm tabular-nums" title={rateSummary(r.rates)}>
+          {rateSummary(r.rates)}
+        </span>
+      ),
     },
     {
       key: 'groups',
@@ -210,16 +288,18 @@ export default function TeachersPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('teachers.create') && (
-          <Button onClick={openAdd}>
-            <Plus className="h-4 w-4" /> {t('addTeacher')}
-          </Button>
-        )}
-      </div>
-      <p className="text-sm text-muted">{t('inviteHint')}</p>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        description={t('inviteHint')}
+        actions={
+          can('teachers.create') && (
+            <Button onClick={openAdd}>
+              <Plus className="h-4 w-4" /> {t('addTeacher')}
+            </Button>
+          )
+        }
+      />
       {deleteMutation.isError && (
         <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {(deleteMutation.error as Error).message}
@@ -297,6 +377,74 @@ export default function TeachersPage() {
               <Input type="number" min={0} max={100} {...form.register('revenuePct')} />
             </div>
           </div>
+
+          {editingRow && can('teachers.rates') && (
+            <div className="space-y-3 border-t border-border pt-4">
+              <Label>Ödəniş modeli</Label>
+              {(addRateMutation.isError || deleteRateMutation.isError) && (
+                <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+                  {((addRateMutation.error ?? deleteRateMutation.error) as Error).message}
+                </div>
+              )}
+              {editingRow.rates.length ? (
+                <ul className="space-y-2">
+                  {editingRow.rates.map((rate) => (
+                    <li
+                      key={rate.id}
+                      className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"
+                    >
+                      <span>{RATE_TYPE_LABELS[rate.type] ?? rate.type}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium tabular-nums">{formatRateAmount(rate)}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title={tc('delete')}
+                          loading={
+                            deleteRateMutation.isPending && deleteRateMutation.variables === rate.id
+                          }
+                          onClick={() => deleteRateMutation.mutate(rate.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-danger" />
+                        </Button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted">—</p>
+              )}
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Select
+                    value={rateType}
+                    onChange={(e) => setRateType(e.target.value)}
+                    options={RATE_TYPE_OPTIONS}
+                  />
+                </div>
+                <div className="w-28">
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder={rateType === 'revenue_pct' ? '%' : 'AZN'}
+                    value={rateAmount}
+                    onChange={(e) => setRateAmount(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  loading={addRateMutation.isPending}
+                  disabled={!rateAmount || Number.isNaN(Number(rateAmount))}
+                  onClick={() => addRateMutation.mutate()}
+                >
+                  Əlavə et
+                </Button>
+              </div>
+            </div>
+          )}
         </form>
       </Drawer>
     </div>

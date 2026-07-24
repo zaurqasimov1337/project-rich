@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn, formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface Run {
   id: string;
@@ -16,6 +17,19 @@ interface Run {
   status: string;
   total: number;
   _count: { items: number };
+}
+
+interface PayrollBreakdown {
+  grossQepik: number;
+  incomeTax: number;
+  dsmfEmployee: number;
+  unemploymentEmployee: number;
+  healthEmployee: number;
+  unionFee: number;
+  totalEmployeeDeductions: number;
+  netQepik: number;
+  totalEmployerContributions: number;
+  totalEmployerCost: number;
 }
 
 interface RunDetail {
@@ -32,7 +46,9 @@ interface RunDetail {
     deduction: number;
     total: number;
     detail: { lessons?: number };
+    breakdown?: PayrollBreakdown;
   }[];
+  totals?: { gross: number; deductions: number; net: number; employerCost: number };
 }
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
@@ -87,18 +103,20 @@ export default function PayrollPage() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('payroll.title')}</h1>
-        {can('finance.payroll.manage') && (
-          <Button loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
-            <Calculator className="h-4 w-4" /> {t('payroll.calculate')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('payroll.title')}
+        actions={
+          can('finance.payroll.manage') && (
+            <Button loading={createMutation.isPending} onClick={() => createMutation.mutate()}>
+              <Calculator className="h-4 w-4" /> {t('payroll.calculate')}
+            </Button>
+          )
+        }
+      />
       {createMutation.isError && (
         <div className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {(createMutation.error as Error).message}
@@ -120,7 +138,7 @@ export default function PayrollPage() {
                 key={run.id}
                 onClick={() => setSelected(run.id)}
                 className={cn(
-                  'w-full rounded-xl border border-border bg-surface p-3 text-left shadow-sm hover:border-primary',
+                  'w-full rounded-xl border border-border bg-surface p-3 text-left shadow-[var(--shadow-sm)] hover:border-primary',
                   selected === run.id && 'border-primary ring-2 ring-primary/20',
                 )}
               >
@@ -144,10 +162,10 @@ export default function PayrollPage() {
               {t('payroll.selectPeriod')}
             </div>
           ) : (
-            <div className="rounded-xl border border-border bg-surface shadow-sm">
+            <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
               <div className="flex items-center justify-between border-b border-border p-4">
                 <div>
-                  <span className="font-semibold">{detail.period}</span>{' '}
+                  <span className="text-[15px] font-bold">{detail.period}</span>{' '}
                   <span className="text-muted">— {tc('total')} {formatMoney(detail.total)}</span>
                 </div>
                 {can('finance.payroll.manage') && (
@@ -165,30 +183,49 @@ export default function PayrollPage() {
                   </div>
                 )}
               </div>
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-border bg-muted-bg/50 text-left text-muted">
-                    <th className="px-4 py-2 font-semibold">{t('payroll.colTeacher')}</th>
-                    <th className="px-4 py-2 font-semibold">{t('payroll.colLessons')}</th>
-                    <th className="px-4 py-2 font-semibold">{t('payroll.colBase')}</th>
-                    <th className="px-4 py-2 font-semibold">{t('payroll.colLessonPay')}</th>
-                    <th className="px-4 py-2 text-right font-semibold">{tc('total')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.items.map((item) => (
-                    <tr key={item.id} className="border-b border-border last:border-0">
-                      <td className="px-4 py-2.5 font-medium">{item.teacherName ?? '—'}</td>
-                      <td className="px-4 py-2.5 tabular-nums">{item.detail.lessons ?? 0}</td>
-                      <td className="px-4 py-2.5 tabular-nums">{formatMoney(item.base)}</td>
-                      <td className="px-4 py-2.5 tabular-nums">{formatMoney(item.lessonPay)}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
-                        {formatMoney(item.total)}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-border bg-muted-bg/50 text-left text-muted">
+                      <th className="px-4 py-2 font-semibold">{t('payroll.colTeacher')}</th>
+                      <th className="px-4 py-2 font-semibold">{t('payroll.colLessons')}</th>
+                      <th className="px-4 py-2 text-right font-semibold">Gross</th>
+                      <th className="px-4 py-2 text-right font-semibold">Vergi + ayırmalar</th>
+                      <th className="px-4 py-2 text-right font-semibold">Net (işçiyə çatan)</th>
+                      <th className="px-4 py-2 text-right font-semibold">İşəgötürənə cəmi</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {detail.items.map((item) => (
+                      <tr key={item.id} className="border-b border-border last:border-0">
+                        <td className="px-4 py-2.5 font-medium">{item.teacherName ?? '—'}</td>
+                        <td className="px-4 py-2.5 tabular-nums">{item.detail.lessons ?? 0}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(item.total)}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-danger">
+                          {item.breakdown ? formatMoney(item.breakdown.totalEmployeeDeductions) : '—'}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-success">
+                          {item.breakdown ? formatMoney(item.breakdown.netQepik) : formatMoney(item.total)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">
+                          {item.breakdown ? formatMoney(item.breakdown.totalEmployerCost) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {detail.totals && (
+                    <tfoot>
+                      <tr className="border-t border-border bg-muted-bg/40 font-semibold">
+                        <td className="px-4 py-2.5" colSpan={2}>{tc('total')}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(detail.totals.gross)}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-danger">{formatMoney(detail.totals.deductions)}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-success">{formatMoney(detail.totals.net)}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{formatMoney(detail.totals.employerCost)}</td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
             </div>
           )}
         </div>

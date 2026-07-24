@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EduSphere",
+    "appName": "Mactab",
     "loading": "Загрузка...",
     "saving": "Сохранение...",
     "save": "Сохранить",
@@ -176,7 +176,7 @@
     "rememberMe": "Запомнить меня",
     "showPassword": "Показать пароль",
     "hidePassword": "Скрыть пароль",
-    "copyright": "© {year} EduSphere",
+    "copyright": "© {year} Mactab",
     "registerSubtitle": "Зарегистрируйте свой учебный центр — 14 дней бесплатно",
     "centerNamePlaceholder": "Напр.: Учебный центр Zirvə",
     "centerNameRequired": "Название центра обязательно",
@@ -242,7 +242,17 @@
     "crmDashboard": "Панель продаж",
     "crmLeads": "Лиды",
     "crmPipeline": "Воронка",
-    "crmFollowUps": "Follow-up"
+    "crmFollowUps": "Follow-up",
+    "crmTrainings": "Тренинги",
+    "crmPayments": "Платежи",
+    "crmTeam": "Команда продаж",
+    "crmReports": "Отчёты продаж",
+    "hrStructure": "Структура",
+    "hrOrgChart": "Орг. схема",
+    "hrDashboard": "HR-панель",
+    "hrLeave": "Отпуска",
+    "hrAttendance": "Посещаемость",
+    "sectionHr": "HR Management"
   },
   "topbar": {
     "trial": "Пробный период",
@@ -392,6 +402,7 @@
     "format": "Формат",
     "formatOnline": "Онлайн",
     "formatOffline": "Офлайн",
+    "formatHybrid": "Гибрид",
     "duration": "Длительность"
   },
   "exams": {
@@ -631,6 +642,7 @@
     "contractFullTime": "Полная занятость",
     "contractPartTime": "Частичная занятость",
     "contractContract": "Договор",
+    "contractFreelance": "Фриланс",
     "noEmployees": "Пока нет сотрудников",
     "noEmployeesDesc": "Чтобы добавить сотрудника, сначала пригласите пользователя, затем свяжите его с HR-профилем.",
     "user": "Пользователь",
@@ -653,7 +665,29 @@
     "selectEmployee": "Выберите сотрудника",
     "startDate": "Начало",
     "endDate": "Окончание",
-    "reason": "Причина"
+    "reason": "Причина",
+    "structureTitle": "Структура",
+    "addUnit": "Новое подразделение",
+    "editUnit": "Редактировать подразделение",
+    "kindLabel": "Тип",
+    "kindDepartament": "Департамент",
+    "kindSobe": "Отдел",
+    "kindBolme": "Секция",
+    "unitName": "Название",
+    "parentUnit": "Родительское подразделение",
+    "noParent": "Нет (корень)",
+    "noteLabel": "Примечание",
+    "employeesCount": "{count} сотрудников",
+    "teachersCount": "{count} преподавателей",
+    "noUnits": "Структура ещё не создана",
+    "noUnitsDesc": "Создайте организационную структуру, добавив департаменты, отделы и секции.",
+    "confirmDeleteUnit": "Удалить подразделение?",
+    "confirmDeleteUnitDesc": "Это действие необратимо. Подразделения с дочерними элементами или сотрудниками удалить нельзя.",
+    "department": "Отдел",
+    "selectDepartment": "Выберите отдел",
+    "bonus": "Бонус",
+    "bonusAzn": "Бонус (₼)",
+    "whoWhere": "Кто где"
   },
   "messaging": {
     "title": "Сообщения",
@@ -847,10 +881,10 @@
     "heroLine1": "Управляйте всей платформой",
     "heroLine2": "из одного места.",
     "heroSubtitle": "Организации, тарифы, подписки и аналитика платформы — в одной супер-админ панели.",
-    "emailPlaceholder": "admin@edusphere.app",
+    "emailPlaceholder": "admin@mactab.app",
     "showPassword": "Показать пароль",
     "hidePassword": "Скрыть пароль",
-    "copyright": "© {year} EduSphere"
+    "copyright": "© {year} Mactab"
   },
   "automations": {
     "title": "Автоответ (комментарий → ответ + DM)",

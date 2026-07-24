@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EduSphere",
+    "appName": "Mactab",
     "loading": "Loading...",
     "saving": "Saving...",
     "save": "Save",
@@ -176,7 +176,7 @@
     "rememberMe": "Remember me",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "copyright": "© {year} EduSphere",
+    "copyright": "© {year} Mactab",
     "registerSubtitle": "Register your training center — 14 days free",
     "centerNamePlaceholder": "e.g. Zirvə Training Center",
     "centerNameRequired": "Center name is required",
@@ -242,7 +242,17 @@
     "crmDashboard": "Sales dashboard",
     "crmLeads": "Leads",
     "crmPipeline": "Pipeline",
-    "crmFollowUps": "Follow-ups"
+    "crmFollowUps": "Follow-ups",
+    "crmTrainings": "Trainings",
+    "crmPayments": "Payments",
+    "crmTeam": "Sales team",
+    "crmReports": "Sales reports",
+    "hrStructure": "Structure",
+    "hrOrgChart": "Org chart",
+    "hrDashboard": "HR Dashboard",
+    "hrLeave": "Leave",
+    "hrAttendance": "Attendance",
+    "sectionHr": "HR Management"
   },
   "topbar": {
     "trial": "Trial period",
@@ -392,6 +402,7 @@
     "format": "Format",
     "formatOnline": "Online",
     "formatOffline": "Offline",
+    "formatHybrid": "Hybrid",
     "duration": "Duration"
   },
   "exams": {
@@ -631,6 +642,7 @@
     "contractFullTime": "Full-time",
     "contractPartTime": "Part-time",
     "contractContract": "Contract",
+    "contractFreelance": "Freelance",
     "noEmployees": "No employees yet",
     "noEmployeesDesc": "To add an employee, first invite a user, then link them to an HR profile.",
     "user": "User",
@@ -653,7 +665,29 @@
     "selectEmployee": "Select employee",
     "startDate": "Start",
     "endDate": "End",
-    "reason": "Reason"
+    "reason": "Reason",
+    "structureTitle": "Structure",
+    "addUnit": "New unit",
+    "editUnit": "Edit unit",
+    "kindLabel": "Type",
+    "kindDepartament": "Department",
+    "kindSobe": "Division",
+    "kindBolme": "Section",
+    "unitName": "Name",
+    "parentUnit": "Parent unit",
+    "noParent": "None (root)",
+    "noteLabel": "Note",
+    "employeesCount": "{count} employees",
+    "teachersCount": "{count} teachers",
+    "noUnits": "No structure yet",
+    "noUnitsDesc": "Build the organizational structure by adding departments, divisions and sections.",
+    "confirmDeleteUnit": "Delete unit?",
+    "confirmDeleteUnitDesc": "This cannot be undone. Units with children or assigned staff cannot be deleted.",
+    "department": "Department",
+    "selectDepartment": "Select department",
+    "bonus": "Bonus",
+    "bonusAzn": "Bonus (₼)",
+    "whoWhere": "Who is where"
   },
   "messaging": {
     "title": "Messaging",
@@ -847,10 +881,10 @@
     "heroLine1": "Manage the whole platform",
     "heroLine2": "from one place.",
     "heroSubtitle": "Tenants, plans, subscriptions and platform analytics — all in one super admin panel.",
-    "emailPlaceholder": "admin@edusphere.app",
+    "emailPlaceholder": "admin@mactab.app",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "copyright": "© {year} EduSphere"
+    "copyright": "© {year} Mactab"
   },
   "automations": {
     "title": "Auto-reply (comment → reply + DM)",

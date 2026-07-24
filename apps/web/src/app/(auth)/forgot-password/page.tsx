@@ -1,5 +1,7 @@
 'use client';
 
+import { BrandLogo } from '@/components/brand';
+
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
@@ -23,13 +25,23 @@ export default function ForgotPasswordPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <h1 className="text-lg font-bold">{t('updatePassword')}</h1>
+    <main className="auth-backdrop flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-[400px] animate-scale-in rounded-2xl border border-border bg-surface/80 p-8 shadow-[var(--shadow-lg)] backdrop-blur-xl">
+        {/* Brand block */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandLogo className="h-9" />
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
+            {t('resetPassword')}
+          </h1>
+          {!sent && <p className="mt-1.5 text-sm text-muted">{t('sendResetLink')}</p>}
+        </div>
+
         {sent ? (
-          <p className="mt-3 text-sm text-muted">{t('resetLinkSentInfo')}</p>
+          <p className="rounded-lg bg-muted-bg px-3 py-2 text-center text-sm text-muted">
+            {t('resetLinkSentInfo')}
+          </p>
         ) : (
-          <form onSubmit={onSubmit} className="mt-4 space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">{t('email')}</Label>
               <Input
@@ -39,13 +51,14 @@ export default function ForgotPasswordPage() {
                 {...register('email', { required: t('emailRequired') })}
               />
             </div>
-            <Button type="submit" className="w-full" loading={isSubmitting}>
+            <Button type="submit" className="h-10 w-full" loading={isSubmitting}>
               {t('sendResetLink')}
             </Button>
           </form>
         )}
-        <p className="mt-4 text-center text-sm">
-          <Link href="/login" className="text-primary hover:underline">
+
+        <p className="mt-6 text-center">
+          <Link href="/login" className="text-sm text-muted transition-colors hover:text-foreground">
             {t('backToLogin')}
           </Link>
         </p>

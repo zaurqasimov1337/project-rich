@@ -11,13 +11,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <input
         ref={ref}
         className={cn(
-          'h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50',
-          error && 'border-danger focus:border-danger focus:ring-danger/20',
+          'h-9 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground shadow-[var(--shadow-sm)] transition-colors duration-150 placeholder:text-muted hover:border-muted/50 focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)] disabled:opacity-50 read-only:bg-muted-bg/50',
+          error && 'animate-soft-shake border-danger focus:border-danger focus:ring-danger/20',
           className,
         )}
+        aria-invalid={error ? true : undefined}
         {...props}
       />
-      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-danger">
+          {error}
+        </p>
+      )}
     </div>
   ),
 );

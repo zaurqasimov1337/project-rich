@@ -10,6 +10,7 @@ import { api, setAccessToken } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -120,18 +121,20 @@ export default function SettingsPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {(can('apikeys.manage') || can('webhooks.manage')) && (
-          <a
-            href="/settings/developer"
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-muted-bg"
-          >
-            {t('developerLink')}
-          </a>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          (can('apikeys.manage') || can('webhooks.manage')) && (
+            <a
+              href="/settings/developer"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-muted-bg"
+            >
+              {t('developerLink')}
+            </a>
+          )
+        }
+      />
 
       <div className="flex gap-1 border-b border-border">
         {TABS.map((tabItem) => (
@@ -159,7 +162,7 @@ export default function SettingsPage() {
               </Button>
             </div>
           )}
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-border bg-muted-bg/50 text-left text-muted">
@@ -204,7 +207,7 @@ export default function SettingsPage() {
       {tab === 'roles' && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {roles?.map((r) => (
-            <div key={r.id} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <div key={r.id} className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{r.name}</span>
                 {r.isSystem && (
@@ -224,7 +227,7 @@ export default function SettingsPage() {
           {can('settings.manage') && (
             <form
               onSubmit={holidayForm.handleSubmit((v) => addHoliday.mutate(v))}
-              className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-surface p-4 shadow-sm"
+              className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]"
             >
               <div>
                 <Label>{tc('date')}</Label>
@@ -239,7 +242,7 @@ export default function SettingsPage() {
               </Button>
             </form>
           )}
-          <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {holidays?.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted">{t('noHolidays')}</div>
             ) : (
@@ -266,7 +269,7 @@ export default function SettingsPage() {
       )}
 
       {tab === 'billing' && (
-        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
           <div className="flex items-center justify-between">
             <div>
               <div className="font-semibold">{user?.tenant.plan?.name ?? t('noPlan')}</div>
@@ -294,8 +297,8 @@ export default function SettingsPage() {
       )}
 
       {tab === 'security' && (
-        <div className="max-w-md rounded-xl border border-border bg-surface p-5 shadow-sm">
-          <h2 className="font-semibold">{t('changePassword')}</h2>
+        <div className="max-w-md rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
+          <h2 className="text-[15px] font-bold">{t('changePassword')}</h2>
           <p className="mt-0.5 text-sm text-muted">{t('changePasswordHint')}</p>
 
           <form

@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -95,15 +96,17 @@ export default function ExamsPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('exams.manage') && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> {t('new')}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          can('exams.manage') && (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('new')}
+            </Button>
+          )
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
         <div className="space-y-2">
@@ -121,7 +124,7 @@ export default function ExamsPage() {
                 setScores({});
               }}
               className={cn(
-                'w-full rounded-xl border border-border bg-surface p-3 text-left shadow-sm transition-colors hover:border-primary',
+                'w-full rounded-xl border border-border bg-surface p-3 text-left shadow-[var(--shadow-sm)] transition-colors hover:border-primary',
                 selectedExam === e.id && 'border-primary ring-2 ring-primary/20',
               )}
             >
@@ -140,9 +143,9 @@ export default function ExamsPage() {
               {t('selectExamPrompt')}
             </div>
           ) : (
-            <div className="rounded-xl border border-border bg-surface shadow-sm">
+            <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
               <div className="flex items-center justify-between border-b border-border p-4">
-                <h2 className="font-semibold">
+                <h2 className="text-[15px] font-bold">
                   {examDetail?.name}{' '}
                   <span className="text-muted">({t('max')} {examDetail?.maxScore})</span>
                 </h2>

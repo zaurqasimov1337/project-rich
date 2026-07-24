@@ -16,6 +16,8 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 
 interface ReportCard {
   key: string;
@@ -52,10 +54,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted">{t('subtitle')}</p>
-      </div>
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
       {revenue?.totals && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -64,12 +63,11 @@ export default function ReportsPage() {
             [t('monthExpense'), revenue.totals.expense, 'text-danger'],
             [t('monthProfit'), revenue.totals.profit, 'text-primary'],
           ].map(([label, val, cls]) => (
-            <div key={label as string} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-              <div className="text-[13px] font-medium text-muted">{label as string}</div>
-              <div className={`mt-1.5 text-2xl font-bold tabular-nums ${cls as string}`}>
-                {formatMoney(val as number)}
-              </div>
-            </div>
+            <StatCard
+              key={label as string}
+              label={label as string}
+              value={<span className={cls as string}>{formatMoney(val as number)}</span>}
+            />
           ))}
         </div>
       )}
@@ -81,7 +79,7 @@ export default function ReportsPage() {
             <Link
               key={r.key}
               href={`/reports/${r.key}`}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-primary"
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)] transition-all duration-200 hover:border-primary hover:shadow-[var(--shadow-md)]"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />

@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -93,8 +94,8 @@ export default function MessagingPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">{t('title')}</h1>
+    <div className="space-y-5">
+      <PageHeader title={t('title')} />
 
       <div className="flex gap-1 border-b border-border">
         {[
@@ -119,7 +120,7 @@ export default function MessagingPage() {
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <form
             onSubmit={sendForm.handleSubmit((v) => sendMutation.mutate(v))}
-            className="space-y-4 rounded-xl border border-border bg-surface p-5 shadow-sm"
+            className="space-y-4 rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]"
           >
             {sendMutation.isSuccess && (
               <div className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
@@ -149,7 +150,7 @@ export default function MessagingPage() {
             <div>
               <Label>{t('bodyLabel')} ({t('variablesHint')}: {'{{firstName}} {{lastName}} {{code}}'})</Label>
               <textarea
-                className="min-h-32 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="min-h-32 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]"
                 placeholder={t('bodyPlaceholder')}
                 {...sendForm.register('body', { required: true })}
               />
@@ -159,7 +160,7 @@ export default function MessagingPage() {
             </Button>
           </form>
 
-          <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <span className="text-sm font-semibold">{t('recipients')} ({selected.length})</span>
               <button
@@ -205,7 +206,7 @@ export default function MessagingPage() {
               </Button>
             </div>
           )}
-          <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {templates?.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted">{t('noTemplates')}</div>
             ) : (
@@ -235,7 +236,7 @@ export default function MessagingPage() {
       )}
 
       {tab === 'logs' && (
-        <div className="rounded-xl border border-border bg-surface shadow-sm">
+        <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
           {logs?.data.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted">{t('noLogs')}</div>
           ) : (
@@ -295,7 +296,7 @@ export default function MessagingPage() {
           <div>
             <Label>{t('bodyLabel')} *</Label>
             <textarea
-              className="min-h-28 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+              className="min-h-28 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
               {...tplForm.register('body', { required: true })}
             />
           </div>

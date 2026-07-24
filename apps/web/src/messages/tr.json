@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EduSphere",
+    "appName": "Mactab",
     "loading": "Yükleniyor...",
     "saving": "Kaydediliyor...",
     "save": "Kaydet",
@@ -176,7 +176,7 @@
     "rememberMe": "Beni hatırla",
     "showPassword": "Şifreyi göster",
     "hidePassword": "Şifreyi gizle",
-    "copyright": "© {year} EduSphere",
+    "copyright": "© {year} Mactab",
     "registerSubtitle": "Eğitim merkezinizi kaydedin — 14 gün ücretsiz",
     "centerNamePlaceholder": "Örn: Zirvə Eğitim Merkezi",
     "centerNameRequired": "Merkez adı zorunludur",
@@ -242,7 +242,17 @@
     "crmDashboard": "Satış paneli",
     "crmLeads": "Adaylar",
     "crmPipeline": "Pipeline",
-    "crmFollowUps": "Takipler"
+    "crmFollowUps": "Takipler",
+    "crmTrainings": "Eğitimler",
+    "crmPayments": "Ödemeler",
+    "crmTeam": "Satış ekibi",
+    "crmReports": "Satış raporları",
+    "hrStructure": "Yapı",
+    "hrOrgChart": "Org şeması",
+    "hrDashboard": "İK Paneli",
+    "hrLeave": "İzinler",
+    "hrAttendance": "Devam",
+    "sectionHr": "HR Management"
   },
   "topbar": {
     "trial": "Deneme süresi",
@@ -392,6 +402,7 @@
     "format": "Format",
     "formatOnline": "Çevrimiçi",
     "formatOffline": "Yüz yüze",
+    "formatHybrid": "Hibrit",
     "duration": "Süre"
   },
   "exams": {
@@ -631,6 +642,7 @@
     "contractFullTime": "Tam zamanlı",
     "contractPartTime": "Yarı zamanlı",
     "contractContract": "Sözleşme",
+    "contractFreelance": "Freelance",
     "noEmployees": "Henüz çalışan yok",
     "noEmployeesDesc": "Çalışan eklemek için önce bir kullanıcı davet edin, ardından onu bir İK profiliyle ilişkilendirin.",
     "user": "Kullanıcı",
@@ -653,7 +665,29 @@
     "selectEmployee": "Çalışan seçin",
     "startDate": "Başlangıç",
     "endDate": "Bitiş",
-    "reason": "Sebep"
+    "reason": "Sebep",
+    "structureTitle": "Yapı",
+    "addUnit": "Yeni birim",
+    "editUnit": "Birimi düzenle",
+    "kindLabel": "Tür",
+    "kindDepartament": "Departman",
+    "kindSobe": "Şube",
+    "kindBolme": "Bölüm",
+    "unitName": "Ad",
+    "parentUnit": "Üst birim",
+    "noParent": "Yok (kök)",
+    "noteLabel": "Not",
+    "employeesCount": "{count} çalışan",
+    "teachersCount": "{count} öğretmen",
+    "noUnits": "Henüz yapı oluşturulmadı",
+    "noUnitsDesc": "Departman, şube ve bölümler ekleyerek organizasyon yapısını oluşturun.",
+    "confirmDeleteUnit": "Birimi sil?",
+    "confirmDeleteUnitDesc": "Bu işlem geri alınamaz. Alt birimleri veya çalışanları olan birimler silinemez.",
+    "department": "Departman",
+    "selectDepartment": "Departman seçin",
+    "bonus": "Bonus",
+    "bonusAzn": "Bonus (₼)",
+    "whoWhere": "Kim nerede"
   },
   "messaging": {
     "title": "Mesajlaşma",
@@ -847,10 +881,10 @@
     "heroLine1": "Tüm platformu",
     "heroLine2": "tek yerden yönetin.",
     "heroSubtitle": "Kiracılar, planlar, abonelikler ve platform analitiği — tek süper admin panelinde.",
-    "emailPlaceholder": "admin@edusphere.app",
+    "emailPlaceholder": "admin@mactab.app",
     "showPassword": "Şifreyi göster",
     "hidePassword": "Şifreyi gizle",
-    "copyright": "© {year} EduSphere"
+    "copyright": "© {year} Mactab"
   },
   "automations": {
     "title": "Otomatik yanıt (yorum → yanıt + DM)",

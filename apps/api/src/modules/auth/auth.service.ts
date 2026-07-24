@@ -208,7 +208,7 @@ export class AuthService {
     const refreshToken = await this.tokens.issueRefresh(result.user.id, 'tenant', meta);
 
     this.mail
-      .send(email, 'EduSphere-ə xoş gəldiniz', `Hesabınız yaradıldı: ${result.tenant.name}`)
+      .send(email, 'Mactab-ə xoş gəldiniz', `Hesabınız yaradıldı: ${result.tenant.name}`)
       .catch(() => undefined);
 
     return { accessToken, refreshToken, user: await this.buildMe(result.user.id) };

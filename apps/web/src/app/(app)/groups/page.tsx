@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-store';
 import { useDebounced } from '@/lib/hooks';
 import { formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
@@ -146,15 +147,17 @@ export default function GroupsPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('groups.manage') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> {t('new')}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          can('groups.manage') && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('new')}
+            </Button>
+          )
+        }
+      />
 
       {(catCounts?.length ?? 0) > 0 && (
         <div className="flex flex-nowrap gap-1 overflow-x-auto border-b border-border">

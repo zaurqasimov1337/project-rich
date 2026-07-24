@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Drawer } from '@/components/ui/drawer';
 
@@ -50,15 +51,17 @@ export default function BranchesPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        {can('branches.manage') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> {t('newBranch')}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          can('branches.manage') && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('newBranch')}
+            </Button>
+          )
+        }
+      />
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -69,7 +72,7 @@ export default function BranchesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {branches?.map((b) => (
-            <div key={b.id} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <div key={b.id} className="rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-sm)]">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">

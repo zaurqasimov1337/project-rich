@@ -36,6 +36,7 @@ interface ListParams {
   trainingId?: string;
   source?: string;
   assignedTo?: string;
+  paymentStatus?: string;
   minScore?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -91,6 +92,7 @@ export class SalesService {
     if (p.trainingId) conds.push(Prisma.sql`l."courseInterestId" = ${p.trainingId}`);
     if (p.source) conds.push(Prisma.sql`l."sourceKey" = ${p.source}`);
     if (p.assignedTo) conds.push(Prisma.sql`l."assignedTo" = ${p.assignedTo}`);
+    if (p.paymentStatus) conds.push(Prisma.sql`l."paymentStatus" = ${p.paymentStatus}`);
     if (p.minScore != null && !Number.isNaN(Number(p.minScore))) {
       conds.push(Prisma.sql`l.score >= ${Number(p.minScore)}`);
     }
@@ -178,6 +180,7 @@ export class SalesService {
       assigneeName: first ? `${first} ${last ?? ''}`.trim() : null,
       followupCount: r.followupCount,
       nextFollowupAt: r.nextFollowupAt,
+      paymentStatus: r.paymentStatus,
       createdAt: r.createdAt,
     };
   }
@@ -198,13 +201,24 @@ export class SalesService {
         priority: true,
         score: true,
         courseInterestId: true,
+        assignedTo: true,
       },
     });
     const trainIds = [...new Set(leads.map((l) => l.courseInterestId).filter(Boolean) as string[])];
-    const trainings = trainIds.length
-      ? await this.prisma.scoped.course.findMany({ where: { id: { in: trainIds } }, select: { id: true, name: true } })
-      : [];
+    const assigneeIds = [...new Set(leads.map((l) => l.assignedTo).filter(Boolean) as string[])];
+    const [trainings, assignees] = await Promise.all([
+      trainIds.length
+        ? this.prisma.scoped.course.findMany({ where: { id: { in: trainIds } }, select: { id: true, name: true } })
+        : [],
+      assigneeIds.length
+        ? this.prisma.scoped.user.findMany({
+            where: { id: { in: assigneeIds } },
+            select: { id: true, firstName: true, lastName: true },
+          })
+        : [],
+    ]);
     const trainMap = new Map(trainings.map((t) => [t.id, t.name]));
+    const assigneeMap = new Map(assignees.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
 
     const statusToCol = new Map<string, string>();
     for (const col of PIPELINE_COLUMNS) for (const s of col.statuses) statusToCol.set(s, col.key);
@@ -221,6 +235,7 @@ export class SalesService {
           priority: l.priority,
           score: l.score,
           trainingName: l.courseInterestId ? (trainMap.get(l.courseInterestId) ?? null) : null,
+          assigneeName: l.assignedTo ? (assigneeMap.get(l.assignedTo) ?? null) : null,
         }));
       return { key: col.key, label: col.label, count: colLeads.length, leads: colLeads };
     });
@@ -285,13 +300,14 @@ export class SalesService {
   async getLead(id: string) {
     const lead = await this.prisma.scoped.lead.findFirst({ where: { id, deletedAt: null } });
     if (!lead) throw new NotFoundException({ code: 'NOT_FOUND', message: 'Müraciət tapılmadı' });
-    const [activities, followups, training, assignee] = await Promise.all([
+    const [activities, followups, payments, training, assignee] = await Promise.all([
       this.prisma.scoped.leadActivity.findMany({
         where: { leadId: id },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
       this.prisma.scoped.followup.findMany({ where: { leadId: id }, orderBy: { dueAt: 'desc' } }),
+      this.prisma.scoped.leadPayment.findMany({ where: { leadId: id }, orderBy: { createdAt: 'desc' } }),
       lead.courseInterestId
         ? this.prisma.scoped.course.findFirst({ where: { id: lead.courseInterestId }, select: { id: true, name: true } })
         : null,
@@ -299,7 +315,7 @@ export class SalesService {
         ? this.prisma.scoped.user.findFirst({ where: { id: lead.assignedTo }, select: { id: true, firstName: true, lastName: true } })
         : null,
     ]);
-    return { ...lead, activities, followups, training, assignee };
+    return { ...lead, activities, followups, payments, training, assignee };
   }
 
   async listActivities(id: string) {
@@ -348,6 +364,17 @@ export class SalesService {
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.lostReason !== undefined) data.lostReason = dto.lostReason;
     if (dto.objectionReason !== undefined) data.objectionReason = dto.objectionReason;
+    if (dto.demoStatus !== undefined) data.demoStatus = dto.demoStatus;
+    if (dto.callStatus !== undefined) data.callStatus = dto.callStatus;
+    if (dto.registrationStatus !== undefined) data.registrationStatus = dto.registrationStatus;
+    if (dto.remarketingStatus !== undefined) data.remarketingStatus = dto.remarketingStatus;
+    if (dto.paymentStatus !== undefined) data.paymentStatus = dto.paymentStatus;
+    if (dto.paymentMethod !== undefined) data.paymentMethod = dto.paymentMethod;
+    if (dto.paymentPlan !== undefined) data.paymentPlan = dto.paymentPlan;
+    if (dto.discountPct !== undefined) data.discountPct = dto.discountPct;
+    if (dto.budgetMatch !== undefined) data.budgetMatch = dto.budgetMatch;
+    if (dto.courseStartDate !== undefined) data.courseStartDate = new Date(dto.courseStartDate);
+    if (dto.firstContactChannel !== undefined) data.firstContactChannel = dto.firstContactChannel;
 
     if (statusChanged) {
       const bucket = stageBucketForStatus(dto.status!);
@@ -369,8 +396,118 @@ export class SalesService {
         },
       });
     }
+
+    // Payments ledger sync: payment-status change drives the payments tab;
+    // a refused lead cancels its open payments.
+    if (dto.paymentStatus !== undefined && dto.paymentStatus !== lead.paymentStatus) {
+      await this.syncLeadPayment(lead, dto.paymentStatus, userId);
+    } else if (statusChanged && stageBucketForStatus(dto.status!) === 'lost') {
+      await this.syncLeadPayment(lead, 'legv_edilib', userId);
+      await this.prisma.scoped.lead.update({ where: { id }, data: { paymentStatus: 'legv_edilib' } });
+    }
+
+    // Registered leads automatically become students in the Education module
+    // (only 'qeydiyyat_oldu'; convert() guards against double-conversion).
+    if (statusChanged && dto.status === 'qeydiyyat_oldu' && !lead.convertedStudentId) {
+      try {
+        await this.crm.convert(id, {}, userId);
+      } catch {
+        // already converted or education guard — status change must not fail
+      }
+    }
     this.audit.log({ action: 'update', entityType: 'lead', entityId: id, after: updated });
     return updated;
+  }
+
+  /**
+   * Keep the payments ledger in sync with the lead's payment status:
+   * - 'odenib'  -> settle the open payment, or auto-create one from the
+   *   interested course's monthly price (e.g. 300 AZN) so the month's sales
+   *   revenue is counted automatically;
+   * - 'legv_edilib' -> cancel open payments;
+   * - other open states -> mirror the state onto the open payment (create it
+   *   for deposit/partial so the debt becomes visible in the payments tab).
+   */
+  private async syncLeadPayment(
+    lead: { id: string; courseInterestId: string | null },
+    newStatus: string,
+    userId: string,
+  ) {
+    const tenantId = requireTenantId();
+    const OPEN = ['gozleyir', 'depozit_odedi', 'qismen_odenib', 'gecikib'];
+    const open = await this.prisma.scoped.leadPayment.findFirst({
+      where: { leadId: lead.id, status: { in: OPEN } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const monthlyPrice = async (): Promise<number> => {
+      if (!lead.courseInterestId) return 0;
+      const course = await this.prisma.scoped.course.findFirst({
+        where: { id: lead.courseInterestId },
+        select: { price: true },
+      });
+      return course?.price ?? 0;
+    };
+
+    const logPayment = (title: string, meta: Record<string, unknown> = {}) =>
+      this.prisma.scoped.leadActivity.create({
+        data: { tenantId, leadId: lead.id, type: 'payment', title, meta, userId },
+      });
+
+    if (newStatus === 'odenib') {
+      if (open) {
+        await this.prisma.scoped.leadPayment.update({
+          where: { id: open.id },
+          data: { status: 'odenib', amountPaid: open.amountDue, paidAt: new Date() },
+        });
+        await logPayment('Ödəniş tam ödənildi (status ilə avtomatik)', { amount: open.amountDue });
+      } else {
+        const amount = await monthlyPrice();
+        await this.prisma.scoped.leadPayment.create({
+          data: {
+            tenantId,
+            leadId: lead.id,
+            trainingId: lead.courseInterestId,
+            amountDue: amount,
+            amountPaid: amount,
+            monthlyAmount: amount || undefined,
+            status: 'odenib',
+            paidAt: new Date(),
+            note: 'Avtomatik: lead statusu "Ödənilib" edildi',
+            createdBy: userId,
+          },
+        });
+        await logPayment('Ödəniş avtomatik hesablandı', { amount });
+      }
+    } else if (newStatus === 'legv_edilib') {
+      if (open) {
+        await this.prisma.scoped.leadPayment.updateMany({
+          where: { leadId: lead.id, status: { in: OPEN } },
+          data: { status: 'legv_edilib' },
+        });
+        await logPayment('Açıq ödənişlər ləğv edildi');
+      }
+    } else if (OPEN.includes(newStatus)) {
+      if (open) {
+        await this.prisma.scoped.leadPayment.update({ where: { id: open.id }, data: { status: newStatus } });
+      } else if (newStatus === 'depozit_odedi' || newStatus === 'qismen_odenib') {
+        const amount = await monthlyPrice();
+        await this.prisma.scoped.leadPayment.create({
+          data: {
+            tenantId,
+            leadId: lead.id,
+            trainingId: lead.courseInterestId,
+            amountDue: amount,
+            amountPaid: 0,
+            monthlyAmount: amount || undefined,
+            status: newStatus,
+            note: 'Avtomatik: lead ödəniş statusundan yaradıldı',
+            createdBy: userId,
+          },
+        });
+        await logPayment('Ödəniş borcu avtomatik yaradıldı', { amount });
+      }
+    }
   }
 
   async moveColumn(id: string, columnKey: string, userId: string) {
@@ -539,7 +676,7 @@ export class SalesService {
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-    const [total, monthCount, registered, hot, won, closed, byTrainingRaw, lostRaw, recent, byManagerRaw] =
+    const [total, monthCount, registered, hot, won, closed, byTrainingRaw, lostRaw, recent, byManagerRaw, topSoldRaw, recentActs] =
       await Promise.all([
         this.prisma.scoped.lead.count({ where: baseWhere }),
         this.prisma.scoped.lead.count({ where: { ...baseWhere, createdAt: { gte: monthStart } } }),
@@ -562,12 +699,28 @@ export class SalesService {
         seeAll
           ? this.prisma.scoped.lead.groupBy({ by: ['assignedTo'], where: baseWhere, _count: true })
           : Promise.resolve([]),
+        this.prisma.scoped.lead.groupBy({
+          by: ['courseInterestId'],
+          where: { ...baseWhere, status: { in: ['qeydiyyat_oldu', 'satis_baglandi'] }, courseInterestId: { not: null } },
+          _count: true,
+        }),
+        this.prisma.scoped.leadActivity.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 8,
+          select: { id: true, leadId: true, type: true, title: true, createdAt: true },
+        }),
       ]);
 
-    // resolve training + manager names
-    const trainIds = byTrainingRaw.map((t) => t.courseInterestId).filter(Boolean) as string[];
+    // resolve training + manager names (incl. top-sold trainings and activity lead names)
+    const trainIds = [
+      ...new Set([
+        ...(byTrainingRaw.map((t) => t.courseInterestId).filter(Boolean) as string[]),
+        ...(topSoldRaw.map((t) => t.courseInterestId).filter(Boolean) as string[]),
+      ]),
+    ];
+    const actLeadIds = [...new Set(recentActs.map((a) => a.leadId))];
     const mgrIds = (byManagerRaw as { assignedTo: string | null }[]).map((m) => m.assignedTo).filter(Boolean) as string[];
-    const [trainings, managers, wonByManager] = await Promise.all([
+    const [trainings, managers, wonByManager, actLeads] = await Promise.all([
       trainIds.length
         ? this.prisma.scoped.course.findMany({ where: { id: { in: trainIds } }, select: { id: true, name: true } })
         : [],
@@ -581,8 +734,15 @@ export class SalesService {
             _count: true,
           })
         : Promise.resolve([]),
+      actLeadIds.length
+        ? this.prisma.scoped.lead.findMany({
+            where: { id: { in: actLeadIds } },
+            select: { id: true, fullName: true, name: true },
+          })
+        : [],
     ]);
     const trainMap = new Map(trainings.map((t) => [t.id, t.name]));
+    const actLeadMap = new Map(actLeads.map((l) => [l.id, l.fullName ?? l.name]));
     const mgrMap = new Map(managers.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
     const wonMap = new Map(
       (wonByManager as { assignedTo: string | null; _count: number }[]).map((w) => [w.assignedTo, w._count]),
@@ -617,6 +777,22 @@ export class SalesService {
             }))
             .sort((a, b) => b.won - a.won)
         : [],
+      topSold: topSoldRaw
+        .map((t) => ({
+          trainingId: t.courseInterestId,
+          name: t.courseInterestId ? (trainMap.get(t.courseInterestId) ?? 'Naməlum') : 'Naməlum',
+          count: t._count,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6),
+      recentActivities: recentActs.map((a) => ({
+        id: a.id,
+        leadId: a.leadId,
+        type: a.type,
+        title: a.title,
+        leadName: actLeadMap.get(a.leadId) ?? '—',
+        createdAt: a.createdAt,
+      })),
       recent: recent.map((r) => ({ ...r, fullName: r.fullName ?? r.name })),
       seeAll,
     };

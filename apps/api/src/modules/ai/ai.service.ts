@@ -6,12 +6,13 @@ import { PlanService } from '../../core/plan/plan.service';
 import { requireTenantId } from '../../core/context/request-context';
 import { ListQueryDto, resolveDateRange } from '../../common/dto/list-query.dto';
 
-const SYSTEM_PROMPT = `Sən EduSphere təhsil idarəetmə platformasının AI köməkçisisən.
+const SYSTEM_PROMPT = `Sən Mactab təhsil idarəetmə platformasının AI köməkçisisən.
 Tədris mərkəzinin rəhbərliyinə analitik suallarda kömək edirsən.
 Yalnız verilmiş alətlərdən istifadə edərək mərkəzin öz məlumatlarına əsaslan.
 Pul dəyərləri qəpiklə saxlanılır — cavabda manata çevir (100 qəpik = 1 ₼).
 Cavabları Azərbaycan dilində, qısa və konkret ver. Rəqəmləri dəqiq göstər.
-Məlumat yoxdursa, bunu açıq de — heç vaxt rəqəm uydurma.`;
+Məlumat yoxdursa, bunu açıq de — heç vaxt rəqəm uydurma.
+HR sualları üçün (işçi, müqavilə, məzuniyyət, gecikmə, maaş) get_hr_overview alətindən istifadə et.`;
 
 /** Read-only, tenant-scoped analytics tools exposed to the model. */
 const TOOLS: Anthropic.Tool[] = [
@@ -54,6 +55,12 @@ const TOOLS: Anthropic.Tool[] = [
     name: 'get_attendance_stats',
     description:
       'Son 30 günün davamiyyət statistikası: status üzrə saylar (present/late/absent/excused) və davamiyyət faizi. Həmçinin davamiyyəti 60%-dən aşağı olan risk qrupundakı tələbələr.',
+    input_schema: { type: 'object' as const, properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'get_hr_overview',
+    description:
+      'HR icmalı: aktiv işçilər (ad, vəzifə, HR status, maaş qəpiklə), 60 gün ərzində bitəcək müqavilələr, son 6 ayın maaş dəyişiklikləri, məzuniyyət balansları (illik 21 gün) və bu ayın gecikmə statistikası. İşçi, müqavilə, məzuniyyət, gecikmə və maaş suallarında istifadə et.',
     input_schema: { type: 'object' as const, properties: {}, additionalProperties: false },
   },
   {
@@ -102,6 +109,8 @@ export class AiService {
         return this.getAttendanceStats();
       case 'get_lead_funnel':
         return this.getLeadFunnel();
+      case 'get_hr_overview':
+        return this.getHrOverview();
       default:
         return { error: `Unknown tool: ${name}` };
     }
@@ -284,6 +293,116 @@ export class AiService {
         name: `${s.firstName} ${s.lastName}`,
         phone: s.phone,
       })),
+    };
+  }
+
+  /** HR overview for the HR Copilot — all lists capped at 50 rows to keep tokens sane. */
+  private async getHrOverview() {
+    const CAP = 50;
+    const now = new Date();
+    const in60d = new Date(now.getTime() + 60 * 24 * 3600 * 1000);
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    const year = now.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const monthStart = new Date(Date.UTC(year, now.getUTCMonth(), 1));
+
+    const employees = await this.prisma.scoped.employee.findMany({
+      where: { firedAt: null },
+      orderBy: { createdAt: 'asc' },
+      take: CAP,
+    });
+    const empIds = employees.map((e) => e.id);
+    const [users, expiringContracts, salaryChanges, approvedLeaves, lateAgg] = await Promise.all([
+      this.prisma.scoped.user.findMany({
+        where: { id: { in: employees.map((e) => e.userId) } },
+        select: { id: true, firstName: true, lastName: true },
+      }),
+      this.prisma.scoped.employeeContract.findMany({
+        where: {
+          employeeId: { in: empIds },
+          expiresAt: { gte: now, lte: in60d },
+          status: { in: ['aktiv', 'imzalanib'] },
+        },
+        orderBy: { expiresAt: 'asc' },
+        take: CAP,
+      }),
+      this.prisma.scoped.salaryChange.findMany({
+        where: { employeeId: { in: empIds }, effectiveAt: { gte: sixMonthsAgo } },
+        orderBy: { effectiveAt: 'desc' },
+        take: CAP,
+      }),
+      this.prisma.scoped.leaveRequest.findMany({
+        where: {
+          employeeId: { in: empIds },
+          status: 'approved',
+          type: 'vacation',
+          fromDate: { lt: yearEnd },
+          toDate: { gte: yearStart },
+        },
+        take: 200,
+      }),
+      this.prisma.scoped.employeeAttendance.groupBy({
+        by: ['employeeId'],
+        where: { employeeId: { in: empIds }, date: { gte: monthStart } },
+        _sum: { lateMinutes: true },
+        _count: true,
+      }),
+    ]);
+
+    const uMap = new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
+    const nameOf = (employeeId: string) => {
+      const e = employees.find((x) => x.id === employeeId);
+      return e ? (uMap.get(e.userId) ?? '—') : '—';
+    };
+
+    // Approved vacation days used within the current year, per employee.
+    const DAY = 24 * 3600 * 1000;
+    const usedDays = new Map<string, number>();
+    for (const r of approvedLeaves) {
+      const from = Math.max(r.fromDate.getTime(), yearStart.getTime());
+      const to = Math.min(r.toDate.getTime(), yearEnd.getTime() - DAY);
+      const days = Math.max(0, Math.round((to - from) / DAY) + 1);
+      usedDays.set(r.employeeId, (usedDays.get(r.employeeId) ?? 0) + days);
+    }
+    const ALLOWANCE = 21;
+
+    return {
+      employees: employees.map((e) => ({
+        name: uMap.get(e.userId) ?? '—',
+        position: e.position,
+        hrStatus: e.hrStatus,
+        salaryQepik: e.salaryQepik,
+        hiredAt: e.hiredAt?.toISOString().slice(0, 10) ?? null,
+      })),
+      contractsExpiring60d: expiringContracts.map((c) => ({
+        employee: nameOf(c.employeeId),
+        title: c.title,
+        expiresAt: c.expiresAt?.toISOString().slice(0, 10) ?? null,
+      })),
+      salaryChangesLast6Months: salaryChanges.map((s) => ({
+        employee: nameOf(s.employeeId),
+        oldQepik: s.oldQepik,
+        newQepik: s.newQepik,
+        effectiveAt: s.effectiveAt.toISOString().slice(0, 10),
+      })),
+      leaveBalances: employees.map((e) => {
+        const used = usedDays.get(e.id) ?? 0;
+        return {
+          employee: uMap.get(e.userId) ?? '—',
+          allowanceDays: ALLOWANCE,
+          usedDays: used,
+          remainingDays: Math.max(0, ALLOWANCE - used),
+        };
+      }),
+      lateStatsThisMonth: lateAgg
+        .map((a) => ({
+          employee: nameOf(a.employeeId),
+          totalLateMinutes: a._sum.lateMinutes ?? 0,
+          recordedDays: a._count,
+        }))
+        .sort((a, b) => b.totalLateMinutes - a.totalLateMinutes)
+        .slice(0, CAP),
     };
   }
 

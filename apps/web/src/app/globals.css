@@ -8,58 +8,82 @@
    ================================================================ */
 
 :root {
-  /* Brand — single primary blue for all interaction/active states */
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+  /* Brand — single premium blue accent in both themes */
+  --primary: #4f8cff;
+  --primary-hover: #3b7dff;
+  --primary-pressed: #2f6fef;
   --primary-foreground: #ffffff;
   /* superadmin realm — muted indigo accent, subtle distinction only */
   --admin-primary: #6e65c8;
-  --accent: #6e65c8;
+  --accent: #4f8cff;
+  --focus-ring: rgba(79, 140, 255, 0.18);
 
   /* Semantic — calm, not neon */
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --info: #2563eb;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #4f8cff;
 
-  /* Neutrals (light) */
-  --background: #f8fafc;
+  /* Neutrals (light) — clean neutral white/gray, no blue tint */
+  --background: #f7f7f8;
   --surface: #ffffff;
   --elevated: #ffffff;
-  --border: #e5e9f0;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --muted-bg: #f1f5f9;
+  --border: #e4e7ec;
+  --foreground: #18181b;
+  --muted: #6b7280;
+  --muted-bg: #f1f1f3;
+  --sidebar: #fcfcfd;
+  --topbar: #ffffff;
+  --input: #ffffff;
 
-  --radius: 8px;
+  /* Scales — shared across every component */
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.05);
+  --shadow-md: 0 2px 8px -2px rgb(16 24 40 / 0.08), 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow-lg: 0 12px 32px -8px rgb(16 24 40 / 0.14), 0 2px 8px rgb(16 24 40 / 0.06);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-micro: 100ms;
+  --dur: 180ms;
+  --dur-lg: 280ms;
 }
 
 .dark {
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+  /* Same single blue accent in dark mode */
+  --primary: #4f8cff;
+  --primary-hover: #3b7dff;
+  --primary-pressed: #2f6fef;
   --primary-foreground: #ffffff;
   --admin-primary: #6e65c8;
-  --accent: #6e65c8;
+  --accent: #4f8cff;
 
-  /* Semantic (dark) — desaturated, professional */
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --info: #60a5fa;
+  /* Semantic (dark) */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #4f8cff;
 
-  /* Neutrals (dark navy/slate) */
-  --background: #0b1220;
-  --surface: #111827;
-  --elevated: #172033;
-  --border: #243044;
-  --foreground: #f1f5f9;
-  --muted: #94a3b8;
-  --muted-bg: #1f2937;
+  /* Neutrals (dark) — deep slate, subtle blue undertone */
+  --background: #0f1115;
+  --surface: #1b1e24;
+  --elevated: #232730;
+  --border: #2c313a;
+  --foreground: #f5f7fa;
+  --muted: #8d95a4;
+  --muted-bg: #21252d;
+  --sidebar: #15181d;
+  --topbar: #16191f;
+  --input: #16191f;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 8px 28px rgb(0 0 0 / 0.18);
+  --shadow-lg: 0 16px 48px rgb(0 0 0 / 0.3);
 }
 
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
   --color-primary-foreground: var(--primary-foreground);
   --color-admin-primary: var(--admin-primary);
   --color-accent: var(--accent);
@@ -74,8 +98,21 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-bg: var(--muted-bg);
+  --color-sidebar: var(--sidebar);
+  --color-topbar: var(--topbar);
+  --color-input: var(--input);
   --font-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif;
   --radius-DEFAULT: var(--radius);
+}
+
+/* The sales module follows the app-wide theme. In dark mode the global
+   palette IS the MilliSec navy reference, so the CRM keeps its look there;
+   in light mode it renders with the clean light tokens. */
+.crm-theme {
+  --accent: #4f8cff;
+}
+.dark .crm-theme {
+  --accent: #4f8cff;
 }
 
 html,
@@ -83,14 +120,176 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  line-height: 1.55;
 }
 
 * {
   border-color: var(--border);
 }
 
+::selection {
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* Slim, theme-aware scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 35%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Soft entrance animations for overlays */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes scale-in {
+  from { transform: scale(0.98) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes page-in {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes soft-ping {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.85; }
+}
+@keyframes fade-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fade-scale {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes soft-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+.animate-fade-in { animation: fade-in var(--dur) var(--ease) both; }
+.animate-slide-in-right { animation: slide-in-right var(--dur-lg) var(--ease); }
+.animate-scale-in { animation: scale-in var(--dur) var(--ease); }
+.animate-page-in { animation: page-in var(--dur-lg) var(--ease); }
+.animate-soft-ping { animation: soft-ping 2s var(--ease) infinite; }
+/* One-shot attention pulse (notification badge) — never infinite */
+.animate-pulse-once { animation: soft-ping 600ms var(--ease) 1; }
+.animate-fade-up { animation: fade-up var(--dur-lg) var(--ease) both; }
+.animate-fade-scale { animation: fade-scale var(--dur-lg) var(--ease) both; }
+.animate-soft-shake { animation: soft-shake 200ms var(--ease); }
+/* Table row entrance — index set inline via --row-i (capped in JS) */
+.animate-row-in {
+  animation: fade-in var(--dur) var(--ease) both;
+  animation-delay: calc(var(--row-i, 0) * 30ms);
+}
+/* Skeleton shimmer — soft left→right gradient sweep */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted-bg) 0%,
+    color-mix(in srgb, var(--foreground) 7%, var(--muted-bg)) 50%,
+    var(--muted-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+/* Entrance stagger helpers (login form fields / buttons) */
+.anim-delay-1 { animation-delay: 80ms; }
+.anim-delay-2 { animation-delay: 160ms; }
+.anim-delay-3 { animation-delay: 240ms; }
+.anim-delay-btn { animation-delay: 340ms; }
+/* Theme switch — brief cross-fade, class toggled around setTheme() */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 300ms var(--ease),
+    border-color 300ms var(--ease),
+    color 300ms var(--ease),
+    fill 300ms var(--ease) !important;
+}
+
+/* Interactive cards lift softly on hover */
+.hover-lift {
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Unified typography scale — Apple-like tight, confident headings */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+@media (min-width: 640px) {
+  h1 {
+    font-size: 1.625rem;
+  }
+}
+h2 {
+  font-weight: 700;
+}
+
+/* Subtle app-wide gradient wash — gives every page gentle depth */
+.app-backdrop {
+  background:
+    radial-gradient(1000px 500px at 85% -5%, color-mix(in srgb, var(--primary) 5%, transparent), transparent 55%),
+    radial-gradient(800px 400px at -5% 105%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 55%),
+    var(--background);
+}
+
+/* Soft page-level gradient wash for auth screens — neutral, matching the
+   monochrome Mactab brand */
+.auth-backdrop {
+  background:
+    radial-gradient(1200px 600px at 80% -10%, color-mix(in srgb, var(--foreground) 5%, transparent), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, color-mix(in srgb, var(--foreground) 4%, transparent), transparent 60%),
+    var(--background);
 }
 
 @media print {

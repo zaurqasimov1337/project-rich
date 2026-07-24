@@ -452,6 +452,7 @@ model Teacher {
   id             String    @id @default(uuid())
   tenantId       String
   userId         String    @unique
+  departmentId   String?
   subjects       String[]
   bio            String?
   hiredAt        DateTime? @db.Date
@@ -714,12 +715,25 @@ model Lead {
   convertedStudentId String?
   utm                Json        @default("{}")
   notes              String?
+  // sales/payment state (millisec parity)
+  demoStatus          String? // teyin_edilmedi|teyin_olundu|verildi|imtina
+  callStatus          String?
+  registrationStatus  String?
+  remarketingStatus   String?
+  paymentStatus       String? // gozleyir|qismen_odenib|odenib|gecikib|legv_edilib
+  paymentMethod       String? // nagd|kart|bank_kocurmesi|birkart|tamkart|bolkart|hisseli
+  paymentPlan         String? // aylik|tam
+  discountPct         Int?
+  budgetMatch         String?
+  courseStartDate     DateTime?
+  firstContactChannel String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   deletedAt          DateTime?
 
   activities LeadActivity[]
   followups  Followup[]
+  payments   LeadPayment[]
 
   @@index([tenantId, stageId])
   @@index([tenantId, ownerId])
@@ -765,6 +779,45 @@ model Followup {
   @@index([tenantId, leadId])
   @@index([tenantId, isDone, dueAt])
   @@map("followups")
+}
+
+// Pre-enrollment payment tracking on a lead (sales-side; separate from student Finance).
+// Amounts in minor units (qəpik), like Invoice/Payment.
+model LeadPayment {
+  id            String    @id @default(uuid())
+  tenantId      String
+  leadId        String
+  lead          Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  trainingId    String?
+  amountDue     Int       @default(0)
+  amountPaid    Int       @default(0)
+  monthlyAmount Int?
+  paidAt        DateTime?
+  nextDueAt     DateTime?
+  status        String    @default("gozleyir") // gozleyir|qismen_odenib|odenib|gecikib|legv_edilib
+  method        String? // nagd|kart|bank_kocurmesi|birkart|tamkart|bolkart|hisseli
+  note          String?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tenantId, leadId])
+  @@index([tenantId, status])
+  @@index([tenantId, nextDueAt])
+  @@map("lead_payments")
+}
+
+// Per-manager sales settings (bonus rate % of collected revenue).
+model SalesManagerProfile {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  bonusRate Float    @default(5.0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId])
+  @@map("sales_manager_profiles")
 }
 
 model Task {
@@ -978,6 +1031,22 @@ model AdSpend {
 
 // ============ HR (tenant-scoped) ============
 
+model Department {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  kind      String   @default("departament") // departament|sobe|bolme
+  parentId  String?
+  parent    Department?  @relation("DepartmentChildren", fields: [parentId], references: [id])
+  children  Department[] @relation("DepartmentChildren")
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, parentId])
+  @@map("departments")
+}
+
 model Employee {
   id           String    @id @default(uuid())
   tenantId     String
@@ -985,16 +1054,133 @@ model Employee {
   position     String?
   contractType String? // full_time|part_time|contract
   branchId     String?
+  departmentId String?
   salaryQepik  Int       @default(0)
+  bonusQepik   Int       @default(0)
+  note         String?
   hiredAt      DateTime? @db.Date
   firedAt      DateTime? @db.Date
+
+  employeeNo       String?
+  pin              String? // FİN
+  idCardNumber     String?
+  birthDate        DateTime? @db.Date
+  address          String?
+  maritalStatus    String?
+  emergencyContact String?
+  workType         String? // tam_stat|yarim_stat|saatliq|muqavileli|freelancer
+  hrStatus         String    @default("aktiv") // aktiv|sinaq|mezuniyyetde|xestelik|ezamiyyetde|cixib
+  managerId        String?
+  sector           String    @default("private_nonoil") // private_nonoil|state_oil
+  exemptionQepik   Int       @default(0)
+  unionPct         Float     @default(0)
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   leaveRequests LeaveRequest[]
+  contracts     EmployeeContract[]
+  salaryChanges SalaryChange[]
+  attendance    EmployeeAttendance[]
+  assets        EmployeeAsset[]
+  documents     EmployeeDocument[]
+  performanceReviews PerformanceReview[]
+  performanceGoals   PerformanceGoal[]
 
   @@index([tenantId])
   @@map("employees")
+}
+
+model EmployeeAttendance {
+  id          String    @id @default(uuid())
+  tenantId    String
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date        DateTime  @db.Date
+  checkIn     DateTime?
+  checkOut    DateTime?
+  lateMinutes Int       @default(0)
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([tenantId, employeeId, date])
+  @@index([tenantId, date])
+  @@map("employee_attendance")
+}
+
+model EmployeeAsset {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name       String
+  category   String? // texnika|kart|acar|sim|diger
+  serial     String?
+  givenAt    DateTime? @db.Date
+  givenBy    String?
+  returnedAt DateTime? @db.Date
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId, employeeId])
+  @@map("employee_assets")
+}
+
+model EmployeeDocument {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       String // sexsiyyet|cv|diplom|sertifikat|muqavile|siyaset|diger
+  title      String
+  fileUrl    String?
+  status     String    @default("yuklenib") // yuklenib|imzalanib|qebul_edilib|bitib
+  acceptedAt DateTime?
+  expiresAt  DateTime? @db.Date
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, expiresAt])
+  @@map("employee_documents")
+}
+
+model EmployeeContract {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       String // emek|nda|daxili_qaydalar|remote|diger
+  title      String
+  status     String    @default("aktiv") // aktiv|imzalanib|bitib|legv
+  signedAt   DateTime? @db.Date
+  expiresAt  DateTime? @db.Date
+  approvedBy String?
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId, employeeId])
+  @@index([tenantId, expiresAt])
+  @@map("employee_contracts")
+}
+
+model SalaryChange {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  oldQepik   Int
+  newQepik   Int
+  reason     String?
+  approvedBy String?
+  effectiveAt DateTime @db.Date
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, employeeId])
+  @@map("salary_changes")
 }
 
 model LeaveRequest {
@@ -1014,6 +1200,42 @@ model LeaveRequest {
   @@index([tenantId, employeeId])
   @@index([tenantId, status])
   @@map("leave_requests")
+}
+
+model PerformanceReview {
+  id         String   @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period     String // e.g. "2026-Q3"
+  type       String   @default("manager") // kpi|okr|manager|p360
+  score      Float?
+  maxScore   Float    @default(100)
+  summary    String?
+  reviewerId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId, employeeId])
+  @@map("performance_reviews")
+}
+
+model PerformanceGoal {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  title      String
+  metric     String?
+  target     Float?
+  progress   Float     @default(0) // 0-100
+  dueAt      DateTime? @db.Date
+  status     String    @default("davam_edir") // davam_edir|catdi|catmadi
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId, employeeId])
+  @@map("performance_goals")
 }
 
 // ============ INTEGRATIONS & WEBHOOKS (tenant-scoped) ============

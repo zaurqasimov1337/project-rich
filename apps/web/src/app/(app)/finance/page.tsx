@@ -15,6 +15,8 @@ import { AlertCircle, ArrowDownRight, ArrowUpRight, Banknote, Wallet } from 'luc
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { formatMoney } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 
 interface Summary {
   income: number;
@@ -48,44 +50,39 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        <div className="flex gap-2">
-          {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-muted-bg"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title={t('title')}
+        actions={LINKS.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-medium hover:bg-muted-bg"
+          >
+            {l.label}
+          </Link>
+        ))}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={kpi.label} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] font-medium text-muted">{kpi.label}</span>
-                <Icon className={`h-4 w-4 ${kpi.cls}`} />
-              </div>
-              <div className="mt-2 text-2xl font-bold tabular-nums">
-                {isLoading ? (
-                  <div className="h-8 w-24 animate-pulse rounded bg-muted-bg" />
-                ) : (
-                  formatMoney(kpi.value ?? 0)
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {kpis.map((kpi) => (
+          <StatCard
+            key={kpi.label}
+            label={kpi.label}
+            icon={kpi.icon}
+            tone={kpi.cls}
+            value={
+              isLoading ? (
+                <div className="h-8 w-24 animate-pulse rounded bg-muted-bg" />
+              ) : (
+                formatMoney(kpi.value ?? 0)
+              )
+            }
+          />
+        ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-        <div className="mb-4 flex items-center gap-2 font-semibold">
+      <div className="rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
+        <div className="mb-4 flex items-center gap-2 text-[15px] font-bold">
           <Banknote className="h-4 w-4 text-muted" /> {t('chart.title')}
         </div>
         <div className="h-72">

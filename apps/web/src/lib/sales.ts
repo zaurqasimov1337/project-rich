@@ -24,22 +24,23 @@ export const LEAD_STATUS_LABELS: Record<string, string> = {
   gelecek_potensial: 'Gələcək Potensial',
 };
 
-// Desaturated, professional badge colors (enterprise SaaS — no neon).
+// Mid-tone badge colors — readable on both the light and the dark navy theme
+// (used as text over a 10% tint of the same color).
 export const LEAD_STATUS_COLORS: Record<string, string> = {
-  yeni_lead: '#94a3b8', // neutral slate
-  ilk_yazisma: '#60a5fa', // blue
-  zeng_edildi: '#cbd5e1', // light slate
-  demo_gozleyir: '#7dd3fc', // muted sky
-  demo_verildi: '#4ade80', // green
-  follow_up: '#fbbf24', // amber
-  hot_lead: '#f87171', // red
-  qerarsiz: '#94a3b8', // neutral slate
-  qiymet_problemi: '#fbbf24', // amber
-  odenis_gozleyir: '#6e65c8', // secondary accent (muted indigo)
-  qeydiyyat_oldu: '#4ade80', // green (won)
-  satis_baglandi: '#4ade80', // green (won)
-  imtina: '#f87171', // red (lost)
-  gelecek_potensial: '#94a3b8', // neutral slate
+  yeni_lead: '#64748b', // neutral slate
+  ilk_yazisma: '#3b82f6', // blue
+  zeng_edildi: '#64748b', // slate
+  demo_gozleyir: '#0ea5e9', // sky
+  demo_verildi: '#22c55e', // green
+  follow_up: '#f59e0b', // amber
+  hot_lead: '#ef4444', // red
+  qerarsiz: '#64748b', // neutral slate
+  qiymet_problemi: '#f59e0b', // amber
+  odenis_gozleyir: '#6366f1', // indigo
+  qeydiyyat_oldu: '#22c55e', // green (won)
+  satis_baglandi: '#22c55e', // green (won)
+  imtina: '#ef4444', // red (lost)
+  gelecek_potensial: '#64748b', // neutral slate
 };
 
 export const LEAD_STATUS_ORDER = [
@@ -49,7 +50,7 @@ export const LEAD_STATUS_ORDER = [
 ];
 
 export const PRIORITY_LABELS: Record<string, string> = { hot: 'HOT', warm: 'WARM', cold: 'COLD' };
-export const PRIORITY_COLORS: Record<string, string> = { hot: '#f87171', warm: '#fbbf24', cold: '#60a5fa' };
+export const PRIORITY_COLORS: Record<string, string> = { hot: '#ef4444', warm: '#f59e0b', cold: '#3b82f6' };
 
 export const SOURCE_LABELS: Record<string, string> = {
   instagram_dm: 'Instagram DM',
@@ -65,6 +66,48 @@ export const SOURCE_LABELS: Record<string, string> = {
 export const SOURCE_KEYS = Object.keys(SOURCE_LABELS);
 
 export const GENDER_LABELS: Record<string, string> = { kisi: 'Kişi', qadin: 'Qadın', diger: 'Digər' };
+
+export const DEMO_STATUS_LABELS: Record<string, string> = {
+  teyin_edilmedi: 'Təyin edilməyib',
+  teyin_olundu: 'Təyin olundu',
+  verildi: 'Verildi',
+  imtina: 'İmtina',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  gozleyir: 'Gözləyir',
+  depozit_odedi: 'Depozit ödədi',
+  qismen_odenib: 'Qismən ödənib',
+  odenib: 'Ödənib',
+  gecikib: 'Gecikib',
+  legv_edilib: 'Ləğv edilib',
+};
+
+export const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  gozleyir: '#f59e0b',
+  depozit_odedi: '#06b6d4',
+  qismen_odenib: '#3b82f6',
+  odenib: '#22c55e',
+  gecikib: '#ef4444',
+  legv_edilib: '#64748b',
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  nagd: 'Nağd',
+  kart: 'Kart',
+  bank_kocurmesi: 'Bank köçürməsi',
+  birkart: 'BirKart',
+  tamkart: 'TamKart',
+  bolkart: 'BolKart',
+  hisseli: 'Hissəli',
+};
+
+export const PAYMENT_PLAN_LABELS: Record<string, string> = { aylik: 'Aylıq', tam: 'Tam' };
+
+export function paymentStatusBadgeStyle(status: string): { background: string; color: string } {
+  const c = PAYMENT_STATUS_COLORS[status] ?? '#64748b';
+  return { background: `${c}1a`, color: c };
+}
 
 export const ACTIVITY_LABELS: Record<string, string> = {
   created: 'Lead yaradıldı',

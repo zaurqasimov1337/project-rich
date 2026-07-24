@@ -4,31 +4,44 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney, initials } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Drawer } from '@/components/ui/drawer';
 import { DataTable, type Column } from '@/components/data-table';
+import { DepartmentCascade, type DeptNode } from '@/components/department-cascade';
+import { HR_STATUS_LABELS } from '@/lib/hr';
 
 interface Employee {
   id: string;
   position: string | null;
   contractType: string | null;
   salaryQepik: number;
+  bonusQepik: number;
+  note: string | null;
   hiredAt: string | null;
+  hrStatus: string;
+  employeeNo: string | null;
   user: { firstName: string; lastName: string; email: string; phone: string | null } | null;
+  department: { id: string; name: string; kind: string } | null;
 }
+
 
 interface EmployeeForm {
   userId: string;
   position?: string;
   contractType?: string;
   salaryQepik?: number;
+  bonusQepik?: number;
+  note?: string;
   hiredAt?: string;
 }
 
@@ -36,14 +49,17 @@ const CONTRACT_KEYS: Record<string, string> = {
   full_time: 'contractFullTime',
   part_time: 'contractPartTime',
   contract: 'contractContract',
+  freelance: 'contractFreelance',
 };
 
 export default function EmployeesPage() {
   const t = useTranslations('hr');
   const tc = useTranslations('common');
   const qc = useQueryClient();
+  const router = useRouter();
   const can = useAuth((s) => s.can);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deptId, setDeptId] = useState<string | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
     queryKey: ['employees'],
@@ -54,6 +70,11 @@ export default function EmployeesPage() {
     queryFn: () => api.list<{ id: string; firstName: string; lastName: string }>('/users?limit=100'),
     enabled: drawerOpen,
   });
+  const { data: departments } = useQuery({
+    queryKey: ['departments'],
+    queryFn: () => api.get<DeptNode[]>('/departments'),
+    enabled: drawerOpen,
+  });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<EmployeeForm>();
 
@@ -61,11 +82,15 @@ export default function EmployeesPage() {
     mutationFn: (v: EmployeeForm) =>
       api.post('/employees', {
         ...v,
+        departmentId: deptId,
+        note: v.note?.trim() || undefined,
         salaryQepik: v.salaryQepik ? Math.round(Number(v.salaryQepik) * 100) : 0,
+        bonusQepik: v.bonusQepik ? Math.round(Number(v.bonusQepik) * 100) : 0,
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['employees'] });
       setDrawerOpen(false);
+      setDeptId(undefined);
       reset();
     },
   });
@@ -90,11 +115,27 @@ export default function EmployeesPage() {
     },
     { key: 'position', header: t('position'), render: (r) => r.position ?? '—' },
     {
+      key: 'hrStatus',
+      header: 'Status',
+      render: (r) => {
+        const st = HR_STATUS_LABELS[r.hrStatus] ?? { label: r.hrStatus, tone: 'neutral' as const };
+        return <Badge tone={st.tone} dot>{st.label}</Badge>;
+      },
+    },
+    { key: 'department', header: t('department'), render: (r) => r.department?.name ?? '—' },
+    {
       key: 'contract',
       header: t('contract'),
       render: (r) => (r.contractType ? t(CONTRACT_KEYS[r.contractType]) : '—'),
     },
     { key: 'salary', header: t('salary'), render: (r) => <span className="tabular-nums">{formatMoney(r.salaryQepik)}</span> },
+    {
+      key: 'bonus',
+      header: t('bonus'),
+      render: (r) => (
+        <span className="tabular-nums">{r.bonusQepik ? formatMoney(r.bonusQepik) : '—'}</span>
+      ),
+    },
     {
       key: 'hired',
       header: t('hired'),
@@ -103,20 +144,20 @@ export default function EmployeesPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">{t('title')}</h1>
-          <Link href="/hr/leave" className="text-sm text-primary hover:underline">
-            {t('leaveRequests')} →
-          </Link>
-        </div>
-        {can('hr.employees.manage') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> {t('addEmployee')}
-          </Button>
-        )}
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        actions={
+          can('hr.employees.manage') && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> {t('addEmployee')}
+            </Button>
+          )
+        }
+      />
+      <Link href="/hr/leave" className="inline-block text-sm text-primary hover:underline">
+        {t('leaveRequests')} →
+      </Link>
 
       <DataTable
         columns={columns}
@@ -126,6 +167,7 @@ export default function EmployeesPage() {
         page={1}
         limit={100}
         onPageChange={() => {}}
+        onRowClick={(r) => router.push(`/hr/employees/${r.id}`)}
         emptyTitle={t('noEmployees')}
         emptyDescription={t('noEmployeesDesc')}
       />
@@ -167,6 +209,11 @@ export default function EmployeesPage() {
             <Label>{t('position')}</Label>
             <Input placeholder={t('positionPlaceholder')} {...register('position')} />
           </div>
+          <DepartmentCascade
+            departments={departments ?? []}
+            value={deptId}
+            onChange={setDeptId}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{t('contractType')}</Label>
@@ -181,9 +228,19 @@ export default function EmployeesPage() {
               <Input type="number" step="0.01" min={0} {...register('salaryQepik')} />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>{t('bonusAzn')}</Label>
+              <Input type="number" step="0.01" min={0} {...register('bonusQepik')} />
+            </div>
+            <div>
+              <Label>{t('hiredDate')}</Label>
+              <Input type="date" {...register('hiredAt')} />
+            </div>
+          </div>
           <div>
-            <Label>{t('hiredDate')}</Label>
-            <Input type="date" {...register('hiredAt')} />
+            <Label>{t('noteLabel')}</Label>
+            <Input maxLength={500} {...register('note')} />
           </div>
         </form>
       </Drawer>

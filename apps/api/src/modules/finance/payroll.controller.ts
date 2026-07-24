@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Matches } from 'class-validator';
+import { calcAzPayroll, type AzPayrollBreakdown } from '@edusphere/shared';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { requireTenantId } from '../../core/context/request-context';
@@ -56,15 +57,62 @@ export class PayrollController {
     });
     const uMap = new Map(users.map((u) => [u.id, u]));
     const tMap = new Map(teachers.map((t) => [t.id, uMap.get(t.userId)]));
-    return {
-      ...run,
-      items: run.items.map((i) => ({
+    const breakdowns = await this.breakdownsFor(run.items);
+    let totals = { net: 0, deductions: 0, employerCost: 0 };
+    const items = run.items.map((i) => {
+      const b = breakdowns.get(i.id)!;
+      totals = {
+        net: totals.net + b.netQepik,
+        deductions: totals.deductions + b.totalEmployeeDeductions,
+        employerCost: totals.employerCost + b.totalEmployerCost,
+      };
+      return {
         ...i,
         teacherName: i.teacherId
           ? `${tMap.get(i.teacherId)?.firstName ?? ''} ${tMap.get(i.teacherId)?.lastName ?? ''}`.trim()
           : null,
-      })),
+        breakdown: b,
+      };
+    });
+    return {
+      ...run,
+      items,
+      totals: {
+        gross: run.items.reduce((s, i) => s + i.total, 0),
+        deductions: totals.deductions,
+        net: totals.net,
+        employerCost: totals.employerCost,
+      },
     };
+  }
+
+  /**
+   * AZ tax/insurance breakdown per item. Stored item.total stays the gross;
+   * the breakdown is computed on the fly from the employee's HR payroll profile
+   * (sector / exemption / union %) when one exists for the item's user.
+   */
+  private async breakdownsFor(
+    items: { id: string; userId: string | null; total: number }[],
+  ): Promise<Map<string, AzPayrollBreakdown>> {
+    const userIds = [...new Set(items.map((i) => i.userId).filter((u): u is string => !!u))];
+    const employees = userIds.length
+      ? await this.prisma.scoped.employee.findMany({ where: { userId: { in: userIds } } })
+      : [];
+    const eMap = new Map(employees.map((e) => [e.userId, e]));
+    const map = new Map<string, AzPayrollBreakdown>();
+    for (const item of items) {
+      const emp = item.userId ? eMap.get(item.userId) : undefined;
+      map.set(
+        item.id,
+        calcAzPayroll({
+          grossQepik: item.total,
+          sector: emp?.sector === 'state_oil' ? 'state_oil' : 'private_nonoil',
+          exemptionQepik: emp?.exemptionQepik ?? 0,
+          unionPct: emp?.unionPct ?? 0,
+        }),
+      );
+    }
+    return map;
   }
 
   /**
@@ -170,13 +218,20 @@ export class PayrollController {
     }
     const tenantId = requireTenantId();
     const cashAccountId = await this.finance.ensureDefaultAccount();
+    // Post the FULL employer cost (gross + employer contributions), not just gross.
+    const items = await this.prisma.scoped.payrollItem.findMany({ where: { runId: id } });
+    const breakdowns = await this.breakdownsFor(items);
+    const employerCost = items.reduce(
+      (s, i) => s + (breakdowns.get(i.id)?.totalEmployerCost ?? i.total),
+      0,
+    );
     await this.prisma.$transaction([
       this.prisma.transaction.create({
         data: {
           tenantId,
           cashAccountId,
           type: 'payroll',
-          amount: run.total,
+          amount: employerCost || run.total,
           category: 'payroll',
           entityType: 'payroll_run',
           entityId: run.id,

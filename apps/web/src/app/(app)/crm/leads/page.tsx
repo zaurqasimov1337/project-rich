@@ -1,10 +1,13 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, Search, UserCog, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2, UserCog, Wallet, X } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { ExportMenu } from '@/components/export-menu';
+import { LeadPaymentsPanel } from '@/components/lead-payments-panel';
+import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useDebounced } from '@/lib/hooks';
 import { useAuth } from '@/lib/auth-store';
@@ -16,6 +19,8 @@ import {
   GENDER_LABELS,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_ORDER,
+  PAYMENT_STATUS_LABELS,
+  paymentStatusBadgeStyle,
   priorityBadgeStyle,
   PRIORITY_LABELS,
   SCORE_FLAG_LABELS,
@@ -34,6 +39,8 @@ interface LeadRow {
   source: string | null;
   trainingName: string | null;
   assigneeName: string | null;
+  nextFollowupAt: string | null;
+  paymentStatus: string | null;
   createdAt: string;
 }
 interface LeadsResp {
@@ -89,22 +96,40 @@ function FF({ label, req, hint, children }: { label: string; req?: boolean; hint
   );
 }
 
-export default function LeadsPage() {
+function LeadsPageInner() {
   const router = useRouter();
+  const params = useSearchParams();
   const qc = useQueryClient();
   const can = useAuth((s) => s.can);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [priority, setPriority] = useState('');
-  const [trainingId, setTrainingId] = useState('');
-  const [source, setSource] = useState('');
-  const [assignedTo, setAssignedTo] = useState('');
-  const [minScore, setMinScore] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [sort, setSort] = useState('date');
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [tab, setTab] = useState<'leads' | 'payments'>(params.get('tab') === 'payments' ? 'payments' : 'leads');
+  const [page, setPage] = useState(Math.max(1, Number(params.get('page')) || 1));
+  const [search, setSearch] = useState(params.get('q') ?? '');
+  const [status, setStatus] = useState(params.get('status') ?? '');
+  const [priority, setPriority] = useState(params.get('priority') ?? '');
+  const [trainingId, setTrainingId] = useState(params.get('training_id') ?? '');
+  const [source, setSource] = useState(params.get('source') ?? '');
+  const [assignedTo, setAssignedTo] = useState(params.get('assigned_to') ?? '');
+  const [paymentStatus, setPaymentStatus] = useState(params.get('payment_status') ?? '');
+  const [minScore, setMinScore] = useState(params.get('min_score') ?? '');
+  const [dateFrom, setDateFrom] = useState(params.get('date_from') ?? '');
+  const [dateTo, setDateTo] = useState(params.get('date_to') ?? '');
+  const [preset, setPreset] = useState('');
+
+  const applyPreset = (p: string) => {
+    setPreset(p);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const today = new Date();
+    let from = '';
+    if (p === 'today') from = iso(today);
+    else if (p === '7d') from = iso(new Date(Date.now() - 6 * 86400000));
+    else if (p === 'month') from = iso(new Date(today.getFullYear(), today.getMonth(), 1));
+    else if (p === '3m') from = iso(new Date(Date.now() - 90 * 86400000));
+    setDateFrom(from);
+    setDateTo('');
+    setPage(1);
+  };
+  const [sort, setSort] = useState(params.get('sort') ?? 'date');
+  const [order, setOrder] = useState<'asc' | 'desc'>(params.get('order') === 'asc' ? 'asc' : 'desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bulkManager, setBulkManager] = useState('');
@@ -119,6 +144,7 @@ export default function LeadsPage() {
   if (trainingId) qs.set('training_id', trainingId);
   if (source) qs.set('source', source);
   if (assignedTo) qs.set('assigned_to', assignedTo);
+  if (paymentStatus) qs.set('payment_status', paymentStatus);
   if (minScore) qs.set('min_score', minScore);
   if (dateFrom) qs.set('date_from', dateFrom);
   if (dateTo) qs.set('date_to', dateTo);
@@ -128,6 +154,27 @@ export default function LeadsPage() {
     queryFn: () => api.get<LeadsResp>(`/leads?${qs.toString()}`),
     placeholderData: keepPreviousData,
   });
+
+  // Keep the filter state shareable/restorable via the URL (no rerender churn).
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (tab === 'payments') sp.set('tab', 'payments');
+    if (debounced) sp.set('q', debounced);
+    if (status) sp.set('status', status);
+    if (priority) sp.set('priority', priority);
+    if (trainingId) sp.set('training_id', trainingId);
+    if (source) sp.set('source', source);
+    if (assignedTo) sp.set('assigned_to', assignedTo);
+    if (paymentStatus) sp.set('payment_status', paymentStatus);
+    if (minScore) sp.set('min_score', minScore);
+    if (dateFrom) sp.set('date_from', dateFrom);
+    if (dateTo) sp.set('date_to', dateTo);
+    if (sort !== 'date') sp.set('sort', sort);
+    if (order !== 'desc') sp.set('order', order);
+    if (page > 1) sp.set('page', String(page));
+    const s = sp.toString();
+    window.history.replaceState(null, '', s ? `?${s}` : window.location.pathname);
+  }, [tab, debounced, status, priority, trainingId, source, assignedTo, paymentStatus, minScore, dateFrom, dateTo, sort, order, page]);
 
   const today = new Date().toISOString().slice(0, 10);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadForm>({
@@ -177,10 +224,15 @@ export default function LeadsPage() {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => api.delete(`/leads/${id}`),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['sales-leads'] }),
+  });
+
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 1;
-  const activeFilterCount = [status, priority, trainingId, source, assignedTo, minScore, dateFrom, dateTo].filter(Boolean).length;
+  const activeFilterCount = [status, priority, trainingId, source, assignedTo, paymentStatus, minScore, dateFrom, dateTo].filter(Boolean).length;
 
   function toggleSort(col: string) {
     if (sort === col) setOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
@@ -205,6 +257,7 @@ export default function LeadsPage() {
     setTrainingId('');
     setSource('');
     setAssignedTo('');
+    setPaymentStatus('');
     setMinScore('');
     setDateFrom('');
     setDateTo('');
@@ -223,17 +276,67 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold">Müraciətlər</h1>
-          <p className="mt-0.5 text-sm text-muted">Cəmi {total} müraciət</p>
-        </div>
-        {can('leads.create') && (
-          <Button onClick={() => setDrawerOpen(true)}>
-            <Plus className="h-4 w-4" /> Yeni müraciət
-          </Button>
-        )}
+      {/* compact top row: tabs left, actions right — no page header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="inline-flex gap-1 rounded-lg border border-border bg-surface p-1">
+        {(
+          [
+            { key: 'leads', label: 'Leadlər', icon: Search },
+            { key: 'payments', label: 'Ödənişlər', icon: Wallet },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={cn(
+              'flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors',
+              tab === t.key ? 'bg-muted-bg font-semibold text-foreground' : 'text-muted hover:text-foreground',
+            )}
+          >
+            <t.icon className="h-4 w-4" />
+            {t.label}
+          </button>
+        ))}
       </div>
+      {tab === 'leads' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted">{total.toLocaleString('az-AZ')} lead</span>
+          <select
+            value={preset}
+            onChange={(e) => applyPreset(e.target.value)}
+            className="h-9 rounded-lg border border-border bg-surface px-2 text-sm font-medium text-foreground outline-none"
+            title="Tarix aralığı"
+          >
+            <option value="">Bütün vaxtlar</option>
+            <option value="today">Bu gün</option>
+            <option value="7d">Son 7 gün</option>
+            <option value="month">Bu ay</option>
+            <option value="3m">Son 3 ay</option>
+          </select>
+          <input type="date" lang="az" title="Tarixdən" value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPreset(''); setPage(1); }}
+            className="h-9 w-36 rounded-lg border border-border bg-surface px-2 text-sm text-foreground" />
+          <input type="date" lang="az" title="Tarixə" value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPreset(''); setPage(1); }}
+            className="h-9 w-36 rounded-lg border border-border bg-surface px-2 text-sm text-foreground" />
+          {can('leads.settings') && (
+            <ExportMenu
+              urlFor={(f) => `/api/v1/sales/leads/export.${f}`}
+              filenameFor={(f) => `leads.${f}`}
+            />
+          )}
+          {can('leads.create') && (
+            <Button onClick={() => setDrawerOpen(true)}>
+              <Plus className="h-4 w-4" /> Yeni lead
+            </Button>
+          )}
+        </div>
+      )}
+      </div>
+
+      {tab === 'payments' && <LeadPaymentsPanel />}
+
+      <div className={tab === 'payments' ? 'hidden' : 'space-y-4'}>
 
       {/* search + filters */}
       <div className="space-y-4 rounded-xl border border-border bg-surface p-4">
@@ -258,14 +361,12 @@ export default function LeadsPage() {
             options={(meta?.trainings ?? []).map((t) => ({ value: t.id, label: t.name }))} className="w-40 shrink-0" />
           <Select value={source} onChange={(e) => { setSource(e.target.value); setPage(1); }} placeholder="Bütün mənbələr"
             options={(meta?.sources ?? []).map((s) => ({ value: s, label: SOURCE_LABELS[s] ?? s }))} className="w-40 shrink-0" />
-          <Select value={assignedTo} onChange={(e) => { setAssignedTo(e.target.value); setPage(1); }} placeholder="Bütün menecerlər"
+          <Select value={assignedTo} onChange={(e) => { setAssignedTo(e.target.value); setPage(1); }} placeholder="Bütün sales"
             options={(meta?.managers ?? []).map((m) => ({ value: m.id, label: m.name }))} className="w-44 shrink-0" />
+          <Select value={paymentStatus} onChange={(e) => { setPaymentStatus(e.target.value); setPage(1); }} placeholder="Ödəniş (hamısı)"
+            options={Object.entries(PAYMENT_STATUS_LABELS).map(([v, l]) => ({ value: v, label: l }))} className="w-40 shrink-0" />
           <input type="number" min={0} max={100} value={minScore} onChange={(e) => { setMinScore(e.target.value); setPage(1); }} placeholder="Skor ≥"
-            className="h-9 w-24 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-          <input type="date" lang="az" title="Tarixdən" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="h-9 w-36 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
-          <input type="date" lang="az" title="Tarixə" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="h-9 w-36 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            className="h-9 w-24 shrink-0 rounded-lg border border-border bg-input px-3 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]" />
           {activeFilterCount > 0 && (
             <Button variant="ghost" size="sm" onClick={resetFilters} className="shrink-0 whitespace-nowrap">Sıfırla</Button>
           )}
@@ -301,21 +402,25 @@ export default function LeadsPage() {
               <th className="px-3 py-2.5 text-left font-semibold text-muted">Prioritet</th>
               <th className="px-3 py-2.5 text-left"><SortHead col="date" label="İlk müraciət" /></th>
               <th className="px-3 py-2.5 text-left"><SortHead col="score" label="Skor" /></th>
-              <th className="px-3 py-2.5 text-left font-semibold text-muted">Təyin olunub</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-muted">Təlim</th>
               <th className="px-3 py-2.5 text-left font-semibold text-muted">Mənbə</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-muted">Sales</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-muted">Növbəti FU</th>
+              <th className="px-3 py-2.5 text-left font-semibold text-muted">Ödəniş</th>
+              <th className="px-3 py-2.5" />
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i} className="border-b border-border">
-                  {Array.from({ length: 9 }).map((__, j) => (
+                  {Array.from({ length: 12 }).map((__, j) => (
                     <td key={j} className="px-3 py-3"><div className="h-4 w-full animate-pulse rounded bg-muted-bg" /></td>
                   ))}
                 </tr>
               ))
             ) : rows.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-12 text-center text-muted">Heç bir müraciət tapılmadı</td></tr>
+              <tr><td colSpan={12} className="px-4 py-12 text-center text-muted">Heç bir lead tapılmadı</td></tr>
             ) : (
               rows.map((r) => (
                 <tr key={r.id} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted-bg/50"
@@ -341,8 +446,51 @@ export default function LeadsPage() {
                   </td>
                   <td className="px-3 py-2.5 text-muted">{fmtDate(r.createdAt)}</td>
                   <td className="px-3 py-2.5 font-semibold tabular-nums">{r.score}</td>
-                  <td className="px-3 py-2.5 text-muted">{r.assigneeName ?? '—'}</td>
+                  <td className="px-3 py-2.5">{r.trainingName ?? '—'}</td>
                   <td className="px-3 py-2.5 text-muted">{r.source ? (SOURCE_LABELS[r.source] ?? r.source) : '—'}</td>
+                  <td className="px-3 py-2.5 text-muted">{r.assigneeName ?? '—'}</td>
+                  <td className="px-3 py-2.5 text-muted">{r.nextFollowupAt ? fmtDate(r.nextFollowupAt) : '—'}</td>
+                  <td className="px-3 py-2.5">
+                    {r.paymentStatus ? (
+                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" style={paymentStatusBadgeStyle(r.paymentStatus)}>
+                        {PAYMENT_STATUS_LABELS[r.paymentStatus] ?? r.paymentStatus}
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {can('leads.update') && (
+                        <button
+                          className="rounded-lg border border-border bg-muted-bg/50 p-1.5 text-muted transition-colors duration-150 hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                          onClick={() => router.push(`/crm/leads/${r.id}`)}
+                          title="Redaktə et"
+                          aria-label="Redaktə et"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {can('leads.delete') && (
+                        <button
+                          className="rounded-lg border border-danger/25 bg-danger/10 p-1.5 text-danger transition-colors duration-150 hover:bg-danger/20"
+                          onClick={() => {
+                            if (window.confirm('Lead silinsin?')) deleteMut.mutate(r.id);
+                          }}
+                          title="Sil"
+                          aria-label="Sil"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <button
+                        className="rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent transition-colors duration-150 hover:bg-accent/20"
+                        onClick={() => router.push(`/crm/leads/${r.id}`)}
+                      >
+                        Detal
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             )}
@@ -361,6 +509,8 @@ export default function LeadsPage() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
       </div>
 
       {/* new lead modal */}
@@ -410,16 +560,16 @@ export default function LeadsPage() {
                 </FF>
                 <FF label="İlk müraciət tarixi" hint="Müştəri ilk dəfə nə vaxt müraciət edib?">
                   <input type="date" lang="az" {...register('firstContactAt')}
-                    className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="h-9 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]" />
                 </FF>
                 <FF label="Növbəti follow-up">
                   <input type="datetime-local" {...register('nextFollowupAt')}
-                    className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    className="h-9 w-full rounded-lg border border-border bg-input px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]" />
                 </FF>
               </div>
               <FF label="Qeydlər">
                 <textarea {...register('notes')}
-                  className="h-24 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  className="h-24 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-4 focus:ring-[var(--focus-ring)]" />
               </FF>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {SCORE_FLAG_LABELS.slice(0, 5).map((f) => (
@@ -439,5 +589,13 @@ export default function LeadsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LeadsPage() {
+  return (
+    <Suspense>
+      <LeadsPageInner />
+    </Suspense>
   );
 }

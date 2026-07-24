@@ -32,6 +32,30 @@ export const LEAD_SOURCES = [
 
 export const LEAD_GENDERS = ['kisi', 'qadin', 'diger'] as const;
 
+export const DEMO_STATUSES = ['teyin_edilmedi', 'teyin_olundu', 'verildi', 'imtina'] as const;
+
+export const PAYMENT_STATUSES = [
+  'gozleyir',
+  'depozit_odedi',
+  'qismen_odenib',
+  'odenib',
+  'gecikib',
+  'legv_edilib',
+] as const;
+export type LeadPaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const PAYMENT_METHODS = [
+  'nagd',
+  'kart',
+  'bank_kocurmesi',
+  'birkart',
+  'tamkart',
+  'bolkart',
+  'hisseli',
+] as const;
+
+export const PAYMENT_PLANS = ['aylik', 'tam'] as const;
+
 export const WON_STATUSES: LeadStatus[] = ['qeydiyyat_oldu', 'satis_baglandi'];
 export const LOST_STATUSES: LeadStatus[] = ['imtina'];
 

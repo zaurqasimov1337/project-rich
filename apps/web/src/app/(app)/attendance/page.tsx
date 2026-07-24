@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { StatusBadge } from '@/components/data-table';
 
 interface LessonEvent {
@@ -68,8 +69,8 @@ export default function AttendancePage() {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">{t('title')}</h1>
+    <div className="space-y-5">
+      <PageHeader title={t('title')} />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         <div className="space-y-2">
@@ -87,7 +88,7 @@ export default function AttendancePage() {
                 setMarks({});
               }}
               className={cn(
-                'w-full rounded-xl border border-border bg-surface p-3 text-left shadow-sm transition-colors hover:border-primary',
+                'w-full rounded-xl border border-border bg-surface p-3 text-left shadow-[var(--shadow-sm)] transition-colors hover:border-primary',
                 selectedLesson === l.id && 'border-primary ring-2 ring-primary/20',
               )}
             >
@@ -112,9 +113,9 @@ export default function AttendancePage() {
               {t('selectLesson')}
             </div>
           ) : (
-            <div className="rounded-xl border border-border bg-surface shadow-sm">
+            <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
               <div className="flex items-center justify-between border-b border-border p-4">
-                <h2 className="font-semibold">{roster?.lesson.group.name} — {t('attendance')}</h2>
+                <h2 className="text-[15px] font-bold">{roster?.lesson.group.name} — {t('attendance')}</h2>
                 <Button
                   size="sm"
                   loading={saveMutation.isPending}

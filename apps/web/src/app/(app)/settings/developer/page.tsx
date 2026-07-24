@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { Input, Label } from '@/components/ui/input';
 import { Drawer } from '@/components/ui/drawer';
 
@@ -89,8 +90,8 @@ export default function DeveloperPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">{t('developer')}</h1>
+    <div className="space-y-5">
+      <PageHeader title={t('developer')} />
 
       <div className="flex gap-1 border-b border-border">
         {[
@@ -136,7 +137,7 @@ export default function DeveloperPage() {
               <Plus className="h-4 w-4" /> {t('newKey')}
             </Button>
           </div>
-          <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {keys?.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted">{t('noKeys')}</div>
             ) : (
@@ -170,7 +171,7 @@ export default function DeveloperPage() {
               <Plus className="h-4 w-4" /> {t('newWebhook')}
             </Button>
           </div>
-          <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {hooks?.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted">{t('noWebhooks')}</div>
             ) : (

@@ -37,7 +37,7 @@ export const PRICING_MODELS = ['monthly', 'course', 'lesson'] as const;
 export type PricingModel = (typeof PRICING_MODELS)[number];
 
 export const TEACHER_RATE_TYPES = [
-  'per_lesson', 'per_student', 'fixed_monthly', 'revenue_pct',
+  'per_lesson', 'per_hour', 'per_student', 'per_group', 'fixed_monthly', 'revenue_pct',
 ] as const;
 export type TeacherRateType = (typeof TEACHER_RATE_TYPES)[number];
 

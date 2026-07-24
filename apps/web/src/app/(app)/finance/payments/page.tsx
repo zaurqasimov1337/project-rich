@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { formatMoney } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
 import { DataTable, type Column } from '@/components/data-table';
 
 interface PaymentRow {
@@ -72,11 +73,11 @@ export default function PaymentsPage() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
-      <h1 className="text-xl font-bold">{t('payments.title')}</h1>
+      <PageHeader title={t('payments.title')} />
       <DataTable
         columns={columns}
         data={data?.data}

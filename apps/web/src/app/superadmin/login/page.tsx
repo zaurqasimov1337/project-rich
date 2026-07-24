@@ -40,7 +40,7 @@ export default function PlatformLoginPage() {
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
-            <div className="text-lg font-bold leading-tight">EduSphere</div>
+            <div className="text-lg font-bold leading-tight">Mactab</div>
             <div className="text-[11px] font-medium uppercase tracking-widest text-white/50">
               {t('brandTagline')}
             </div>
@@ -66,7 +66,7 @@ export default function PlatformLoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-admin-primary text-white">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <span className="text-lg font-bold text-foreground">EduSphere</span>
+            <span className="text-lg font-bold text-foreground">Mactab</span>
           </div>
 
           <h1 className="text-2xl font-bold text-foreground">{t('loginTitle')}</h1>

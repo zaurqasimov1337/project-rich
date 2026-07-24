@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { formatMoney } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 
 interface DashboardData {
   activeStudents: number;
@@ -41,37 +43,32 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted">
-          {t('welcome', { name: user?.firstName ?? '' })} {user?.tenant.name}
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title={t('title')}
+        description={`${t('welcome', { name: user?.firstName ?? '' })} ${user?.tenant.name ?? ''}`}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={kpi.label} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] font-medium text-muted">{kpi.label}</span>
-                <Icon className="h-4 w-4 text-muted" />
-              </div>
-              <div className="mt-2 text-2xl font-bold tabular-nums">
-                {isLoading ? (
-                  <div className="h-8 w-16 animate-pulse rounded bg-muted-bg" />
-                ) : (
-                  (kpi.value ?? '—')
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {kpis.map((kpi) => (
+          <StatCard
+            key={kpi.label}
+            label={kpi.label}
+            icon={kpi.icon}
+            tone="text-muted"
+            value={
+              isLoading ? (
+                <div className="h-8 w-16 animate-pulse rounded bg-muted-bg" />
+              ) : (
+                (kpi.value ?? '—')
+              )
+            }
+          />
+        ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-surface shadow-sm">
-        <div className="border-b border-border px-5 py-3 font-semibold">{t('upcomingLessons')}</div>
+      <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
+        <div className="border-b border-border px-5 py-3 text-[15px] font-bold">{t('upcomingLessons')}</div>
         {isLoading ? (
           <div className="space-y-2 p-5">
             {Array.from({ length: 3 }).map((_, i) => (

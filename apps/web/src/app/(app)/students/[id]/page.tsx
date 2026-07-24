@@ -96,7 +96,7 @@ export default function StudentDetailPage() {
         <ArrowLeft className="h-4 w-4" /> {t('title')}
       </Link>
 
-      <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-5 shadow-sm">
+      <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-lg font-bold text-primary">
           {initials(student.firstName, student.lastName)}
         </div>
@@ -132,7 +132,7 @@ export default function StudentDetailPage() {
       </div>
 
       {tab === 'profile' && (
-        <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-[var(--shadow-sm)]">
           <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
             {info.map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 sm:block">
@@ -148,7 +148,7 @@ export default function StudentDetailPage() {
       )}
 
       {tab === 'groups' && (
-        <div className="rounded-xl border border-border bg-surface shadow-sm">
+        <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
           {student.enrollments.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted">{t('noGroups')}</div>
           ) : (
@@ -183,7 +183,7 @@ export default function StudentDetailPage() {
               ['absent', t('absent')],
               ['excused', t('excused')],
             ].map(([key, label]) => (
-              <div key={key} className="rounded-xl border border-border bg-surface p-4 text-center shadow-sm">
+              <div key={key} className="rounded-xl border border-border bg-surface p-4 text-center shadow-[var(--shadow-sm)]">
                 <div className="text-2xl font-bold tabular-nums">
                   {attendance?.summary[key!] ?? 0}
                 </div>
@@ -191,7 +191,7 @@ export default function StudentDetailPage() {
               </div>
             ))}
           </div>
-          <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {!attendance || attendance.recent.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted">{t('noAttendance')}</div>
             ) : (
@@ -215,7 +215,7 @@ export default function StudentDetailPage() {
       )}
 
       {tab === 'grades' && (
-        <div className="rounded-xl border border-border bg-surface shadow-sm">
+        <div className="rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
           {!grades || grades.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted">{t('noGrades')}</div>
           ) : (

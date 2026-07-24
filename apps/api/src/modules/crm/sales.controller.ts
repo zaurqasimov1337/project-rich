@@ -15,7 +15,15 @@ import { CurrentUser, type AuthUser } from '../../common/decorators/current-user
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SalesService } from './sales.service';
 import { CrmService } from './crm.service';
-import { LEAD_SOURCES, LEAD_STATUSES, PIPELINE_COLUMNS } from './sales.constants';
+import {
+  DEMO_STATUSES,
+  LEAD_SOURCES,
+  LEAD_STATUSES,
+  PAYMENT_METHODS,
+  PAYMENT_PLANS,
+  PAYMENT_STATUSES,
+  PIPELINE_COLUMNS,
+} from './sales.constants';
 import {
   AddLeadActivityDto,
   BulkAssignDto,
@@ -61,6 +69,10 @@ export class SalesController {
       statuses: LEAD_STATUSES,
       sources: LEAD_SOURCES,
       columns: PIPELINE_COLUMNS.map((c) => ({ key: c.key, label: c.label })),
+      demoStatuses: DEMO_STATUSES,
+      paymentStatuses: PAYMENT_STATUSES,
+      paymentMethods: PAYMENT_METHODS,
+      paymentPlans: PAYMENT_PLANS,
       trainings,
       campaigns,
       managers: managers.map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}`.trim() })),
@@ -117,6 +129,7 @@ export class SalesController {
     @Query('training_id') trainingId?: string,
     @Query('source') source?: string,
     @Query('assigned_to') assignedTo?: string,
+    @Query('payment_status') paymentStatus?: string,
     @Query('min_score') minScore?: string,
     @Query('date_from') dateFrom?: string,
     @Query('date_to') dateTo?: string,
@@ -132,6 +145,7 @@ export class SalesController {
       trainingId,
       source,
       assignedTo,
+      paymentStatus,
       minScore: minScore ? Number(minScore) : undefined,
       dateFrom,
       dateTo,
